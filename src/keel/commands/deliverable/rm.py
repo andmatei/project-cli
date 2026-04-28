@@ -55,6 +55,16 @@ def cmd_rm(
         yes=yes,
     )
 
+    # Remove worktree if present (and not --keep-code)
+    code_dir = deliv / "code"
+    if code_dir.is_dir() and not keep_code:
+        from keel import git_ops
+        try:
+            git_ops.remove_worktree(code_dir, force=force)
+        except git_ops.GitError as e:
+            out.error(f"failed to remove worktree at {code_dir}: {e}", code="git_failed")
+            raise typer.Exit(code=1)
+
     # Remove design dir
     if not keep_design:
         shutil.rmtree(deliv)

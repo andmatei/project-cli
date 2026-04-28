@@ -41,3 +41,15 @@ def test_rm_dry_run_writes_nothing(projects, make_project, make_deliverable) -> 
     assert result.exit_code == 0
     assert deliv.exists()  # not actually removed
     assert "[dry-run]" in result.stderr
+
+
+def test_rm_calls_remove_worktree_if_code_dir_present(projects, make_project, make_deliverable, monkeypatch) -> None:
+    """If deliv/code exists, rm calls git_ops.remove_worktree on it."""
+    deliv = make_deliverable(project_name="foo", name="bar", description="d")
+    (deliv / "code").mkdir()
+    calls = []
+    def fake_remove(dest, *, force=False):
+        calls.append((str(dest), force))
+    monkeypatch.setattr("keel.git_ops.remove_worktree", fake_remove)
+    runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo"])
+    assert calls == [(str(deliv / "code"), False)]
