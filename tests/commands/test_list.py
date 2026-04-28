@@ -1,4 +1,4 @@
-"""Tests for `project-cli list`."""
+"""Tests for `keel list`."""
 import json
 
 from typer.testing import CliRunner

@@ -1,4 +1,4 @@
-"""`project-cli list`."""
+"""`keel list`."""
 from __future__ import annotations
 from dataclasses import dataclass
 import typer

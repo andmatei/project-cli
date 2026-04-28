@@ -4,7 +4,7 @@ import typer
 from keel import __version__
 
 app = typer.Typer(
-    name="project-cli",
+    name="keel",
     help="Manage the ~/projects/ workspace.",
     no_args_is_help=True,
     add_completion=True,
@@ -26,7 +26,7 @@ def main(
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Suppress info logs."),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose logs."),
 ) -> None:
-    """project-cli: manage the ~/projects/ workspace."""
+    """keel: manage the ~/projects/ workspace."""
     if quiet and verbose:
         raise typer.BadParameter("--quiet and --verbose are mutually exclusive.")
 

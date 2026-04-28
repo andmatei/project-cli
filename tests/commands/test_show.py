@@ -1,4 +1,4 @@
-"""Tests for `project-cli show`."""
+"""Tests for `keel show`."""
 import json
 from typer.testing import CliRunner
 from keel.app import app
