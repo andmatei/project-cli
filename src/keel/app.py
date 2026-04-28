@@ -42,3 +42,6 @@ app.command(name="show")(cmd_show)
 
 from keel.commands.deliverable import app as deliverable_app
 app.add_typer(deliverable_app, name="deliverable")
+
+from keel.commands.decision import app as decision_app
+app.add_typer(decision_app, name="decision")
