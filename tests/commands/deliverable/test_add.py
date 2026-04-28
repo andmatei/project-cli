@@ -77,3 +77,13 @@ def test_add_is_idempotent_in_parent_files(projects, make_project) -> None:
     parent_claude = (projects / "foo" / "design" / "CLAUDE.md").read_text()
     # Count occurrences of the deliverable bullet line:
     assert parent_claude.count("**bar**") == 1
+
+
+def test_add_updates_sibling_deliverable_claude_md(projects, make_project) -> None:
+    """Adding a second deliverable updates the first's CLAUDE.md sibling section."""
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"])
+    runner.invoke(app, ["deliverable", "add", "beta", "-d", "beta thing", "-y", "--project", "foo"])
+    sibling_claude = (projects / "foo" / "deliverables" / "alpha" / "design" / "CLAUDE.md").read_text()
+    # alpha's CLAUDE.md should mention beta:
+    assert "beta" in sibling_claude

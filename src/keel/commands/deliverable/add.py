@@ -88,7 +88,7 @@ def cmd_add(
 
     # Templates
     (deliv / "design" / "CLAUDE.md").write_text(
-        templates.render("claude_md.j2", name=slug, description=description, repos=[], deliverables=[])
+        templates.render("claude_md.j2", name=slug, description=description, repos=[], deliverables=[], siblings=[])
     )
     (deliv / "design" / "design.md").write_text(
         templates.render("design_md.j2", name=slug, description=description)
@@ -120,11 +120,26 @@ def cmd_add(
         new_text = insert_under_heading(parent_design_path.read_text(), "Deliverables", line)
         parent_design_path.write_text(new_text)
 
+    # AST-edit existing siblings' CLAUDE.md to add this new deliverable
+    siblings_dir = workspace.project_dir(project) / "deliverables"
+    sibling_modifications = []
+    if siblings_dir.is_dir():
+        for sibling in sorted(siblings_dir.iterdir()):
+            if sibling.name == slug or not sibling.is_dir():
+                continue
+            sibling_claude = sibling / "design" / "CLAUDE.md"
+            if sibling_claude.is_file():
+                line = f"- {slug}: ../{slug}/design/ -- {description}\n"
+                new_text = insert_under_heading(sibling_claude.read_text(), "Sibling deliverables", line)
+                sibling_claude.write_text(new_text)
+                sibling_modifications.append(str(sibling_claude))
+
     modified_files = []
     if parent_claude_path.is_file():
         modified_files.append(str(parent_claude_path))
     if parent_design_path.is_file():
         modified_files.append(str(parent_design_path))
+    modified_files.extend(sibling_modifications)
     out.result(
         {"deliverable_path": str(deliv), "modified_files": modified_files},
         human_text=f"Deliverable created: {deliv}",

@@ -17,7 +17,15 @@
 - **{{ d.name }}**: ../deliverables/{{ d.name }}/design/ -- {{ d.description }}
 {% endfor %}
 {% endif %}
+{% if siblings is defined %}
 
+## Sibling deliverables
+
+{% for s in siblings -%}
+- {{ s.name }}: ../{{ s.name }}/design/ -- {{ s.description }}
+{% endfor %}
+
+{% endif -%}
 ## Workflow
 - `scope.md` defines boundaries and success criteria — set early, changes rarely
 - `design.md` is the living source of truth for the current technical approach
