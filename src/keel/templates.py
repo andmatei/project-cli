@@ -1,7 +1,10 @@
 """Jinja2 template loader/renderer for design artifacts."""
+
 from __future__ import annotations
+
 from importlib.resources import files
-from jinja2 import Environment, BaseLoader, TemplateNotFound, select_autoescape
+
+from jinja2 import BaseLoader, Environment, TemplateNotFound, select_autoescape
 
 
 class _PackageLoader(BaseLoader):

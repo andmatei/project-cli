@@ -1,14 +1,17 @@
 """Tests for workspace path conventions and CWD scope detection."""
+
 from __future__ import annotations
+
 from pathlib import Path
-import os
+
 import pytest
+
 from keel.workspace import (
-    projects_dir,
-    project_dir,
+    Scope,
     deliverable_dir,
     detect_scope,
-    Scope,
+    project_dir,
+    projects_dir,
 )
 
 
@@ -68,6 +71,7 @@ def test_resolve_scope_or_fail_returns_existing_project(monkeypatch, tmp_path) -
     )
     monkeypatch.chdir(tmp_path / "foo" / "design")
     from keel.workspace import resolve_scope_or_fail
+
     scope = resolve_scope_or_fail()
     assert scope.project == "foo"
     assert scope.deliverable is None
@@ -78,8 +82,10 @@ def test_resolve_scope_or_fail_rejects_missing_manifest(monkeypatch, tmp_path) -
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     (tmp_path / "ghost" / "design").mkdir(parents=True)  # no project.toml
     monkeypatch.chdir(tmp_path / "ghost" / "design")
-    from keel.workspace import resolve_scope_or_fail
     import typer
+
+    from keel.workspace import resolve_scope_or_fail
+
     with pytest.raises(typer.Exit) as exc:
         resolve_scope_or_fail()
     assert exc.value.exit_code == 1
@@ -92,12 +98,14 @@ def test_deliverable_exists_true(monkeypatch, tmp_path) -> None:
         '[deliverable]\nname = "bar"\nparent_project = "foo"\ndescription = "d"\ncreated = 2026-04-28\nshared_worktree = false\n'
     )
     from keel.workspace import deliverable_exists
+
     assert deliverable_exists("foo", "bar") is True
 
 
 def test_deliverable_exists_false(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import deliverable_exists
+
     assert deliverable_exists("foo", "bar") is False
 
 
@@ -108,6 +116,7 @@ def test_resolve_cli_scope_explicit_project(monkeypatch, tmp_path) -> None:
         '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-28\n'
     )
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(project="foo", deliverable=None)
     assert scope.project == "foo"
     assert scope.deliverable is None
@@ -121,6 +130,7 @@ def test_resolve_cli_scope_falls_back_to_cwd(monkeypatch, tmp_path) -> None:
     )
     monkeypatch.chdir(tmp_path / "foo" / "design")
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(project=None)
     assert scope.project == "foo"
 
@@ -128,8 +138,10 @@ def test_resolve_cli_scope_falls_back_to_cwd(monkeypatch, tmp_path) -> None:
 def test_resolve_cli_scope_missing_project_exits(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     monkeypatch.chdir(tmp_path)
-    from keel.workspace import resolve_cli_scope
     import typer
+
+    from keel.workspace import resolve_cli_scope
+
     with pytest.raises(typer.Exit) as exc:
         resolve_cli_scope(project=None)
     assert exc.value.exit_code == 1
@@ -137,8 +149,10 @@ def test_resolve_cli_scope_missing_project_exits(monkeypatch, tmp_path) -> None:
 
 def test_resolve_cli_scope_unknown_project_exits(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
-    from keel.workspace import resolve_cli_scope
     import typer
+
+    from keel.workspace import resolve_cli_scope
+
     with pytest.raises(typer.Exit) as exc:
         resolve_cli_scope(project="ghost")
     assert exc.value.exit_code == 1
@@ -146,31 +160,39 @@ def test_resolve_cli_scope_unknown_project_exits(monkeypatch, tmp_path) -> None:
 
 def test_read_phase_default_when_missing(tmp_path) -> None:
     from keel.workspace import read_phase
+
     assert read_phase(tmp_path) == "scoping"
 
 
 def test_read_phase_default_when_empty(tmp_path) -> None:
     (tmp_path / ".phase").write_text("")
     from keel.workspace import read_phase
+
     assert read_phase(tmp_path) == "scoping"
 
 
 def test_read_phase_value(tmp_path) -> None:
     (tmp_path / ".phase").write_text("implementing\n2026-04-28  scoping → implementing\n")
     from keel.workspace import read_phase
+
     assert read_phase(tmp_path) == "implementing"
 
 
 def test_decisions_dir_project(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import decisions_dir
+
     assert decisions_dir("foo") == tmp_path / "foo" / "design" / "decisions"
 
 
 def test_decisions_dir_deliverable(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import decisions_dir
-    assert decisions_dir("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "design" / "decisions"
+
+    assert (
+        decisions_dir("foo", "bar")
+        == tmp_path / "foo" / "deliverables" / "bar" / "design" / "decisions"
+    )
 
 
 def test_resolve_scope_or_fail_returns_deliverable(monkeypatch, tmp_path) -> None:
@@ -186,6 +208,7 @@ def test_resolve_scope_or_fail_returns_deliverable(monkeypatch, tmp_path) -> Non
     )
     monkeypatch.chdir(proj)
     from keel.workspace import resolve_scope_or_fail
+
     scope = resolve_scope_or_fail()
     assert scope.project == "foo"
     assert scope.deliverable == "bar"

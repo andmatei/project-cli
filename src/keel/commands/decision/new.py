@@ -1,10 +1,14 @@
 """`keel decision new <title>`."""
+
 from __future__ import annotations
-from datetime import date
-from pathlib import Path
+
+import contextlib
 import os
 import re
 import subprocess
+from datetime import date
+from pathlib import Path
+
 import typer
 
 from keel import templates, workspace
@@ -15,19 +19,39 @@ from keel.util import slugify
 def cmd_new(
     ctx: typer.Context,
     title: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Decision scope: a deliverable instead of the project. Auto-detected from CWD."),
-    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
-    slug: str | None = typer.Option(None, "--slug", help="Override the auto-generated slug from the title."),
-    supersedes: str | None = typer.Option(None, "--supersedes", help="Mark an existing decision as superseded and link forward to this one. Pass the slug or the full filename."),
-    no_edit: bool = typer.Option(False, "--no-edit", help="Don't open $EDITOR after creating the decision file."),
-    force: bool = typer.Option(False, "--force", help="Overwrite an existing decision file with the same name."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    deliverable: str | None = typer.Option(
+        None,
+        "-D",
+        "--deliverable",
+        help="Decision scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."
+    ),
+    slug: str | None = typer.Option(
+        None, "--slug", help="Override the auto-generated slug from the title."
+    ),
+    supersedes: str | None = typer.Option(
+        None,
+        "--supersedes",
+        help="Mark an existing decision as superseded and link forward to this one. Pass the slug or the full filename.",
+    ),
+    no_edit: bool = typer.Option(
+        False, "--no-edit", help="Don't open $EDITOR after creating the decision file."
+    ),
+    force: bool = typer.Option(
+        False, "--force", help="Overwrite an existing decision file with the same name."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new decision record at the current scope (project or deliverable)."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(project, deliverable)
     project = scope.project
     deliverable = scope.deliverable
@@ -51,7 +75,11 @@ def cmd_new(
     # Validate --supersedes early, before creating the new file
     supersedes_path: Path | None = None
     if supersedes:
-        candidate_paths = list(target_dir.glob(f"*-{supersedes}.md")) if not supersedes.endswith(".md") else [target_dir / supersedes]
+        candidate_paths = (
+            list(target_dir.glob(f"*-{supersedes}.md"))
+            if not supersedes.endswith(".md")
+            else [target_dir / supersedes]
+        )
         candidate_paths = [c for c in candidate_paths if c.is_file()]
         if not candidate_paths:
             out.error(
@@ -63,6 +91,7 @@ def cmd_new(
 
     if dry_run:
         from keel.dryrun import OpLog
+
         log = OpLog()
         log.create_file(path, size=0)
         out.info(log.format_summary())
@@ -96,7 +125,5 @@ def cmd_new(
 
     # Open editor
     if not no_edit and os.environ.get("EDITOR") and not dry_run:
-        try:
+        with contextlib.suppress(Exception):
             subprocess.run([os.environ["EDITOR"], str(path)], check=False)
-        except Exception:
-            pass  # don't fail the command if editor invocation fails

@@ -1,6 +1,9 @@
 """Top-level Typer app and global flags."""
+
 from __future__ import annotations
+
 import typer
+
 from keel import __version__
 
 app = typer.Typer(
@@ -21,7 +24,10 @@ def _version_callback(value: bool) -> None:
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
-        False, "--version", callback=_version_callback, is_eager=True,
+        False,
+        "--version",
+        callback=_version_callback,
+        is_eager=True,
         help="Show version and exit.",
     ),
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Suppress info logs."),
@@ -33,20 +39,26 @@ def main(
     ctx.obj = {"quiet": quiet, "verbose": verbose}
 
 
-from keel.commands.new import cmd_new
+from keel.commands.new import cmd_new  # noqa: E402
+
 app.command(name="new")(cmd_new)
 
-from keel.commands.list import cmd_list
+from keel.commands.list import cmd_list  # noqa: E402
+
 app.command(name="list")(cmd_list)
 
-from keel.commands.show import cmd_show
+from keel.commands.show import cmd_show  # noqa: E402
+
 app.command(name="show")(cmd_show)
 
-from keel.commands.deliverable import app as deliverable_app
+from keel.commands.deliverable import app as deliverable_app  # noqa: E402
+
 app.add_typer(deliverable_app, name="deliverable")
 
-from keel.commands.decision import app as decision_app
+from keel.commands.decision import app as decision_app  # noqa: E402
+
 app.add_typer(decision_app, name="decision")
 
-from keel.commands.phase import cmd_phase
+from keel.commands.phase import cmd_phase  # noqa: E402
+
 app.command(name="phase")(cmd_phase)

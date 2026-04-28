@@ -5,48 +5,25 @@ build-backend = "hatchling.build"
 [project]
 name = "keel-cli"
 version = "0.1.0"
-description = "Personal-workspace CLI for managing project design docs, decisions, and code worktrees"
-readme = "README.md"
-license = { file = "LICENSE" }
+description = "CLI for the projects workspace"
 requires-python = ">=3.11"
 authors = [{ name = "Andrei Matei" }]
-keywords = ["cli", "workspace", "projects", "scaffolding", "git-worktree"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: MacOS",
-    "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Software Development",
-    "Topic :: Utilities",
-]
 dependencies = [
-    "typer>=0.25.0",
-    "rich>=15.0.0",
-    "pydantic>=2.13.3",
-    "markdown-it-py>=4.0.0",
-    "jinja2>=3.1.6",
-    "tomlkit>=0.14.0",
-    "questionary>=2.1.1",
+    "typer>=0.12",
+    "rich>=13",
+    "pydantic>=2.6",
+    "markdown-it-py>=3",
+    "jinja2>=3.1",
+    "tomlkit>=0.13",
+    "questionary>=2",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
     "pytest-snapshot>=0.9",
+    "ruff>=0.6",
 ]
-
-[project.urls]
-Homepage = "https://github.com/andmatei/keel"
-Repository = "https://github.com/andmatei/keel"
-Issues = "https://github.com/andmatei/keel/issues"
-Changelog = "https://github.com/andmatei/keel/releases"
 
 [project.scripts]
 keel = "keel.app:app"
@@ -58,3 +35,28 @@ include = ["src/keel/_templates/*.j2"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplifications
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # function call in argument default (Typer requires this)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["B"]  # tests can have less-strict bugbear
+
+[tool.ruff.format]
+quote-style = "double"

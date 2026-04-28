@@ -1,7 +1,9 @@
 """Tests for the output module."""
+
 from __future__ import annotations
+
 import json
-import io
+
 from keel.output import Output
 
 
@@ -82,8 +84,10 @@ def test_warn_suppressed_when_quiet(capsys) -> None:
 
 def test_from_context_picks_up_quiet() -> None:
     """Output.from_context honors quiet=True from ctx.obj."""
+
     class _Ctx:
         obj = {"quiet": True, "verbose": False}
+
     o = Output.from_context(_Ctx())
     assert o.quiet is True
 
@@ -91,14 +95,17 @@ def test_from_context_picks_up_quiet() -> None:
 def test_from_context_picks_up_verbose() -> None:
     class _Ctx:
         obj = {"quiet": False, "verbose": True}
+
     o = Output.from_context(_Ctx())
     assert o.verbose is True
 
 
 def test_from_context_with_json_mode_overrides_quiet() -> None:
     """--json forces quiet (existing constructor behavior)."""
+
     class _Ctx:
         obj = {"quiet": False, "verbose": False}
+
     o = Output.from_context(_Ctx(), json_mode=True)
     assert o.json_mode is True
     assert o.quiet is True
@@ -106,8 +113,10 @@ def test_from_context_with_json_mode_overrides_quiet() -> None:
 
 def test_from_context_handles_no_ctx_obj() -> None:
     """Don't crash if ctx.obj is None (subcommand invoked without root callback)."""
+
     class _Ctx:
         obj = None
+
     o = Output.from_context(_Ctx())
     assert o.quiet is False
     assert o.verbose is False

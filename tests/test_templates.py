@@ -1,4 +1,5 @@
 """Tests for the template renderer."""
+
 from keel.templates import render
 
 
@@ -65,8 +66,11 @@ def test_claude_md_no_empty_sibling_heading() -> None:
     """siblings=[] must not render an empty '## Sibling deliverables' heading."""
     out = render(
         "claude_md.j2",
-        name="x", description="d",
-        repos=[], deliverables=[], siblings=[],
+        name="x",
+        description="d",
+        repos=[],
+        deliverables=[],
+        siblings=[],
     )
     assert "## Sibling deliverables" not in out
 
@@ -75,8 +79,10 @@ def test_claude_md_renders_sibling_heading_when_siblings_present() -> None:
     """When siblings is non-empty, the heading should render with bullets."""
     out = render(
         "claude_md.j2",
-        name="x", description="d",
-        repos=[], deliverables=[],
+        name="x",
+        description="d",
+        repos=[],
+        deliverables=[],
         siblings=[{"name": "alpha", "description": "the alpha"}],
     )
     assert "## Sibling deliverables" in out
@@ -88,10 +94,15 @@ def test_render_claude_md_no_triple_blank_lines() -> None:
     """Avoid triple blank lines in any rendered combination."""
     cases = [
         {"repos": [], "deliverables": []},
-        {"repos": [{"worktree": "code", "remote": "g@h:o/r.git", "local_hint": None}], "deliverables": []},
+        {
+            "repos": [{"worktree": "code", "remote": "g@h:o/r.git", "local_hint": None}],
+            "deliverables": [],
+        },
         {"repos": [], "deliverables": [{"name": "bar", "description": "the bar"}]},
-        {"repos": [{"worktree": "code", "remote": "g@h:o/r.git", "local_hint": None}],
-         "deliverables": [{"name": "bar", "description": "the bar"}]},
+        {
+            "repos": [{"worktree": "code", "remote": "g@h:o/r.git", "local_hint": None}],
+            "deliverables": [{"name": "bar", "description": "the bar"}],
+        },
     ]
     for ctx in cases:
         out = render("claude_md.j2", name="foo", description="d", **ctx)

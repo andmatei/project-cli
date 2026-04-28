@@ -1,12 +1,16 @@
 """`keel deliverable add <name>`."""
+
 from __future__ import annotations
+
 from datetime import date
 from pathlib import Path
+
 import typer
 
 from keel import templates, workspace
 from keel.manifest import (
-    DeliverableManifest, DeliverableMeta,
+    DeliverableManifest,
+    DeliverableMeta,
     save_deliverable_manifest,
 )
 from keel.output import Output
@@ -17,18 +21,34 @@ from keel.util import slugify
 def cmd_add(
     ctx: typer.Context,
     name: str = typer.Argument(..., help="Deliverable name (will be slugified)."),
-    description: str | None = typer.Option(None, "-d", "--description", help="Brief deliverable description; required."),
-    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
-    repo: str | None = typer.Option(None, "-r", "--repo", help="Source git repo for the deliverable's own worktree. Mutually exclusive with --shared."),
-    shared: bool = typer.Option(False, "--shared", help="Use the parent project's worktree (no own [[repos]])."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
-    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
+    description: str | None = typer.Option(
+        None, "-d", "--description", help="Brief deliverable description; required."
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."
+    ),
+    repo: str | None = typer.Option(
+        None,
+        "-r",
+        "--repo",
+        help="Source git repo for the deliverable's own worktree. Mutually exclusive with --shared.",
+    ),
+    shared: bool = typer.Option(
+        False, "--shared", help="Use the parent project's worktree (no own [[repos]])."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
+    yes: bool = typer.Option(
+        False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new deliverable inside a project."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(project, None, allow_deliverable=False)
     project = scope.project
 
@@ -60,6 +80,7 @@ def cmd_add(
 
     if dry_run:
         from keel.dryrun import OpLog
+
         log = OpLog()
         log.create_file(deliv / "design" / "deliverable.toml", size=0)
         log.create_file(deliv / "design" / "CLAUDE.md", size=0)
@@ -80,12 +101,14 @@ def cmd_add(
             user_slug = git_ops.git_user_slug(repo_path)
         except Exception:
             user_slug = "user"
-        repo_specs.append(RepoSpec(
-            remote=str(repo_path),
-            local_hint=str(repo_path),
-            worktree="code",
-            branch_prefix=f"{user_slug}/{project}-{slug}",
-        ))
+        repo_specs.append(
+            RepoSpec(
+                remote=str(repo_path),
+                local_hint=str(repo_path),
+                worktree="code",
+                branch_prefix=f"{user_slug}/{project}-{slug}",
+            )
+        )
     manifest = DeliverableManifest(
         deliverable=DeliverableMeta(
             name=slug,
@@ -109,15 +132,21 @@ def cmd_add(
             if not sib_manifest.is_file():
                 continue
             from keel.manifest import load_deliverable_manifest
+
             sm = load_deliverable_manifest(sib_manifest)
-            existing_siblings.append({"name": sm.deliverable.name, "description": sm.deliverable.description})
+            existing_siblings.append(
+                {"name": sm.deliverable.name, "description": sm.deliverable.description}
+            )
 
     # Templates
     (deliv / "design" / "CLAUDE.md").write_text(
         templates.render(
             "claude_md.j2",
-            name=slug, description=description,
-            repos=[], deliverables=[], siblings=existing_siblings,
+            name=slug,
+            description=description,
+            repos=[],
+            deliverables=[],
+            siblings=existing_siblings,
         )
     )
     (deliv / "design" / "design.md").write_text(
@@ -145,10 +174,11 @@ def cmd_add(
         except git_ops.GitError as e:
             out.error(f"worktree creation failed: {e}", code="git_failed")
             out.info(f"Design files are at {deliv / 'design'}; clean up manually if needed.")
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from None
 
     # AST-edit the parent's CLAUDE.md to list this deliverable
     from keel.markdown_edit import insert_under_heading
+
     parent_claude_path = workspace.project_dir(project) / "design" / "CLAUDE.md"
     if parent_claude_path.is_file():
         line = f"- **{slug}**: ../deliverables/{slug}/design/ -- {description}\n"
@@ -158,7 +188,9 @@ def cmd_add(
     # AST-edit the parent's design.md
     parent_design_path = workspace.project_dir(project) / "design" / "design.md"
     if parent_design_path.is_file():
-        line = f"- **{slug}**: {description}. See [design](../deliverables/{slug}/design/design.md).\n"
+        line = (
+            f"- **{slug}**: {description}. See [design](../deliverables/{slug}/design/design.md).\n"
+        )
         new_text = insert_under_heading(parent_design_path.read_text(), "Deliverables", line)
         parent_design_path.write_text(new_text)
 
@@ -172,7 +204,9 @@ def cmd_add(
             sibling_claude = sibling / "design" / "CLAUDE.md"
             if sibling_claude.is_file():
                 line = f"- {slug}: ../{slug}/design/ -- {description}\n"
-                new_text = insert_under_heading(sibling_claude.read_text(), "Sibling deliverables", line)
+                new_text = insert_under_heading(
+                    sibling_claude.read_text(), "Sibling deliverables", line
+                )
                 sibling_claude.write_text(new_text)
                 sibling_modifications.append(str(sibling_claude))
 

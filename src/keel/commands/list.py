@@ -1,6 +1,9 @@
 """`keel list`."""
+
 from __future__ import annotations
+
 from dataclasses import dataclass
+
 import typer
 from rich.tree import Tree
 
@@ -31,19 +34,25 @@ def _scan(projects_root) -> list[_ProjectRow]:
         d_dir = child / "deliverables"
         d_count = 0
         if d_dir.is_dir():
-            d_count = sum(1 for d in d_dir.iterdir() if (d / "design" / "deliverable.toml").is_file())
-        rows.append(_ProjectRow(
-            name=m.project.name,
-            phase=phase,
-            description=m.project.description,
-            deliverable_count=d_count,
-        ))
+            d_count = sum(
+                1 for d in d_dir.iterdir() if (d / "design" / "deliverable.toml").is_file()
+            )
+        rows.append(
+            _ProjectRow(
+                name=m.project.name,
+                phase=phase,
+                description=m.project.description,
+                deliverable_count=d_count,
+            )
+        )
     return rows
 
 
 def cmd_list(
     ctx: typer.Context,
-    phase: str | None = typer.Option(None, "--phase", help="Filter to projects in the given phase."),
+    phase: str | None = typer.Option(
+        None, "--phase", help="Filter to projects in the given phase."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """List projects in the workspace."""
@@ -54,13 +63,19 @@ def cmd_list(
         rows = [r for r in rows if r.phase == phase]
 
     if json_mode:
-        out.result({
-            "projects": [
-                {"name": r.name, "phase": r.phase, "description": r.description,
-                 "deliverable_count": r.deliverable_count}
-                for r in rows
-            ]
-        })
+        out.result(
+            {
+                "projects": [
+                    {
+                        "name": r.name,
+                        "phase": r.phase,
+                        "description": r.description,
+                        "deliverable_count": r.deliverable_count,
+                    }
+                    for r in rows
+                ]
+            }
+        )
         return
 
     if not rows:
@@ -74,6 +89,8 @@ def cmd_list(
     for r in rows:
         label = f"[bold]{r.name}[/bold]  \\[{r.phase}]"
         if r.deliverable_count:
-            label += f"  ({r.deliverable_count} deliverable{'s' if r.deliverable_count != 1 else ''})"
+            label += (
+                f"  ({r.deliverable_count} deliverable{'s' if r.deliverable_count != 1 else ''})"
+            )
         tree.add(label)
     out.print_rich(tree)

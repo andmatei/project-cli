@@ -1,5 +1,7 @@
 """`keel decision ...` command group."""
+
 from __future__ import annotations
+
 import typer
 
 app = typer.Typer(
@@ -8,14 +10,18 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-from keel.commands.decision.new import cmd_new
+from keel.commands.decision.new import cmd_new  # noqa: E402
+
 app.command(name="new")(cmd_new)
 
-from keel.commands.decision.list import cmd_list
+from keel.commands.decision.list import cmd_list  # noqa: E402
+
 app.command(name="list")(cmd_list)
 
-from keel.commands.decision.show import cmd_show
+from keel.commands.decision.show import cmd_show  # noqa: E402
+
 app.command(name="show")(cmd_show)
 
-from keel.commands.decision.rm import cmd_rm
+from keel.commands.decision.rm import cmd_rm  # noqa: E402
+
 app.command(name="rm")(cmd_rm)

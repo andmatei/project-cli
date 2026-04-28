@@ -1,8 +1,11 @@
 """`keel decision list`."""
+
 from __future__ import annotations
+
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
+
 import typer
 from rich.table import Table
 
@@ -47,29 +50,47 @@ def _scan(decisions_dir: Path) -> list[_DecisionRow]:
             d, slug = stem[:10], stem[11:]
         else:
             d, slug = "", stem
-        rows.append(_DecisionRow(
-            date=fm.get("date", d),
-            slug=slug,
-            title=fm.get("title", slug),
-            status=fm.get("status", "unknown"),
-            path=f,
-        ))
+        rows.append(
+            _DecisionRow(
+                date=fm.get("date", d),
+                slug=slug,
+                title=fm.get("title", slug),
+                status=fm.get("status", "unknown"),
+                path=f,
+            )
+        )
     return rows
 
 
 def cmd_list(
     ctx: typer.Context,
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Decision scope: a deliverable instead of the project. Auto-detected from CWD."),
-    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
-    all_scopes: bool = typer.Option(False, "--all", help="Include parent project decisions when at deliverable scope."),
-    status: str | None = typer.Option(None, "--status", help="Filter by frontmatter 'status' (e.g., proposed, accepted, superseded)."),
-    since: str | None = typer.Option(None, "--since", help="Show only decisions on or after this date (YYYY-MM-DD)."),
+    deliverable: str | None = typer.Option(
+        None,
+        "-D",
+        "--deliverable",
+        help="Decision scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."
+    ),
+    all_scopes: bool = typer.Option(
+        False, "--all", help="Include parent project decisions when at deliverable scope."
+    ),
+    status: str | None = typer.Option(
+        None,
+        "--status",
+        help="Filter by frontmatter 'status' (e.g., proposed, accepted, superseded).",
+    ),
+    since: str | None = typer.Option(
+        None, "--since", help="Show only decisions on or after this date (YYYY-MM-DD)."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """List decisions at the current scope."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(project, deliverable)
     project = scope.project
     deliverable = scope.deliverable
@@ -90,12 +111,20 @@ def cmd_list(
     rows.sort(key=lambda r: r.date, reverse=True)
 
     if json_mode:
-        out.result({
-            "decisions": [
-                {"date": r.date, "slug": r.slug, "title": r.title, "status": r.status, "path": str(r.path)}
-                for r in rows
-            ]
-        })
+        out.result(
+            {
+                "decisions": [
+                    {
+                        "date": r.date,
+                        "slug": r.slug,
+                        "title": r.title,
+                        "status": r.status,
+                        "path": str(r.path),
+                    }
+                    for r in rows
+                ]
+            }
+        )
         return
 
     if not rows:

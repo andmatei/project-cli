@@ -2,17 +2,21 @@
 
 Uses real git repos in tmp_path — no mocks.
 """
+
 from __future__ import annotations
+
 import subprocess
 from pathlib import Path
+
 import pytest
+
 from keel.git_ops import (
     GitError,
     create_worktree,
     default_branch,
+    git_user_slug,
     is_git_repo,
     is_worktree_dirty,
-    git_user_slug,
 )
 
 
@@ -22,7 +26,9 @@ def _init_repo(path: Path) -> None:
     subprocess.run(["git", "add", "."], cwd=path, check=True, capture_output=True)
     subprocess.run(
         ["git", "-c", "user.email=t@t", "-c", "user.name=Test User", "commit", "-m", "init"],
-        cwd=path, check=True, capture_output=True,
+        cwd=path,
+        check=True,
+        capture_output=True,
     )
 
 
@@ -54,7 +60,11 @@ def test_create_worktree_creates_branch_and_dir(tmp_path) -> None:
     assert (wt / "README").read_text() == "test\n"
     # Branch exists in the repo:
     out = subprocess.run(
-        ["git", "branch", "--list", "me/feat"], cwd=repo, capture_output=True, text=True, check=True,
+        ["git", "branch", "--list", "me/feat"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout
     assert "me/feat" in out
 
@@ -104,6 +114,7 @@ def test_create_then_remove_worktree(tmp_path) -> None:
     create_worktree(repo, wt, branch="me/feat")
     assert wt.is_dir()
     from keel.git_ops import remove_worktree
+
     remove_worktree(wt)
     assert not wt.exists()
 
@@ -115,7 +126,8 @@ def test_remove_worktree_dirty_fails_without_force(tmp_path) -> None:
     wt = tmp_path / "wt"
     create_worktree(repo, wt, branch="me/feat")
     (wt / "dirty.txt").write_text("dirty")
-    from keel.git_ops import remove_worktree, GitError
+    from keel.git_ops import GitError, remove_worktree
+
     with pytest.raises(GitError):
         remove_worktree(wt)
     # With force=True, it should succeed

@@ -1,12 +1,12 @@
 """Tests for AST-aware markdown editing."""
+
 from __future__ import annotations
-import pytest
+
 from keel.markdown_edit import (
     insert_under_heading,
     replace_section,
     section_exists,
 )
-
 
 SAMPLE = """# Title
 
@@ -73,6 +73,7 @@ def test_replace_section_missing_heading_appends() -> None:
 def test_remove_line_under_heading() -> None:
     """Removing a specific line preserves other content under the heading."""
     from keel.markdown_edit import remove_line_under_heading
+
     out = remove_line_under_heading(SAMPLE, "Workflow", "- Do thing A\n")
     assert "- Do thing A" not in out
     assert "- Do thing B" in out
@@ -124,6 +125,7 @@ def test_remove_bullet_by_prefix() -> None:
 ## Other
 """
     from keel.markdown_edit import remove_bullet_under_heading
+
     out = remove_bullet_under_heading(text, "Deliverables", "- **beta**:")
     assert "**beta**" not in out
     assert "**alpha**" in out
@@ -134,6 +136,7 @@ def test_remove_bullet_by_prefix() -> None:
 def test_remove_bullet_no_match_is_noop() -> None:
     text = "# T\n\n## D\n- **a**: x\n"
     from keel.markdown_edit import remove_bullet_under_heading
+
     out = remove_bullet_under_heading(text, "D", "- **z**:")
     assert out == text
 

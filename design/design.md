@@ -182,10 +182,10 @@ description = "AI agents for the API platform"
 created = "2026-04-15"
 
 [[repos]]
-remote = "git@github.com:example-org/example-repo.git"   # canonical clone URL
-local_hint = "~/example-repo"                             # suggested local path on a fresh machine
-worktree = "code"                                         # subdir under project for the worktree
-branch_prefix = "alice/api-ai-agents"                     # prefix for branches in this worktree
+remote = "git@github.com:10gen/mms.git"   # canonical clone URL
+local_hint = "~/mms"                       # suggested local path on a fresh machine
+worktree = "code"                          # subdir under project for the worktree
+branch_prefix = "andrei/api-ai-agents"     # prefix for branches in this worktree
 ```
 
 ### 5.2 `deliverable.toml`
@@ -199,10 +199,10 @@ created = "2026-04-20"
 shared_worktree = false   # true means uses parent's worktree, no own [[repos]]
 
 [[repos]]
-remote = "git@github.com:example-org/another-repo.git"
-local_hint = "~/another-repo"
+remote = "git@github.com:10gen/ipa.git"
+local_hint = "~/ipa"
 worktree = "code"
-branch_prefix = "alice/api-ai-agents-ipa-skills"
+branch_prefix = "andrei/api-ai-agents-ipa-skills"
 ```
 
 ### 5.3 Schema rules

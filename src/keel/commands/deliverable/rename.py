@@ -1,14 +1,19 @@
 """`keel deliverable rename <old> <new>`."""
+
 from __future__ import annotations
+
 import shutil
+
 import typer
 
 from keel import workspace
-from keel.markdown_edit import insert_under_heading, remove_bullet_under_heading
 from keel.manifest import (
-    DeliverableManifest, DeliverableMeta,
-    load_deliverable_manifest, save_deliverable_manifest,
+    DeliverableManifest,
+    DeliverableMeta,
+    load_deliverable_manifest,
+    save_deliverable_manifest,
 )
+from keel.markdown_edit import insert_under_heading, remove_bullet_under_heading
 from keel.output import Output
 
 
@@ -16,16 +21,27 @@ def cmd_rename(
     ctx: typer.Context,
     old: str = typer.Argument(...),
     new: str = typer.Argument(...),
-    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
-    rename_branch: bool = typer.Option(True, "--rename-branch/--no-rename-branch", help="Also rename the worktree's git branch (default true)."),
-    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."
+    ),
+    rename_branch: bool = typer.Option(
+        True,
+        "--rename-branch/--no-rename-branch",
+        help="Also rename the worktree's git branch (default true).",
+    ),
+    yes: bool = typer.Option(
+        False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Rename a deliverable."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(project, None, allow_deliverable=False)
     project = scope.project
     if not workspace.deliverable_exists(project, old):
@@ -40,6 +56,7 @@ def cmd_rename(
 
     if dry_run:
         from keel.dryrun import OpLog
+
         log = OpLog()
         log.modify_file(old_path, diff=f"rename → {new_path}")
         out.info(log.format_summary())
@@ -49,6 +66,7 @@ def cmd_rename(
     old_code = old_path / "code"
     if old_code.is_dir():
         from keel import git_ops
+
         new_path.mkdir(parents=True, exist_ok=True)
         git_ops.move_worktree(old_code, new_path / "code")
 
@@ -80,15 +98,22 @@ def cmd_rename(
     description = m.deliverable.description
     parent_claude = workspace.project_dir(project) / "design" / "CLAUDE.md"
     if parent_claude.is_file():
-        text = remove_bullet_under_heading(parent_claude.read_text(), "Deliverables", f"- **{old}**:")
-        text = insert_under_heading(text, "Deliverables", f"- **{new}**: ../deliverables/{new}/design/ -- {description}\n")
+        text = remove_bullet_under_heading(
+            parent_claude.read_text(), "Deliverables", f"- **{old}**:"
+        )
+        text = insert_under_heading(
+            text, "Deliverables", f"- **{new}**: ../deliverables/{new}/design/ -- {description}\n"
+        )
         parent_claude.write_text(text)
 
     parent_design = workspace.project_dir(project) / "design" / "design.md"
     if parent_design.is_file():
-        text = remove_bullet_under_heading(parent_design.read_text(), "Deliverables", f"- **{old}**:")
+        text = remove_bullet_under_heading(
+            parent_design.read_text(), "Deliverables", f"- **{old}**:"
+        )
         text = insert_under_heading(
-            text, "Deliverables",
+            text,
+            "Deliverables",
             f"- **{new}**: {description}. See [design](../deliverables/{new}/design/design.md).\n",
         )
         parent_design.write_text(text)
@@ -101,14 +126,19 @@ def cmd_rename(
                 continue
             sibling_claude = sibling / "design" / "CLAUDE.md"
             if sibling_claude.is_file():
-                text = remove_bullet_under_heading(sibling_claude.read_text(), "Sibling deliverables", f"- {old}:")
-                text = insert_under_heading(text, "Sibling deliverables", f"- {new}: ../{new}/design/ -- {description}\n")
+                text = remove_bullet_under_heading(
+                    sibling_claude.read_text(), "Sibling deliverables", f"- {old}:"
+                )
+                text = insert_under_heading(
+                    text, "Sibling deliverables", f"- {new}: ../{new}/design/ -- {description}\n"
+                )
                 sibling_claude.write_text(text)
 
     # 5. (Optional) branch rename
     code_dir = new_path / "code"
     if code_dir.is_dir() and rename_branch and m.repos:
         from keel import git_ops
+
         old_branch = m.repos[0].branch_prefix
         if old_branch and old_branch.endswith(f"-{old}"):
             new_branch = old_branch[: -len(f"-{old}")] + f"-{new}"

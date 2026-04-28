@@ -4,12 +4,15 @@ Manifests live at:
     <project>/design/project.toml
     <project>/deliverables/<name>/design/deliverable.toml
 """
+
 from __future__ import annotations
+
+import tomllib
 from datetime import date as _date
 from pathlib import Path
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-import tomllib
+
 import tomlkit
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class RepoSpec(BaseModel):

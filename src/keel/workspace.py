@@ -1,8 +1,10 @@
 """Workspace paths and CWD-based scope detection."""
+
 from __future__ import annotations
+
+import os
 from dataclasses import dataclass
 from pathlib import Path
-import os
 
 
 def projects_dir() -> Path:
@@ -50,7 +52,9 @@ def detect_scope(cwd: Path | None = None) -> Scope:
 
 def deliverable_exists(project_name: str, deliverable_name: str) -> bool:
     """Check whether a deliverable's manifest exists on disk."""
-    return (deliverable_dir(project_name, deliverable_name) / "design" / "deliverable.toml").is_file()
+    return (
+        deliverable_dir(project_name, deliverable_name) / "design" / "deliverable.toml"
+    ).is_file()
 
 
 def project_exists(project_name: str) -> bool:
@@ -77,6 +81,7 @@ def resolve_cli_scope(
     Always exits 1 (via typer.Exit) when scope can't be resolved.
     """
     import typer
+
     if project is None:
         scope = detect_scope()
         project = scope.project
@@ -124,6 +129,7 @@ def resolve_scope_or_fail(cwd: Path | None = None) -> Scope:
     - The detected deliverable's manifest doesn't exist.
     """
     import typer  # local import to keep workspace.py lightweight when imported in non-CLI contexts
+
     scope = detect_scope(cwd)
     if scope.project is None:
         typer.echo("error: no project detected from current directory", err=True)

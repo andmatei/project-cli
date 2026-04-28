@@ -1,6 +1,9 @@
 """`keel deliverable list`."""
+
 from __future__ import annotations
+
 from dataclasses import dataclass
+
 import typer
 from rich.table import Table
 
@@ -28,36 +31,47 @@ def _scan(project_name: str) -> list[_DeliverableRow]:
             continue
         m = load_deliverable_manifest(manifest_path)
         phase = workspace.read_phase(child / "design")
-        rows.append(_DeliverableRow(
-            name=m.deliverable.name,
-            phase=phase,
-            description=m.deliverable.description,
-            shared_worktree=m.deliverable.shared_worktree,
-        ))
+        rows.append(
+            _DeliverableRow(
+                name=m.deliverable.name,
+                phase=phase,
+                description=m.deliverable.description,
+                shared_worktree=m.deliverable.shared_worktree,
+            )
+        )
     return rows
 
 
 def cmd_list(
     ctx: typer.Context,
-    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """List deliverables in a project."""
     out = Output.from_context(ctx, json_mode=json_mode)
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(project, None, allow_deliverable=False)
     project = scope.project
 
     rows = _scan(project)
 
     if json_mode:
-        out.result({
-            "deliverables": [
-                {"name": r.name, "phase": r.phase, "description": r.description,
-                 "shared_worktree": r.shared_worktree}
-                for r in rows
-            ]
-        })
+        out.result(
+            {
+                "deliverables": [
+                    {
+                        "name": r.name,
+                        "phase": r.phase,
+                        "description": r.description,
+                        "shared_worktree": r.shared_worktree,
+                    }
+                    for r in rows
+                ]
+            }
+        )
         return
 
     if not rows:

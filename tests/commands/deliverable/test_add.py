@@ -1,5 +1,7 @@
 """Tests for `keel deliverable add`."""
+
 from typer.testing import CliRunner
+
 from keel.app import app
 from keel.manifest import load_deliverable_manifest
 
@@ -26,7 +28,9 @@ def test_add_creates_deliverable_design_dir(projects, make_project) -> None:
 def test_add_writes_valid_manifest(projects, make_project) -> None:
     make_project("foo")
     runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo"])
-    m = load_deliverable_manifest(projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml")
+    m = load_deliverable_manifest(
+        projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml"
+    )
     assert m.deliverable.name == "bar"
     assert m.deliverable.parent_project == "foo"
     assert m.deliverable.shared_worktree is False
@@ -42,7 +46,9 @@ def test_add_fails_if_deliverable_exists(projects, make_project) -> None:
 
 
 def test_add_fails_if_parent_project_missing(projects) -> None:
-    result = runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "ghost"])
+    result = runner.invoke(
+        app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "ghost"]
+    )
     assert result.exit_code == 1
     assert "ghost" in result.stderr.lower()
 
@@ -82,9 +88,13 @@ def test_add_is_idempotent_in_parent_files(projects, make_project) -> None:
 def test_add_updates_sibling_deliverable_claude_md(projects, make_project) -> None:
     """Adding a second deliverable updates the first's CLAUDE.md sibling section."""
     make_project("foo")
-    runner.invoke(app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"])
+    runner.invoke(
+        app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"]
+    )
     runner.invoke(app, ["deliverable", "add", "beta", "-d", "beta thing", "-y", "--project", "foo"])
-    sibling_claude = (projects / "foo" / "deliverables" / "alpha" / "design" / "CLAUDE.md").read_text()
+    sibling_claude = (
+        projects / "foo" / "deliverables" / "alpha" / "design" / "CLAUDE.md"
+    ).read_text()
     # alpha's CLAUDE.md should mention beta:
     assert "beta" in sibling_claude
 
@@ -109,16 +119,24 @@ def test_add_with_repo_writes_repo_to_manifest(projects, make_project, source_re
         ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo", "-r", str(source_repo)],
     )
     from keel.manifest import load_deliverable_manifest
-    m = load_deliverable_manifest(projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml")
+
+    m = load_deliverable_manifest(
+        projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml"
+    )
     assert len(m.repos) == 1
     assert m.repos[0].worktree == "code"
 
 
 def test_add_shared_marks_manifest_and_no_repos(projects, make_project) -> None:
     make_project("foo")
-    runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo", "--shared"])
+    runner.invoke(
+        app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo", "--shared"]
+    )
     from keel.manifest import load_deliverable_manifest
-    m = load_deliverable_manifest(projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml")
+
+    m = load_deliverable_manifest(
+        projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml"
+    )
     assert m.deliverable.shared_worktree is True
     assert m.repos == []
 
@@ -126,7 +144,9 @@ def test_add_shared_marks_manifest_and_no_repos(projects, make_project) -> None:
 def test_add_lists_existing_siblings_in_new_deliverable_claude(projects, make_project) -> None:
     """When adding B after A exists, B's own CLAUDE.md should list A as a sibling."""
     make_project("foo")
-    runner.invoke(app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"])
+    runner.invoke(
+        app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"]
+    )
     runner.invoke(app, ["deliverable", "add", "beta", "-d", "beta thing", "-y", "--project", "foo"])
     beta_claude = (projects / "foo" / "deliverables" / "beta" / "design" / "CLAUDE.md").read_text()
     # Both directions of sibling reference should be present:

@@ -1,6 +1,9 @@
 """`keel deliverable rm <name>`."""
+
 from __future__ import annotations
+
 import shutil
+
 import typer
 
 from keel import workspace
@@ -12,18 +15,33 @@ from keel.prompts import confirm_destructive
 def cmd_rm(
     ctx: typer.Context,
     name: str = typer.Argument(...),
-    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
-    keep_code: bool = typer.Option(False, "--keep-code", help="Preserve the worktree dir even when removing the deliverable."),
-    keep_design: bool = typer.Option(False, "--keep-design", help="Preserve the design dir (rare; use to keep records of a removed deliverable)."),
-    force: bool = typer.Option(False, "--force", help="Allow removal even if the worktree has uncommitted changes."),
-    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."
+    ),
+    keep_code: bool = typer.Option(
+        False, "--keep-code", help="Preserve the worktree dir even when removing the deliverable."
+    ),
+    keep_design: bool = typer.Option(
+        False,
+        "--keep-design",
+        help="Preserve the design dir (rare; use to keep records of a removed deliverable).",
+    ),
+    force: bool = typer.Option(
+        False, "--force", help="Allow removal even if the worktree has uncommitted changes."
+    ),
+    yes: bool = typer.Option(
+        False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Remove a deliverable, including its design dir, worktree, and parent references."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(project, None, allow_deliverable=False)
     project = scope.project
     if not workspace.deliverable_exists(project, name):
@@ -34,6 +52,7 @@ def cmd_rm(
 
     if dry_run:
         from keel.dryrun import OpLog
+
         log = OpLog()
         if not keep_design:
             log.delete_file(deliv)
@@ -57,11 +76,12 @@ def cmd_rm(
     code_dir = deliv / "code"
     if code_dir.is_dir() and not keep_code:
         from keel import git_ops
+
         try:
             git_ops.remove_worktree(code_dir, force=force)
         except git_ops.GitError as e:
             out.error(f"failed to remove worktree at {code_dir}: {e}", code="git_failed")
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from None
 
     # Remove design dir (unless --keep-design)
     if not keep_design:
@@ -100,7 +120,9 @@ def cmd_rm(
             sibling_claude = sibling / "design" / "CLAUDE.md"
             if sibling_claude.is_file():
                 sibling_claude.write_text(
-                    remove_bullet_under_heading(sibling_claude.read_text(), "Sibling deliverables", f"- {name}:")
+                    remove_bullet_under_heading(
+                        sibling_claude.read_text(), "Sibling deliverables", f"- {name}:"
+                    )
                 )
 
     out.info(f"Removed deliverable: {deliv}")

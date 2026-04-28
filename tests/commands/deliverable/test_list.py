@@ -1,6 +1,9 @@
 """Tests for `keel deliverable list`."""
+
 import json
+
 from typer.testing import CliRunner
+
 from keel.app import app
 
 runner = CliRunner()
@@ -31,7 +34,9 @@ def test_list_json_shape(projects, make_project, make_deliverable) -> None:
     assert payload["deliverables"][0]["description"] == "the bar"
 
 
-def test_list_auto_detects_project_from_cwd(projects, make_project, make_deliverable, monkeypatch) -> None:
+def test_list_auto_detects_project_from_cwd(
+    projects, make_project, make_deliverable, monkeypatch
+) -> None:
     proj = make_deliverable(project_name="foo", name="bar", description="d").parent.parent
     monkeypatch.chdir(proj / "design")
     result = runner.invoke(app, ["deliverable", "list"])

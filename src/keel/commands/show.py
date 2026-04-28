@@ -1,5 +1,7 @@
 """`keel show`."""
+
 from __future__ import annotations
+
 import typer
 from rich.panel import Panel
 from rich.table import Table
@@ -11,12 +13,15 @@ from keel.output import Output
 
 def cmd_show(
     ctx: typer.Context,
-    name: str | None = typer.Argument(None, help="Project name. Auto-detected from CWD if omitted."),
+    name: str | None = typer.Argument(
+        None, help="Project name. Auto-detected from CWD if omitted."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Show a project's structure and current state."""
     out = Output.from_context(ctx, json_mode=json_mode)
     from keel.workspace import resolve_cli_scope
+
     scope = resolve_cli_scope(name, None, allow_deliverable=False)
     name = scope.project
 
@@ -38,15 +43,17 @@ def cmd_show(
                 deliverables.append((d.name, d_phase))
 
     if json_mode:
-        out.result({
-            "name": m.project.name,
-            "description": m.project.description,
-            "path": str(proj),
-            "phase": phase,
-            "repos": [r.model_dump() for r in m.repos],
-            "decision_count": decision_count,
-            "deliverables": [{"name": n, "phase": p} for n, p in deliverables],
-        })
+        out.result(
+            {
+                "name": m.project.name,
+                "description": m.project.description,
+                "path": str(proj),
+                "phase": phase,
+                "repos": [r.model_dump() for r in m.repos],
+                "decision_count": decision_count,
+                "deliverables": [{"name": n, "phase": p} for n, p in deliverables],
+            }
+        )
         return
 
     table = Table(show_header=False, box=None, padding=(0, 1))

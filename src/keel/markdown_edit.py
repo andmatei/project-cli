@@ -5,10 +5,12 @@ than fragile regex. The implementation is line-based on top of the AST: we
 identify the (start, end) line ranges of each top-level (h2) heading section,
 then splice text into those ranges.
 """
-from __future__ import annotations
-from dataclasses import dataclass
-from markdown_it import MarkdownIt
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from markdown_it import MarkdownIt
 
 _MD = MarkdownIt("commonmark")
 
@@ -34,22 +36,23 @@ def _find_sections(text: str, level: int = 2) -> list[_Section]:
         if pending is None:
             return
         heading_line, title, _ = pending
-        sections.append(_Section(
-            heading_level=level,
-            title=title,
-            heading_line=heading_line,
-            body_start=heading_line + 1,
-            body_end=end_line,
-        ))
+        sections.append(
+            _Section(
+                heading_level=level,
+                title=title,
+                heading_line=heading_line,
+                body_start=heading_line + 1,
+                body_end=end_line,
+            )
+        )
         pending = None
 
     for i, tok in enumerate(tokens):
         if tok.type == "heading_open":
             tok_level = int(tok.tag[1:])
-            if tok_level <= level:
+            if tok_level <= level and tok.map is not None:
                 # close any open section at this point
-                if tok.map is not None:
-                    _close(tok.map[0])
+                _close(tok.map[0])
             if tok_level == level:
                 # title is the inline_text in the next token
                 inline = tokens[i + 1]
@@ -81,7 +84,7 @@ def insert_under_heading(text: str, title: str, line_to_insert: str) -> str:
         # Append a new section
         return text + f"\n## {title}\n{line_to_insert}"
     lines = text.splitlines(keepends=True)
-    body_lines = lines[target.body_start:target.body_end]
+    body_lines = lines[target.body_start : target.body_end]
     if any(b == line_to_insert for b in body_lines):
         return text  # already present, idempotent
     # Insert after the last non-empty body line, or right after the heading if body is empty
@@ -113,8 +116,8 @@ def replace_section(text: str, title: str, new_body: str) -> str:
             prefix = prefix + "\n"
         return prefix + f"## {title}\n{new_body}"
     lines = text.splitlines(keepends=True)
-    head = lines[:target.body_start]
-    tail = lines[target.body_end:]
+    head = lines[: target.body_start]
+    tail = lines[target.body_end :]
     body = new_body if new_body.endswith("\n") else new_body + "\n"
     if not body.endswith("\n\n") and tail and tail[0].strip():
         body = body + "\n"
@@ -137,10 +140,11 @@ def remove_bullet_under_heading(text: str, title: str, line_prefix: str) -> str:
         return text
     lines = text.splitlines(keepends=True)
     body = [
-        line for line in lines[target.body_start:target.body_end]
+        line
+        for line in lines[target.body_start : target.body_end]
         if not line.lstrip().startswith(line_prefix)
     ]
-    return "".join(lines[:target.body_start]) + "".join(body) + "".join(lines[target.body_end:])
+    return "".join(lines[: target.body_start]) + "".join(body) + "".join(lines[target.body_end :])
 
 
 def remove_line_under_heading(text: str, title: str, line_to_remove: str) -> str:
@@ -152,5 +156,5 @@ def remove_line_under_heading(text: str, title: str, line_to_remove: str) -> str
     if target is None:
         return text
     lines = text.splitlines(keepends=True)
-    body = [b for b in lines[target.body_start:target.body_end] if b != line_to_remove]
-    return "".join(lines[:target.body_start]) + "".join(body) + "".join(lines[target.body_end:])
+    body = [b for b in lines[target.body_start : target.body_end] if b != line_to_remove]
+    return "".join(lines[: target.body_start]) + "".join(body) + "".join(lines[target.body_end :])

@@ -1,5 +1,7 @@
 """Tests for `keel phase`."""
+
 from typer.testing import CliRunner
+
 from keel.app import app
 
 runner = CliRunner()
@@ -8,6 +10,7 @@ runner = CliRunner()
 # ---------------------------------------------------------------------------
 # T4.1: show mode
 # ---------------------------------------------------------------------------
+
 
 def test_phase_show_at_project(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
@@ -35,6 +38,7 @@ def test_phase_show_no_scope(projects, monkeypatch, tmp_path) -> None:
 # ---------------------------------------------------------------------------
 # T4.2: forward/backward transitions + auto decision
 # ---------------------------------------------------------------------------
+
 
 def test_phase_forward_transition(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
@@ -73,6 +77,7 @@ def test_phase_invalid_phase(projects, make_project, monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 # T4.3: --next shortcut
 # ---------------------------------------------------------------------------
+
 
 def test_phase_next_advances_one_step(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")

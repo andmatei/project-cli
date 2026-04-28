@@ -3,7 +3,9 @@
 Uses subprocess directly rather than a library — no extra dep, the surface
 we use is small.
 """
+
 from __future__ import annotations
+
 import subprocess
 from pathlib import Path
 

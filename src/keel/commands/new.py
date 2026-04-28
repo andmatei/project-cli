@@ -1,12 +1,16 @@
 """`keel new <name>`."""
+
 from __future__ import annotations
+
 from datetime import date
 from pathlib import Path
+
 import typer
 
 from keel import templates, workspace
 from keel.manifest import (
-    ProjectManifest, ProjectMeta,
+    ProjectManifest,
+    ProjectMeta,
     save_project_manifest,
 )
 from keel.output import Output
@@ -17,11 +21,27 @@ from keel.util import slugify
 def cmd_new(
     ctx: typer.Context,
     name: str = typer.Argument(..., help="Project name (will be slugified)."),
-    description: str | None = typer.Option(None, "-d", "--description", help="Brief project description; required (prompted on TTY if missing)."),
-    repos: list[str] | None = typer.Option(None, "-r", "--repo", help="Source git repo for a worktree. Repeatable for multi-repo projects."),
-    no_worktree: bool = typer.Option(False, "--no-worktree", help="Skip worktree creation even if --repo provided."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
-    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
+    description: str | None = typer.Option(
+        None,
+        "-d",
+        "--description",
+        help="Brief project description; required (prompted on TTY if missing).",
+    ),
+    repos: list[str] | None = typer.Option(
+        None,
+        "-r",
+        "--repo",
+        help="Source git repo for a worktree. Repeatable for multi-repo projects.",
+    ),
+    no_worktree: bool = typer.Option(
+        False, "--no-worktree", help="Skip worktree creation even if --repo provided."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
+    yes: bool = typer.Option(
+        False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new project workspace."""
@@ -52,6 +72,7 @@ def cmd_new(
 
     if dry_run:
         from keel.dryrun import OpLog
+
         log = OpLog()
         log.create_file(proj / "design" / "project.toml", size=0)
         log.create_file(proj / "design" / "CLAUDE.md", size=0)
@@ -76,6 +97,7 @@ def cmd_new(
 
     # Build manifest with repos (worktree path defaults to "code" when single, "code-<repo>" otherwise)
     from keel.manifest import RepoSpec
+
     repo_specs: list[RepoSpec] = []
     for rp in repo_paths:
         worktree_name = "code" if len(repo_paths) == 1 else f"code-{rp.name}"
@@ -84,12 +106,14 @@ def cmd_new(
         except Exception:
             user_slug = "user"
         branch_prefix_suffix = "-base" if len(repo_paths) == 1 else f"-{rp.name}-base"
-        repo_specs.append(RepoSpec(
-            remote=str(rp),
-            local_hint=str(rp),
-            worktree=worktree_name,
-            branch_prefix=f"{user_slug}/{slug}{branch_prefix_suffix}",
-        ))
+        repo_specs.append(
+            RepoSpec(
+                remote=str(rp),
+                local_hint=str(rp),
+                worktree=worktree_name,
+                branch_prefix=f"{user_slug}/{slug}{branch_prefix_suffix}",
+            )
+        )
 
     manifest = ProjectManifest(
         project=ProjectMeta(name=slug, description=description, created=date.today()),
@@ -98,9 +122,17 @@ def cmd_new(
     save_project_manifest(proj / "design" / "project.toml", manifest)
 
     # Templates
-    repos_for_template = [{"worktree": r.worktree, "remote": r.remote, "local_hint": r.local_hint} for r in repo_specs]
+    repos_for_template = [
+        {"worktree": r.worktree, "remote": r.remote, "local_hint": r.local_hint} for r in repo_specs
+    ]
     (proj / "design" / "CLAUDE.md").write_text(
-        templates.render("claude_md.j2", name=slug, description=description, repos=repos_for_template, deliverables=[])
+        templates.render(
+            "claude_md.j2",
+            name=slug,
+            description=description,
+            repos=repos_for_template,
+            deliverables=[],
+        )
     )
     (proj / "design" / "scope.md").write_text(
         templates.render("scope_md.j2", name=slug, description=description)
@@ -121,15 +153,17 @@ def cmd_new(
 
     # Worktrees (last — file ops above already done)
     created_worktrees: list[str] = []
-    for rp, spec in zip(repo_paths, repo_specs):
+    for rp, spec in zip(repo_paths, repo_specs, strict=True):
         wt_dest = proj / spec.worktree
         try:
             git_ops.create_worktree(rp, wt_dest, branch=spec.branch_prefix)
             created_worktrees.append(str(wt_dest))
         except git_ops.GitError as e:
             out.error(f"worktree creation failed: {e}", code="git_failed")
-            out.info(f"Design files are at {proj / 'design'}; clean up with `rm -rf {proj}` or retry.")
-            raise typer.Exit(code=1)
+            out.info(
+                f"Design files are at {proj / 'design'}; clean up with `rm -rf {proj}` or retry."
+            )
+            raise typer.Exit(code=1) from None
 
     out.info(f"Created project: {proj}")
     out.result(

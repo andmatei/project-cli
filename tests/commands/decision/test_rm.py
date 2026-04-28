@@ -1,5 +1,7 @@
 """Tests for `keel decision rm`."""
+
 from typer.testing import CliRunner
+
 from keel.app import app
 
 runner = CliRunner()

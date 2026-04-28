@@ -1,12 +1,20 @@
 """Shared fixtures: isolated PROJECTS_DIR and helpers for assembling sample workspaces."""
+
 from __future__ import annotations
+
 import subprocess
-from pathlib import Path
+from collections.abc import Callable
 from datetime import date
-from typing import Callable
+from pathlib import Path
+
 import pytest
+
 from keel.manifest import (
-    ProjectManifest, ProjectMeta, RepoSpec,
+    DeliverableManifest,
+    DeliverableMeta,
+    ProjectManifest,
+    ProjectMeta,
+    save_deliverable_manifest,
     save_project_manifest,
 )
 
@@ -21,8 +29,10 @@ def projects(tmp_path, monkeypatch) -> Path:
 @pytest.fixture
 def make_project(projects) -> Callable[[str, str], Path]:
     """Factory: create a project with empty design dir and a manifest."""
+
     def _make(name: str, description: str = "test project") -> Path:
         from keel import templates
+
         proj = projects / name
         (proj / "design" / "decisions").mkdir(parents=True)
         m = ProjectManifest(
@@ -31,13 +41,16 @@ def make_project(projects) -> Callable[[str, str], Path]:
         )
         save_project_manifest(proj / "design" / "project.toml", m)
         (proj / "design" / "CLAUDE.md").write_text(
-            templates.render("claude_md.j2", name=name, description=description, repos=[], deliverables=[])
+            templates.render(
+                "claude_md.j2", name=name, description=description, repos=[], deliverables=[]
+            )
         )
         (proj / "design" / "design.md").write_text(
             templates.render("design_md.j2", name=name, description=description)
         )
         (proj / "design" / ".phase").write_text("scoping\n")
         return proj
+
     return _make
 
 
@@ -55,15 +68,10 @@ def source_repo(tmp_path) -> Path:
     return repo
 
 
-from keel.manifest import (
-    DeliverableManifest, DeliverableMeta,
-    save_deliverable_manifest,
-)
-
-
 @pytest.fixture
 def make_deliverable(make_project) -> Callable[..., Path]:
     """Factory: create a deliverable inside a (possibly new) project."""
+
     def _make(
         project_name: str = "foo",
         name: str = "bar",
@@ -71,11 +79,13 @@ def make_deliverable(make_project) -> Callable[..., Path]:
         shared_worktree: bool = False,
     ) -> Path:
         from keel import workspace
+
         if not workspace.project_exists(project_name):
             make_project(project_name)
         deliv = workspace.deliverable_dir(project_name, name)
         (deliv / "design" / "decisions").mkdir(parents=True)
         from datetime import date as _date
+
         m = DeliverableManifest(
             deliverable=DeliverableMeta(
                 name=name,
@@ -89,4 +99,5 @@ def make_deliverable(make_project) -> Callable[..., Path]:
         save_deliverable_manifest(deliv / "design" / "deliverable.toml", m)
         (deliv / "design" / ".phase").write_text("scoping\n")
         return deliv
+
     return _make

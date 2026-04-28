@@ -1,5 +1,7 @@
 """Tests for `keel decision new`."""
+
 from typer.testing import CliRunner
+
 from keel.app import app
 
 runner = CliRunner()
@@ -22,7 +24,9 @@ def test_new_creates_decision_file_at_project_level(projects, make_project, monk
 def test_new_at_deliverable_level(projects, make_deliverable, monkeypatch) -> None:
     deliv = make_deliverable(project_name="foo", name="bar", description="d")
     monkeypatch.chdir(deliv / "design")
-    result = runner.invoke(app, ["decision", "new", "Some choice", "--no-edit"], catch_exceptions=False)
+    result = runner.invoke(
+        app, ["decision", "new", "Some choice", "--no-edit"], catch_exceptions=False
+    )
     assert result.exit_code == 0
     decision_files = list((deliv / "design" / "decisions").glob("*-some-choice.md"))
     assert len(decision_files) == 1
@@ -53,7 +57,6 @@ def test_new_supersedes_marks_old_decision(projects, make_project, monkeypatch) 
     runner.invoke(app, ["decision", "new", "Old choice", "--no-edit"])
     old_files = list((proj / "design" / "decisions").glob("*-old-choice.md"))
     assert len(old_files) == 1
-    old_slug = old_files[0].stem  # e.g. "2026-04-28-old-choice"
 
     runner.invoke(app, ["decision", "new", "New choice", "--no-edit", "--supersedes", "old-choice"])
     new_files = list((proj / "design" / "decisions").glob("*-new-choice.md"))

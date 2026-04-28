@@ -3,10 +3,13 @@
 The CLI fails loud (exit 2) when a required value is missing on a non-TTY
 stdin, rather than hanging on a prompt or silently using a default.
 """
+
 from __future__ import annotations
+
 import sys
-import typer
+
 import questionary
+import typer
 
 
 def is_interactive() -> bool:

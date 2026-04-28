@@ -1,5 +1,5 @@
 """Edge-case coverage for the slugifier used by `keel new`."""
-import pytest
+
 from keel.util import slugify as _slugify
 
 

@@ -5,10 +5,13 @@ Conventions:
 - stderr: progress/info logs, errors, prompts
 - --json implies --quiet
 """
+
 from __future__ import annotations
+
 import json
 import sys
 from typing import Any
+
 from rich.console import Console
 
 
@@ -52,7 +55,7 @@ class Output:
             self._stdout.print(renderable)
 
     @classmethod
-    def from_context(cls, ctx, *, json_mode: bool = False) -> "Output":
+    def from_context(cls, ctx, *, json_mode: bool = False) -> Output:
         """Build an Output instance using global --quiet/--verbose flags from a Typer context."""
         obj = (ctx.obj or {}) if hasattr(ctx, "obj") else {}
         return cls(

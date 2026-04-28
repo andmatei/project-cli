@@ -3,7 +3,9 @@
 Commands record planned mutations into an OpLog; when --dry-run is set, the
 log is printed instead of actually applying the operations.
 """
+
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -30,21 +32,25 @@ class OpLog:
         self.ops.append(Op(kind="delete", path=path))
 
     def create_worktree(self, path: Path, *, source: Path, branch: str) -> None:
-        self.ops.append(Op(
-            kind="git-worktree-create",
-            path=path,
-            detail=f"from {source} on branch {branch}",
-        ))
+        self.ops.append(
+            Op(
+                kind="git-worktree-create",
+                path=path,
+                detail=f"from {source} on branch {branch}",
+            )
+        )
 
     def remove_worktree(self, path: Path) -> None:
         self.ops.append(Op(kind="git-worktree-remove", path=path))
 
     def rename_branch(self, repo: Path, *, old: str, new: str) -> None:
-        self.ops.append(Op(
-            kind="git-branch-rename",
-            path=repo,
-            detail=f"{old} → {new}",
-        ))
+        self.ops.append(
+            Op(
+                kind="git-branch-rename",
+                path=repo,
+                detail=f"{old} → {new}",
+            )
+        )
 
     def format_summary(self) -> str:
         lines: list[str] = []

@@ -1,8 +1,23 @@
 """Tests for manifest schema and TOML I/O."""
+
 from __future__ import annotations
+
+from datetime import date
+
 import pytest
 from pydantic import ValidationError
-from keel.manifest import RepoSpec
+
+from keel.manifest import (
+    DeliverableManifest,
+    DeliverableMeta,
+    ProjectManifest,
+    ProjectMeta,
+    RepoSpec,
+    load_deliverable_manifest,
+    load_project_manifest,
+    save_deliverable_manifest,
+    save_project_manifest,
+)
 
 
 def test_repo_spec_minimal() -> None:
@@ -33,10 +48,6 @@ def test_repo_spec_rejects_absolute_worktree() -> None:
     """Worktree must be a relative subdir name, not an absolute path."""
     with pytest.raises(ValidationError):
         RepoSpec(remote="git@github.com:org/repo.git", worktree="/absolute/path")
-
-
-from datetime import date
-from keel.manifest import ProjectManifest, ProjectMeta, DeliverableManifest, DeliverableMeta
 
 
 def test_project_manifest_minimal() -> None:
@@ -93,19 +104,18 @@ def test_deliverable_manifest_owned_with_repos_ok() -> None:
     )
 
 
-from keel.manifest import load_project_manifest, save_project_manifest, load_deliverable_manifest, save_deliverable_manifest
-
-
 def test_project_manifest_roundtrip(tmp_path) -> None:
     path = tmp_path / "project.toml"
     original = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 27)),
-        repos=[RepoSpec(
-            remote="git@github.com:org/r.git",
-            local_hint="~/r",
-            worktree="code",
-            branch_prefix="me/foo",
-        )],
+        repos=[
+            RepoSpec(
+                remote="git@github.com:org/r.git",
+                local_hint="~/r",
+                worktree="code",
+                branch_prefix="me/foo",
+            )
+        ],
     )
     save_project_manifest(path, original)
     loaded = load_project_manifest(path)
@@ -118,7 +128,7 @@ def test_project_manifest_roundtrip(tmp_path) -> None:
 
 def test_project_manifest_load_rejects_bad_schema(tmp_path) -> None:
     path = tmp_path / "project.toml"
-    path.write_text("[project]\nname = \"foo\"\n")  # missing description and created
+    path.write_text('[project]\nname = "foo"\n')  # missing description and created
     with pytest.raises(ValidationError):
         load_project_manifest(path)
 
@@ -127,8 +137,11 @@ def test_deliverable_manifest_roundtrip(tmp_path) -> None:
     path = tmp_path / "deliverable.toml"
     original = DeliverableManifest(
         deliverable=DeliverableMeta(
-            name="bar", parent_project="foo", description="d",
-            created=date(2026, 4, 27), shared_worktree=True,
+            name="bar",
+            parent_project="foo",
+            description="d",
+            created=date(2026, 4, 27),
+            shared_worktree=True,
         ),
     )
     save_deliverable_manifest(path, original)

@@ -1,4 +1,5 @@
 """Cross-cutting utilities used by multiple commands."""
+
 from __future__ import annotations
 
 import re

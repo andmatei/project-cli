@@ -1,6 +1,9 @@
 """Tests for `keel show`."""
+
 import json
+
 from typer.testing import CliRunner
+
 from keel.app import app
 
 runner = CliRunner()

@@ -1,10 +1,15 @@
 ---
 date: 2026-04-27
 title: Plan 1 implementation fixes and forward debt
-status: accepted
+status: superseded
 ---
 
 # Plan 1 implementation fixes and forward debt
+
+> **Superseded by `2026-04-28-plan-2-implementation-fixes.md`** for the
+> forward-debt list. The implementation-fixes section below is still
+> historically accurate; the forward-debt section is now stale (most items
+> resolved by Plan 2 or Plan 2.5).
 
 Captures non-obvious implementation choices made during Plan 1 execution and
 items the final code review flagged as forward debt for Plans 2-4. Recorded

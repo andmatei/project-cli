@@ -1,8 +1,11 @@
 """Tests for `keel new`."""
+
 from __future__ import annotations
+
 import json
-from pathlib import Path
+
 from typer.testing import CliRunner
+
 from keel.app import app
 from keel.manifest import load_project_manifest
 
@@ -11,7 +14,8 @@ runner = CliRunner()
 
 def test_new_creates_design_dir(projects) -> None:
     result = runner.invoke(
-        app, ["new", "foo", "-d", "A test project", "--no-worktree", "-y"],
+        app,
+        ["new", "foo", "-d", "A test project", "--no-worktree", "-y"],
         catch_exceptions=False,
     )
     assert result.exit_code == 0, (result.stdout, result.stderr)
@@ -49,7 +53,8 @@ def test_new_fails_without_description_non_tty(projects) -> None:
 
 def test_new_json_output(projects) -> None:
     result = runner.invoke(
-        app, ["new", "foo", "-d", "t", "--no-worktree", "-y", "--json"],
+        app,
+        ["new", "foo", "-d", "t", "--no-worktree", "-y", "--json"],
     )
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
@@ -61,7 +66,8 @@ def test_new_json_output(projects) -> None:
 
 def test_new_with_one_repo_creates_worktree(projects, source_repo) -> None:
     result = runner.invoke(
-        app, ["new", "foo", "-d", "t", "-r", str(source_repo), "-y"],
+        app,
+        ["new", "foo", "-d", "t", "-r", str(source_repo), "-y"],
         catch_exceptions=False,
     )
     assert result.exit_code == 0, result.stderr
@@ -86,6 +92,7 @@ def test_new_with_invalid_repo_exits_1(projects, tmp_path) -> None:
 
 def test_new_with_two_repos_creates_named_worktrees(projects, tmp_path) -> None:
     import subprocess
+
     repos = []
     for name in ("alpha", "beta"):
         r = tmp_path / f"src_{name}"
@@ -113,7 +120,8 @@ def test_new_with_two_repos_creates_named_worktrees(projects, tmp_path) -> None:
 
 def test_new_dry_run_writes_nothing(projects, source_repo) -> None:
     result = runner.invoke(
-        app, ["new", "foo", "-d", "t", "-r", str(source_repo), "--dry-run", "-y"],
+        app,
+        ["new", "foo", "-d", "t", "-r", str(source_repo), "--dry-run", "-y"],
     )
     assert result.exit_code == 0
     assert not (projects / "foo").exists()
@@ -121,7 +129,8 @@ def test_new_dry_run_writes_nothing(projects, source_repo) -> None:
 
 def test_new_dry_run_lists_planned_ops(projects, source_repo) -> None:
     result = runner.invoke(
-        app, ["new", "foo", "-d", "t", "-r", str(source_repo), "--dry-run", "-y"],
+        app,
+        ["new", "foo", "-d", "t", "-r", str(source_repo), "--dry-run", "-y"],
     )
     assert "[dry-run]" in result.stderr
     assert "project.toml" in result.stderr
