@@ -1,0 +1,114 @@
+"""`keel decision list`."""
+from __future__ import annotations
+from dataclasses import dataclass
+from pathlib import Path
+import re
+import typer
+from rich.table import Table
+
+from keel import workspace
+from keel.output import Output
+
+
+@dataclass
+class _DecisionRow:
+    date: str
+    slug: str
+    title: str
+    status: str
+    path: Path
+
+
+_FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---", re.DOTALL)
+
+
+def _parse_frontmatter(text: str) -> dict[str, str]:
+    m = _FRONTMATTER_RE.match(text)
+    if not m:
+        return {}
+    fields: dict[str, str] = {}
+    for line in m.group(1).splitlines():
+        if ":" in line:
+            k, v = line.split(":", 1)
+            fields[k.strip()] = v.strip()
+    return fields
+
+
+def _scan(decisions_dir: Path) -> list[_DecisionRow]:
+    rows: list[_DecisionRow] = []
+    if not decisions_dir.is_dir():
+        return rows
+    for f in sorted(decisions_dir.glob("*.md"), reverse=True):
+        text = f.read_text()
+        fm = _parse_frontmatter(text)
+        # Filename format: YYYY-MM-DD-slug.md
+        stem = f.stem
+        if len(stem) > 10 and stem[10] == "-":
+            d, slug = stem[:10], stem[11:]
+        else:
+            d, slug = "", stem
+        rows.append(_DecisionRow(
+            date=fm.get("date", d),
+            slug=slug,
+            title=fm.get("title", slug),
+            status=fm.get("status", "unknown"),
+            path=f,
+        ))
+    return rows
+
+
+def cmd_list(
+    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
+    project: str | None = typer.Option(None, "--project", "-p"),
+    all_scopes: bool = typer.Option(False, "--all", help="Include parent project decisions when at deliverable scope."),
+    status: str | None = typer.Option(None, "--status"),
+    since: str | None = typer.Option(None, "--since"),
+    json_mode: bool = typer.Option(False, "--json"),
+) -> None:
+    """List decisions at the current scope."""
+    out = Output(json_mode=json_mode)
+
+    if project is None:
+        scope = workspace.detect_scope()
+        project = scope.project
+        deliverable = deliverable if deliverable is not None else scope.deliverable
+    if project is None:
+        out.error("no project specified and none detected from CWD", code="no_project")
+        raise typer.Exit(code=1)
+
+    rows: list[_DecisionRow] = []
+    if deliverable:
+        rows.extend(_scan(workspace.deliverable_dir(project, deliverable) / "design" / "decisions"))
+        if all_scopes:
+            rows.extend(_scan(workspace.project_dir(project) / "design" / "decisions"))
+    else:
+        rows.extend(_scan(workspace.project_dir(project) / "design" / "decisions"))
+
+    if status:
+        rows = [r for r in rows if r.status == status]
+    if since:
+        rows = [r for r in rows if r.date >= since]
+
+    rows.sort(key=lambda r: r.date, reverse=True)
+
+    if json_mode:
+        out.result({
+            "decisions": [
+                {"date": r.date, "slug": r.slug, "title": r.title, "status": r.status, "path": str(r.path)}
+                for r in rows
+            ]
+        })
+        return
+
+    if not rows:
+        out.result(None, human_text="(no decisions)")
+        return
+
+    table = Table()
+    table.add_column("Date")
+    table.add_column("Slug")
+    table.add_column("Status")
+    table.add_column("Title")
+    for r in rows:
+        table.add_row(r.date, r.slug, r.status, r.title)
+    out.print_rich(table)

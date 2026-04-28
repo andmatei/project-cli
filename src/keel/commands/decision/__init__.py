@@ -10,3 +10,6 @@ app = typer.Typer(
 
 from keel.commands.decision.new import cmd_new
 app.command(name="new")(cmd_new)
+
+from keel.commands.decision.list import cmd_list
+app.command(name="list")(cmd_list)
