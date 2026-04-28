@@ -76,3 +76,47 @@ def test_remove_line_under_heading() -> None:
     out = remove_line_under_heading(SAMPLE, "Workflow", "- Do thing A\n")
     assert "- Do thing A" not in out
     assert "- Do thing B" in out
+
+
+def test_replace_section_is_idempotent_on_re_apply() -> None:
+    """Re-applying the same body produces identical output (no whitespace drift)."""
+    text = """# Title
+
+Intro.
+
+## Section A
+
+- existing item
+"""
+    once = replace_section(text, "Section A", "- new item\n")
+    twice = replace_section(once, "Section A", "- new item\n")
+    assert once == twice
+
+
+def test_replace_section_preserves_blank_line_before_next_heading() -> None:
+    """After replacement, there's exactly one blank line between body and next heading."""
+    text = """# Title
+
+## A
+
+- old
+
+## B
+
+content
+"""
+    out = replace_section(text, "A", "- new\n")
+    assert "## A\n- new\n" in out or "## A\n\n- new\n" in out
+    # Crucially: no triple-newline before "## B"
+    assert "\n\n\n## B" not in out
+
+
+def test_replace_section_appends_with_consistent_spacing() -> None:
+    """When the section doesn't exist, the appended section is well-spaced."""
+    text = "# Title\n\n## A\n- a\n"
+    out = replace_section(text, "B", "- b\n")
+    # Existing "## A" body intact:
+    assert "## A\n- a\n" in out
+    # New "## B" appended with at most one blank line before it:
+    assert "\n## B\n- b\n" in out
+    assert "\n\n\n## B" not in out

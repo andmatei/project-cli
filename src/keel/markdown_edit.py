@@ -95,17 +95,33 @@ def insert_under_heading(text: str, title: str, line_to_insert: str) -> str:
 
 
 def replace_section(text: str, title: str, new_body: str) -> str:
-    """Replace the body of a section. If the section doesn't exist, append it."""
+    """Replace the body of a section. If the section doesn't exist, append it.
+
+    Output normalization: the body of the named section is exactly `new_body`
+    surrounded by exactly one blank line before the next same-or-higher heading
+    (or, at end-of-file, by the existing trailing newline). Re-applying the
+    same body produces identical output.
+    """
     new_body = _ensure_trailing_newline(new_body)
     text = _ensure_trailing_newline(text)
     sections = _find_sections(text)
     target = next((s for s in sections if s.title == title), None)
     if target is None:
-        return text + f"\n## {title}\n{new_body}"
+        # Append a new section. Ensure exactly one blank line precedes it.
+        prefix = text if text.endswith("\n\n") else (text if text.endswith("\n") else text + "\n")
+        if not prefix.endswith("\n\n"):
+            prefix = prefix + "\n"
+        return prefix + f"## {title}\n{new_body}"
     lines = text.splitlines(keepends=True)
     head = lines[:target.body_start]
     tail = lines[target.body_end:]
-    return "".join(head) + new_body + ("\n" if not new_body.endswith("\n\n") else "") + "".join(tail)
+    body = new_body if new_body.endswith("\n") else new_body + "\n"
+    if not body.endswith("\n\n") and tail and tail[0].strip():
+        body = body + "\n"
+    elif body.endswith("\n\n\n"):
+        while body.endswith("\n\n\n"):
+            body = body[:-1]
+    return "".join(head) + body + "".join(tail)
 
 
 def remove_line_under_heading(text: str, title: str, line_to_remove: str) -> str:
