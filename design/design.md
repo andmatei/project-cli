@@ -1,0 +1,543 @@
+# project-cli — Design
+
+## Status
+
+Initial design from 2026-04-27 brainstorm. Living source of truth — update as
+implementation reveals new constraints. See `scope.md` for what's in/out and
+why; see `decisions/` for rationale on choices made.
+
+---
+
+## 1. Summary
+
+Rewrite the projects-workspace CLI in Python (Typer + Rich + Pydantic +
+markdown-it-py + Jinja2 + tomlkit + questionary + pytest), with three core
+structural changes versus the current Bash version:
+
+1. **Per-unit TOML manifest** is the source of truth for code linkage —
+   CLAUDE.md text is generated from it, not the other way around.
+2. **Deliverables are mini-projects** — their `design/` directory has parallel
+   artifacts (scope.md opt-in, design.md, decisions/, .phase) to a project's.
+3. **Consistent surface** — every command auto-detects scope from CWD, supports
+   the same global flags (`--json`, `--dry-run`, `-y`, `-q/-v`), and uses
+   AST-aware markdown editing for cross-file mutations (no more `sed`).
+
+---
+
+## 2. Stack
+
+| Concern | Choice | Notes |
+|---|---|---|
+| CLI framework | **Typer** | Subcommand groups, auto-generated help, built-in completion |
+| Output rendering | **Rich** | Tables, color, progress, markdown rendering. Honors `NO_COLOR`. |
+| Manifest schema validation | **Pydantic v2** | TOML → typed models for safety |
+| TOML I/O | **tomllib** (read), **tomlkit** (write) | Stdlib reads; tomlkit preserves comments on write |
+| Markdown AST editing | **markdown-it-py** | Replaces `sed`-based mutation in current Bash |
+| Templating | **Jinja2** | Replaces `envsubst`-based templating |
+| Interactive prompts | **questionary** | Used only when stdin is a TTY and a required value is missing |
+| Tests | **pytest** + **pytest-snapshot** | Snapshot tests on dry-run output and rendered files |
+| Install | `uv tool install --editable .` (or `pipx install -e .`) | No system packaging |
+
+---
+
+## 3. Cross-cutting conventions
+
+### 3.1 Auto-detection from CWD
+
+- If `$PWD` is inside `~/projects/<X>/` → `--project=<X>` is set automatically.
+- If `$PWD` is inside `~/projects/<X>/deliverables/<Y>/` → both `--project=<X>`
+  and `--deliverable=<Y>` are set.
+- An explicit `--project`/`--deliverable` flag always overrides.
+- If a command needs a project and none is detected and none is passed, fail
+  with a clear error. Do **not** silently prompt — too easy to misfire.
+
+### 3.2 Global flags
+
+| Flag | Scope | Behavior |
+|---|---|---|
+| `--help` / `-h` | every command | Typer-generated |
+| `--json` | commands with readable output (`list`, `show`, `phase`, `validate`, decisions, deliverable, code) | structured output, suppresses log lines (implies `-q`) |
+| `--dry-run` | mutating commands (`new`, `deliverable add/rm/rename`, `decision new/rm`, `phase set`, `code init/add/rm`, `archive`, `rename`, `migrate`) | print intended actions + diffs, write nothing. Read-only commands (`list`, `show`, `validate`, `decision list/show`, `code list/status`, `design export`) don't need it — running them doesn't mutate state |
+| `--yes` / `-y` | destructive commands (`rm`, `rename`, anything that overwrites) | skip confirmation prompt |
+| `--quiet` / `-q` | global | suppress info logs, errors still go to stderr |
+| `--verbose` / `-v` | global | extra debug logs to stderr |
+| `NO_COLOR` env | global | honored by Rich |
+
+`-q` and `-v` are mutually exclusive. `--json` implies `-q`.
+
+### 3.3 Exit codes
+
+- `0` success
+- `1` runtime error (project not found, file conflict, git failed,
+  validation failed)
+- `2` usage error (Typer default)
+- `130` SIGINT (Typer default)
+
+### 3.4 Output format
+
+- **stdout**: command results — the requested data, or the `--json` payload.
+  Pipe-friendly.
+- **stderr**: progress/info logs ("Created project at ..."), errors,
+  interactive prompts. Never pollutes stdout.
+- **`--json` mode**: predictable schema per command (e.g., `list` always
+  returns `{"projects": [...]}`); errors emitted as
+  `{"error": "...", "code": "..."}` on stderr, exit non-zero.
+- **Color**: auto-detect TTY via Rich; respect `NO_COLOR`.
+
+### 3.5 Mutation safety
+
+- `--dry-run` prints a structured op list and exits 0. Example:
+  ```
+  [dry-run] Would create:
+    ~/projects/foo/design/CLAUDE.md         (1.2 KB)
+    ~/projects/foo/design/scope.md          (340 B)
+  [dry-run] Would modify:
+    ~/projects/parent/design/CLAUDE.md
+      + ## Deliverables
+      + - foo: ../deliverables/foo/design/ -- desc
+  [dry-run] Would create git worktree:
+    ~/projects/foo/code  (from ~/repo, branch andrei/foo-base)
+  ```
+- **Confirmation** prompts only on **destructive** ops (`rm`, `rename`,
+  `--force` overwrites). Creates and additive modifications never prompt.
+  `-y/--yes` skips confirmation.
+- Non-TTY stdin + destructive op + no `-y` → fail loud (don't hang).
+- **Conflict on create** → hard fail by default. Opt-in `--force` where it
+  makes sense (`decision new` overwriting same-day slug, etc.).
+- **Atomicity**: cheap ops (mkdir, file writes) happen first; expensive/
+  external ops (git worktree create) happen last. On git failure, leave files
+  in place and print recovery hints. No auto-rollback — manual recovery is
+  fine for a personal tool.
+- **Cross-file mutations** (e.g., `deliverable add` updating parent
+  `CLAUDE.md` / `design.md`) use **markdown-it-py AST editing**, not regex/
+  sed. AST edits target named sections (insert under `## Deliverables`
+  heading; create the heading if missing). Idempotent — re-running doesn't
+  duplicate.
+
+---
+
+## 4. Conceptual model
+
+```
+~/projects/
+├── <project-name>/
+│   ├── design/
+│   │   ├── CLAUDE.md           # Generated; human-narrative + manifest summary
+│   │   ├── project.toml        # Manifest: source of truth for code linkage
+│   │   ├── scope.md            # Always present at project level
+│   │   ├── design.md           # Always present at project level
+│   │   ├── .phase              # Phase tracker (current line + history)
+│   │   └── decisions/
+│   │       └── YYYY-MM-DD-slug.md
+│   ├── code/                   # Worktree #1 (or code-<repo>/ if multiple)
+│   └── deliverables/
+│       └── <deliverable>/
+│           ├── design/
+│           │   ├── CLAUDE.md
+│           │   ├── deliverable.toml   # Manifest
+│           │   ├── scope.md           # OPT-IN — only when distinct from parent
+│           │   ├── design.md
+│           │   ├── .phase             # Independent phase tracker
+│           │   └── decisions/
+│           └── code/                  # Worktree (or shared with parent)
+└── .archive/                   # Soft-deleted projects
+    └── <project-name>-<date>/
+```
+
+### 4.1 Project vs. deliverable artifact parity
+
+| Artifact | Project | Deliverable |
+|---|---|---|
+| `CLAUDE.md` | yes | yes |
+| Manifest | `project.toml` | `deliverable.toml` |
+| `scope.md` | always created | **opt-in** (use `/write-scope` from inside the dir) |
+| `design.md` | always created | always created |
+| `decisions/` | yes | yes (independent) |
+| `.phase` (lifecycle) | yes | yes (**independent** — different deliverables can be at different phases) |
+| Worktree(s) | optional, declared in manifest | optional, declared in manifest, may be `shared = true` |
+
+**Rationale (recorded in `decisions/`):**
+- Deliverable scope is opt-in because scope is usually derived top-down from
+  the project; most deliverables don't have a distinct bounded scope.
+- Deliverable phase is independent because deliverables progress at different
+  rates (one in `implementing`, another still in `designing`).
+
+### 4.2 Composition principle
+
+The project's design materials compose into a single multi-section document.
+Each level contributes its own sections (mental model: tabs in a Google Doc).
+`project design export` at the project level produces the unified output;
+at the deliverable level it produces just that deliverable.
+
+---
+
+## 5. Manifest schema
+
+### 5.1 `project.toml`
+
+```toml
+[project]
+name = "api-ai-agents"
+description = "AI agents for the API platform"
+created = "2026-04-15"
+
+[[repos]]
+remote = "git@github.com:example-org/example-repo.git"   # canonical clone URL
+local_hint = "~/example-repo"                             # suggested local path on a fresh machine
+worktree = "code"                                         # subdir under project for the worktree
+branch_prefix = "alice/api-ai-agents"                     # prefix for branches in this worktree
+```
+
+### 5.2 `deliverable.toml`
+
+```toml
+[deliverable]
+name = "ipa-skills"
+parent_project = "api-ai-agents"
+description = "Interface for IPA validation skills"
+created = "2026-04-20"
+shared_worktree = false   # true means uses parent's worktree, no own [[repos]]
+
+[[repos]]
+remote = "git@github.com:example-org/another-repo.git"
+local_hint = "~/another-repo"
+worktree = "code"
+branch_prefix = "alice/api-ai-agents-ipa-skills"
+```
+
+### 5.3 Schema rules
+
+- Manifests are validated via Pydantic models on every read.
+- `[[repos]]` is empty when the unit has no code (design-only project).
+- `shared_worktree = true` is mutually exclusive with `[[repos]]` on a
+  deliverable.
+- The `branch_prefix` is the basis for branch naming when `code add` creates
+  a new worktree.
+- `validate` checks: TOML parses, schema matches, declared worktrees exist on
+  disk, branches start with the declared `branch_prefix`.
+
+### 5.4 CLAUDE.md regeneration
+
+The "## Code" and "## Deliverables" sections in `CLAUDE.md` are
+**generated from the manifest**. AST-aware regen replaces those sections
+without disturbing human-written sections. Hand-edited code/deliverable
+sections are overwritten on regen — the manifest wins.
+
+---
+
+## 6. Command surface
+
+```
+project new <name>                                     # create project
+project list                                           # tree of projects
+project show [name]                                    # project card
+project phase [PHASE]                                  # show or transition phase
+project validate [name]                                # structural health check
+project archive <name>                                 # soft-delete
+project rename <old> <new>                             # rename project
+project completion {bash|zsh|fish}                     # shell completion install
+project --version
+
+project deliverable add <name>
+project deliverable rm <name>
+project deliverable rename <old> <new>
+project deliverable list
+
+project decision new <title> [--supersedes <slug>]
+project decision list
+project decision show <slug>
+project decision rm <slug>
+
+project design export
+
+project code list [name]
+project code status [name]
+project code init [name] [--clone-missing]
+project code add [name] --repo PATH
+project code rm [name] --repo URL
+```
+
+**Slash command remap** (slash command bodies are rewritten to call the new CLI):
+- `/decide` → `project decision new`
+- `/phase` → `project phase`
+- `/export-design` → `project design export`
+- `/new-project` (already a guided Claude flow — just calls `project new` at the end)
+- `/design-sync` (Claude-driven; no CLI counterpart — `project validate`
+  covers structural drift only)
+
+---
+
+## 7. Per-command contracts
+
+### 7.1 `project new <name>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `<name>` (slugified), `-d/--description TEXT` (required, prompted on TTY if missing), `-r/--repo PATH` (repeatable), `--no-worktree`, `--dry-run`, `-y/--yes` |
+| Auto-detect | n/a (creates new project) |
+| Side effects | mkdir `~/projects/<name>/{design,design/decisions}`; write `project.toml`, `CLAUDE.md`, `scope.md`, `design.md`, initial `decisions/<date>-project-setup.md`; `.phase` set to `scoping`; for each `--repo`: append `[[repos]]` to manifest, then `code init` materializes worktrees |
+| Conflict | hard fail if `~/projects/<name>` exists. No `--force` here (too risky for `new`) |
+| Output | created paths + next-steps hints; `--json`: `{"path": "...", "design": "...", "worktrees": [...]}` |
+| Errors | invalid name, description missing in non-TTY, repo not a git dir, worktree creation fails (file ops kept; recovery hint printed) |
+
+### 7.2 `project deliverable add <name>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `<name>`, `-d/--description TEXT` (required), `-r/--repo PATH` (single), `--shared` (use parent's worktree), `--dry-run`, `-y/--yes` |
+| Auto-detect | parent project from CWD; `--project NAME` overrides; fail loud if not detected and not provided |
+| Side effects | mkdir deliverable design dir; write `deliverable.toml`, `CLAUDE.md`, `design.md`, initial decision; **no `scope.md`** (opt-in); `.phase` set to `scoping`; AST-edit parent `CLAUDE.md` + `design.md` to add deliverable to `## Deliverables` (idempotent); AST-edit sibling deliverables' `CLAUDE.md` to list new sibling; create worktree if `--repo` (or shared if `--shared`) |
+| Conflict | hard fail if deliverable already exists |
+| Output | created paths + parent files modified + next-steps; `--json`: `{"deliverable_path": "...", "modified_files": [...]}` |
+
+### 7.3 `project deliverable rm <name>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `<name>`, `--keep-code`, `--keep-design`, `--force` (allow even if worktree dirty), `-y/--yes`, `--dry-run` |
+| Auto-detect | parent project from CWD |
+| Confirm | always prompts unless `-y`; lists paths to delete + parent files to modify |
+| Side effects | `git worktree remove` (fail if dirty without `--force`); rmtree deliverable design dir; AST-edit parent `CLAUDE.md` + `design.md` to remove the deliverable line; AST-edit sibling `CLAUDE.md` files |
+| Errors | dirty worktree without `--force`, deliverable not found, non-TTY without `-y` |
+
+### 7.4 `project deliverable rename <old> <new>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `<old> <new>`, `--rename-branch / --no-rename-branch` (default rename), `-y`, `--dry-run` |
+| Auto-detect | parent project from CWD |
+| Side effects | `git worktree move` (proper git op); rename design dir; update manifest's `[deliverable]` block; AST-edit parent files; AST-edit sibling files; `git branch -m old new` if `--rename-branch` |
+| Conflict | new name exists → hard fail; dirty worktree → warn but allow |
+
+### 7.5 `project deliverable list`
+
+| Aspect | Spec |
+|---|---|
+| Args | `--json` |
+| Auto-detect | project from CWD |
+| Default output | table: name, phase, has-code, description |
+| `--json` | `{"deliverables": [{"name": "...", "phase": "...", "description": "...", "shared_worktree": bool, "repos": [...]}]}` |
+
+### 7.6 `project decision new <title>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `<title>`, `-D/--deliverable NAME` (override CWD), `--slug SLUG` (override auto-slug), `--supersedes <slug>` (mark old decision superseded + link), `--no-edit` (skip `$EDITOR`), `--force` (overwrite if a decision with same `<date>-<slug>.md` already exists), `--dry-run` |
+| Auto-detect | scope (project or deliverable) from CWD |
+| Side effects | create `decisions/<YYYY-MM-DD>-<slug>.md` with frontmatter + question/options/conclusion stub; open `$EDITOR` afterwards (skip with `--no-edit` or unset `$EDITOR`); if `--supersedes`: edit old decision's frontmatter to `status: superseded` and append `Superseded by: <new-slug>` |
+| Conflict | `<date>-<slug>.md` exists → hard fail; suggest `--slug` to disambiguate |
+| Output | path; `--json`: `{"path": "...", "scope": "project|deliverable", "slug": "...", "supersedes": "..."}` |
+
+### 7.7 `project decision list`
+
+| Aspect | Spec |
+|---|---|
+| Args | `-D/--deliverable NAME`, `--all` (include parent project decisions when run inside a deliverable), `--status STATUS`, `--since DATE`, `--json` |
+| Auto-detect | scope from CWD |
+| Default output | table: date, slug, status, title (truncated). Sorted reverse-chronological |
+| `--json` | `{"decisions": [{"date": "...", "slug": "...", "title": "...", "status": "...", "path": "..."}]}` |
+
+### 7.8 `project decision show <slug>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `<slug>` (date prefix optional), `-D/--deliverable NAME`, `--json`, `--raw` |
+| Auto-detect | scope from CWD |
+| Default output | rendered markdown via Rich |
+| `--raw` | dump file contents unchanged (pipe-friendly) |
+| `--json` | `{"path": "...", "frontmatter": {...}, "body_markdown": "..."}` |
+| Errors | slug not found → suggest closest matches (fuzzy) |
+
+### 7.9 `project decision rm <slug>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `<slug>` or full filename, `-y/--yes`, `--dry-run` |
+| Auto-detect | scope from CWD |
+| Confirm | prompts unless `-y` |
+| Side effects | rm decision file. Note: typical "changed my mind" pattern is `decision new --supersedes <slug>`, not `rm` |
+
+### 7.10 `project phase [PHASE]`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[PHASE]` (transition target), `--next` (advance one step, exclusive with positional), `-D/--deliverable NAME`, `-m/--message TEXT`, `--no-decision` (skip auto-creating phase decision file), `--json`, `--dry-run` |
+| Auto-detect | scope from CWD |
+| Show mode (no `PHASE`/`--next`) | print current + lifecycle bar with current marked + history (date, old→new, note) |
+| Transition mode | write `.phase`; auto-create `decisions/<date>-phase-<new>.md` unless `--no-decision`; print `old → new` |
+| Lifecycle | `scoping → designing → poc → implementing → shipping → done` |
+| Backwards transitions | allowed; warn + confirm prompt unless `-y` |
+| `--json` | show: `{"scope": "project|deliverable", "name": "...", "phase": "...", "history": [...]}`. transition: same plus `"transitioned_from"` |
+
+### 7.11 `project list`
+
+| Aspect | Spec |
+|---|---|
+| Args | `--phase PHASE`, `--deliverables-only`, `--json` |
+| Default output | tree: project name + phase + deliverable count, indented children with their phases. Does NOT run `git status` (slow) |
+| `--json` | `{"projects": [{"name": "...", "phase": "...", "description": "...", "repos": [...], "deliverables": [...]}]}` |
+
+### 7.12 `project show [name]`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `-D/--deliverable NAME`, `--json` |
+| Default output | structured "project card": name + description, phase, manifest repos (paths/branches), design files (mtime), decision count + last 3, deliverable list with phases, worktree paths/branches (no git status — `code status` covers it) |
+| `--json` | flat object with all the above |
+
+### 7.13 `project validate [name]`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `--strict` (warnings → failures), `--check FILTER` (e.g., `--check manifest,refs`), `--content` (opt-in content checks), `--json` |
+| Structural checks (always) | manifest is valid TOML & matches schema; required design files exist (`CLAUDE.md`, `design.md`, `.phase`); declared worktrees exist; worktree branches match `branch_prefix`; parent CLAUDE.md/design.md mention all on-disk deliverables; sibling CLAUDE.md files reference each other consistently |
+| Content checks (`--content`) | decision frontmatter parses; design.md has expected sections |
+| Default output | per-check PASS/WARN/FAIL list + summary |
+| `--json` | `{"findings": [...], "summary": {"pass": N, "warn": N, "fail": N}}` |
+| Exit code | 0 if no FAILs; 1 if any FAIL; with `--strict`, warnings count as fails |
+
+### 7.14 `project archive <name>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `--force` (allow if any worktree dirty), `-y/--yes`, `--dry-run` |
+| Side effects | `git worktree remove` for each worktree (fail if dirty without `--force`); move `~/projects/<name>` → `~/projects/.archive/<name>-<YYYY-MM-DD>/`; leave `.archived` marker noting timestamp |
+| Restore | manual: `mv .archive/foo-<date> foo && project code init` |
+
+### 7.15 `project rename <old> <new>`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `<old> <new>`, `--rename-branches / --no-rename-branches` (default rename), `-y`, `--dry-run` |
+| Side effects | rename project dir; for each worktree: `git worktree move`, `git branch -m`; update manifest's `branch_prefix`; AST-edit any deliverable CLAUDE.md mentioning old name |
+| Output | summary of dirs renamed + branches renamed + files updated |
+
+### 7.16 `project design export`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `-D/--deliverable NAME`, `--no-decisions`, `--no-deliverables` (project-level only), `--include-scope` (prepend scope.md), `-o/--output PATH` (default stdout), `--format markdown` |
+| Project-level output | `# <Project>: Design` → `## Project Design` (decisions replaced with `(Appendix D.N)` refs) → `## Deliverable: <a>` ... → `## Appendix: Decisions` (numbered, superseded excluded) |
+| Deliverable-level output | `# <Deliverable>: Design` → `## Design` → `## Appendix: Decisions` (just that deliverable's) |
+| Decision appendix scoping | flat numbering across the whole export (D.1, D.2, ...) |
+| Errors | design.md missing; broken decision refs (warns + inlines with note) |
+
+### 7.17 `project code list [name]`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `-D/--deliverable NAME`, `--json` |
+| Default output | table: remote, local_hint, worktree path, branch_prefix |
+| `--json` | `{"repos": [...]}` |
+
+### 7.18 `project code status [name]`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `--json`, `--fetch` (run `git fetch` first) |
+| Default output | per-repo: cloned? worktree exists? current branch (matches prefix?), clean/dirty, ahead/behind |
+| `--json` | structured per-repo state |
+
+### 7.19 `project code init [name]`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `--clone-missing` (clone repos missing locally — uses `local_hint` or prompts), `-y/--yes`, `--dry-run` |
+| Side effects | for each `[[repos]]` entry: ensure source repo exists at `local_hint` (clone if `--clone-missing`); ensure worktree at declared `worktree` path on a branch with `branch_prefix` (create if missing). Idempotent |
+| Errors | source repo missing without `--clone-missing`; branch_prefix mismatch (existing branch elsewhere) |
+
+### 7.20 `project code add [name] --repo PATH`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `--repo PATH` (required), `--worktree NAME` (default: `code-<reponame>`), `--branch-prefix PREFIX` (default: `<gituser>/<project>[-<deliverable>]`), `--dry-run`, `-y` |
+| Side effects | append `[[repos]]` entry to manifest; create worktree per the new entry; regen CLAUDE.md "## Code" section |
+| Conflict | repo already declared → hard fail unless `--force` |
+
+### 7.21 `project code rm [name] --repo URL`
+
+| Aspect | Spec |
+|---|---|
+| Args | positional `[name]` (auto-detected), `--repo URL` (required), `-y/--yes`, `--dry-run`, `--force` (dirty worktree) |
+| Confirm | prompts unless `-y` |
+| Side effects | `git worktree remove` (fail if dirty without `--force`); remove `[[repos]]` entry; regen CLAUDE.md |
+
+### 7.22 `project completion {bash|zsh|fish}`
+
+Wraps Typer's built-in completion installer. Prints the completion script to
+stdout (redirect to file), or with `--install` writes to the canonical
+location for the chosen shell.
+
+### 7.23 `project --version`
+
+Reads version from `pyproject.toml` via `importlib.metadata`.
+
+---
+
+## 8. Migration plan
+
+Existing projects under `~/projects/` need a one-time migration:
+
+1. **Synthesize manifests from CLAUDE.md text**: a `project migrate [name]`
+   subcommand (one-shot, removed after migration completes) reads the existing
+   `## Code` and `## Deliverables` sections of each project's `CLAUDE.md`,
+   the `[code]` paragraphs in deliverable `CLAUDE.md` files, and the existing
+   git worktrees, and writes equivalent `project.toml` /
+   `deliverable.toml` files.
+2. **Initialize `.phase` for deliverables**: any deliverable without a
+   `.phase` file gets one initialized to `scoping`.
+3. **Verify**: `project validate --strict` must pass on every project after
+   migration. Fixups (e.g., orphaned worktree references) handled manually.
+
+Migration is **dry-run by default**: `project migrate` prints what it would
+write; `project migrate --apply` actually writes. The migration command is
+removed after the migration succeeds across all existing projects (or kept as
+a hidden `--legacy` command in case new old-style projects ever appear).
+
+---
+
+## 9. Tests
+
+- `pytest` covers, at minimum:
+  - `new` (with and without repos)
+  - `deliverable add/rm/rename/list`
+  - `decision new/list/show/rm` and `--supersedes`
+  - `phase` show + transitions (incl. backwards + per-deliverable)
+  - `design export` (project- and deliverable-level)
+  - `code init/status/list/add/rm`
+  - `validate` (PASS, WARN, FAIL fixtures)
+  - `archive` + restore round-trip
+  - `rename` (project-level)
+- **Snapshot tests** on dry-run output and rendered files: changes to
+  generated artifacts (CLAUDE.md, design.md mutations) require updating
+  snapshots, making cross-file mutations easy to review.
+- Each command has a smoke test for `--json` shape (Pydantic models).
+
+---
+
+## 10. Deferred / Parking lot
+
+- **Milestones per deliverable/project**: each milestone tracked with its own
+  worktree (e.g., ship milestone A while iterating on B). Open questions: do
+  milestones have their own design artifacts or just a branch+worktree?
+  Naming/dir layout? Revisit after the base CLI ships.
+- **IDL location**: pending clarification of what "idl where to put it"
+  meant — possibly Interface Definition Language files, possibly a typo.
+- **`project link/unlink` for Jira/Confluence**: structured external-ref
+  storage is out of scope for v1; links live in design docs and tickets.
+
+---
+
+## 11. Open questions
+
+- **Where does the Python source code live?**
+  - In `~/projects/bin/` alongside the existing Bash tool until cutover, then
+    replace?
+  - In a new top-level dir, e.g., `~/projects/.tools/project-cli/`?
+  - In its own git repo, separate from `~/projects/`?
+  - Decide during implementation planning (writing-plans skill).
+- **Cutover strategy**: do we run new + old in parallel for a period, or
+  swap atomically? Probably atomic, since we control both sides.
+- **`local_hint` UX in `code init --clone-missing`**: prompt with default,
+  or fail if not present? Probably prompt-with-default on TTY, fail on
+  non-TTY.

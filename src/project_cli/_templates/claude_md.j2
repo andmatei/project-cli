@@ -1,0 +1,30 @@
+# {{ name }}
+
+{{ description }}
+{% if repos %}
+
+## Code
+
+{% for r in repos %}
+- `{{ r.worktree }}/` ← {{ r.remote }}{{ " (local hint: `" + r.local_hint + "`)" if r.local_hint else "" }}
+{% endfor %}
+{% endif %}
+{% if deliverables %}
+
+## Deliverables
+
+{% for d in deliverables %}
+- **{{ d.name }}**: ../deliverables/{{ d.name }}/design/ -- {{ d.description }}
+{% endfor %}
+{% endif %}
+
+## Workflow
+- `scope.md` defines boundaries and success criteria — set early, changes rarely
+- `design.md` is the living source of truth for the current technical approach
+- `decisions/` contains one file per decision — question, options explored, conclusion
+- The `## Code` and `## Deliverables` sections above are **generated from `project.toml`** — edit the manifest, not these sections.
+
+## Rules
+- Read scope.md and design.md before starting significant work
+- When a decision is made, create a new file in decisions/
+- If implementation reveals the scope needs to change, flag it explicitly
