@@ -19,8 +19,11 @@ class Output:
         self.quiet = quiet
         self.verbose = verbose
         self.json_mode = json_mode
-        self._stderr = Console(file=sys.stderr, highlight=False)
-        self._stdout = Console(file=sys.stdout, highlight=False)
+        # soft_wrap=True so long paths/words aren't broken across lines —
+        # callers (and tests) match on substrings like "project.toml" and
+        # rely on the terminal to do its own wrapping.
+        self._stderr = Console(file=sys.stderr, highlight=False, soft_wrap=True)
+        self._stdout = Console(file=sys.stdout, highlight=False, soft_wrap=True)
 
     def info(self, message: str) -> None:
         if not self.quiet:
