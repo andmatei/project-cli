@@ -62,3 +62,7 @@ app.add_typer(decision_app, name="decision")
 from keel.commands.phase import cmd_phase  # noqa: E402
 
 app.command(name="phase")(cmd_phase)
+
+from keel.commands.code import app as code_app  # noqa: E402
+
+app.add_typer(code_app, name="code")
