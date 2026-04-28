@@ -38,7 +38,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8",
+    "pytest>=9.0.3",
     "pytest-snapshot>=0.9",
 ]
 
