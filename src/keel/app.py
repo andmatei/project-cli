@@ -34,7 +34,7 @@ def main(
 from keel.commands.new import cmd_new
 app.command(name="new")(cmd_new)
 
-from keel.commands.list_cmd import cmd_list
+from keel.commands.list import cmd_list
 app.command(name="list")(cmd_list)
 
 from keel.commands.show import cmd_show
