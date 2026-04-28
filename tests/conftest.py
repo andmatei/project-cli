@@ -22,6 +22,7 @@ def projects(tmp_path, monkeypatch) -> Path:
 def make_project(projects) -> Callable[[str, str], Path]:
     """Factory: create a project with empty design dir and a manifest."""
     def _make(name: str, description: str = "test project") -> Path:
+        from keel import templates
         proj = projects / name
         (proj / "design" / "decisions").mkdir(parents=True)
         m = ProjectManifest(
@@ -29,6 +30,12 @@ def make_project(projects) -> Callable[[str, str], Path]:
             repos=[],
         )
         save_project_manifest(proj / "design" / "project.toml", m)
+        (proj / "design" / "CLAUDE.md").write_text(
+            templates.render("claude_md.j2", name=name, description=description, repos=[], deliverables=[])
+        )
+        (proj / "design" / "design.md").write_text(
+            templates.render("design_md.j2", name=name, description=description)
+        )
         (proj / "design" / ".phase").write_text("scoping\n")
         return proj
     return _make

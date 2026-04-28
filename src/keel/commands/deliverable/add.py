@@ -104,7 +104,28 @@ def cmd_add(
     )
 
     out.info(f"Created deliverable: {deliv}")
+
+    # AST-edit the parent's CLAUDE.md to list this deliverable
+    from keel.markdown_edit import insert_under_heading
+    parent_claude_path = workspace.project_dir(project) / "design" / "CLAUDE.md"
+    if parent_claude_path.is_file():
+        line = f"- **{slug}**: ../deliverables/{slug}/design/ -- {description}\n"
+        new_text = insert_under_heading(parent_claude_path.read_text(), "Deliverables", line)
+        parent_claude_path.write_text(new_text)
+
+    # AST-edit the parent's design.md
+    parent_design_path = workspace.project_dir(project) / "design" / "design.md"
+    if parent_design_path.is_file():
+        line = f"- **{slug}**: {description}. See [design](../deliverables/{slug}/design/design.md).\n"
+        new_text = insert_under_heading(parent_design_path.read_text(), "Deliverables", line)
+        parent_design_path.write_text(new_text)
+
+    modified_files = []
+    if parent_claude_path.is_file():
+        modified_files.append(str(parent_claude_path))
+    if parent_design_path.is_file():
+        modified_files.append(str(parent_design_path))
     out.result(
-        {"deliverable_path": str(deliv), "modified_files": []},
+        {"deliverable_path": str(deliv), "modified_files": modified_files},
         human_text=f"Deliverable created: {deliv}",
     )

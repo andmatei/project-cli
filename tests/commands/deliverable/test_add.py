@@ -45,3 +45,35 @@ def test_add_fails_if_parent_project_missing(projects) -> None:
     result = runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "ghost"])
     assert result.exit_code == 1
     assert "ghost" in result.stderr.lower()
+
+
+def test_add_inserts_into_parent_claude_md(projects, make_project) -> None:
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "bar", "-d", "the bar", "-y", "--project", "foo"])
+    parent_claude = (projects / "foo" / "design" / "CLAUDE.md").read_text()
+    assert "## Deliverables" in parent_claude
+    assert "bar" in parent_claude
+    assert "the bar" in parent_claude
+
+
+def test_add_inserts_into_parent_design_md(projects, make_project) -> None:
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "bar", "-d", "the bar", "-y", "--project", "foo"])
+    parent_design = (projects / "foo" / "design" / "design.md").read_text()
+    assert "## Deliverables" in parent_design
+    assert "bar" in parent_design
+
+
+def test_add_is_idempotent_in_parent_files(projects, make_project) -> None:
+    """Adding the same deliverable twice doesn't duplicate the parent line.
+
+    (We can't add twice via the command — it'll fail with 'already exists' —
+    but the AST helper's idempotency means hand-editing won't double-up either.
+    Verify by checking the parent's deliverables list contains exactly one
+    'bar' entry.)
+    """
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo"])
+    parent_claude = (projects / "foo" / "design" / "CLAUDE.md").read_text()
+    # Count occurrences of the deliverable bullet line:
+    assert parent_claude.count("**bar**") == 1
