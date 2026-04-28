@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "typer>=0.12",
+    "typer>=0.25.0",
     "rich>=13",
     "pydantic>=2.6",
     "markdown-it-py>=3",
