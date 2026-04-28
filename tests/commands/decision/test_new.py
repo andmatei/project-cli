@@ -44,3 +44,22 @@ def test_new_fails_if_no_scope(projects, monkeypatch, tmp_path) -> None:
     result = runner.invoke(app, ["decision", "new", "X", "--no-edit"])
     assert result.exit_code == 1
     assert "no project" in result.stderr.lower()
+
+
+def test_new_supersedes_marks_old_decision(projects, make_project, monkeypatch) -> None:
+    """--supersedes should mark the old decision as superseded and link to the new one."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    runner.invoke(app, ["decision", "new", "Old choice", "--no-edit"])
+    old_files = list((proj / "design" / "decisions").glob("*-old-choice.md"))
+    assert len(old_files) == 1
+    old_slug = old_files[0].stem  # e.g. "2026-04-28-old-choice"
+
+    runner.invoke(app, ["decision", "new", "New choice", "--no-edit", "--supersedes", "old-choice"])
+    new_files = list((proj / "design" / "decisions").glob("*-new-choice.md"))
+    assert len(new_files) == 1
+    new_slug = new_files[0].stem
+
+    old_body = old_files[0].read_text()
+    assert "status: superseded" in old_body
+    assert new_slug in old_body  # references the new decision

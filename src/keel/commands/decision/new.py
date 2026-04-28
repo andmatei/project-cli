@@ -78,6 +78,28 @@ def cmd_new(
     target_dir.mkdir(parents=True, exist_ok=True)
     path.write_text(templates.render("decision_entry.j2", date=today, title=title))
 
+    if supersedes:
+        # Find the file matching `supersedes` (which may be just the slug part or the full filename)
+        candidate_paths = list(target_dir.glob(f"*-{supersedes}.md")) if not supersedes.endswith(".md") else [target_dir / supersedes]
+        if not candidate_paths:
+            out.warn(f"--supersedes: no decision matching '{supersedes}' found in {target_dir}")
+        else:
+            old_path = candidate_paths[0]
+            old_text = old_path.read_text()
+            # Replace status field in frontmatter
+            new_text = re.sub(
+                r"^status:\s*\S+",
+                "status: superseded",
+                old_text,
+                count=1,
+                flags=re.MULTILINE,
+            )
+            # Append "Superseded by:" line at end
+            superseded_by_line = f"\nSuperseded by: {filename[:-3]}\n"  # strip .md
+            if "Superseded by:" not in new_text:
+                new_text = new_text.rstrip("\n") + superseded_by_line
+            old_path.write_text(new_text)
+
     out.info(f"Created decision: {path}")
     out.result(
         {"path": str(path), "scope": scope_label, "slug": slug_value, "supersedes": supersedes},
