@@ -45,3 +45,6 @@ app.add_typer(deliverable_app, name="deliverable")
 
 from keel.commands.decision import app as decision_app
 app.add_typer(decision_app, name="decision")
+
+from keel.commands.phase import cmd_phase
+app.command(name="phase")(cmd_phase)
