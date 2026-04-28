@@ -4,7 +4,7 @@ import shutil
 import typer
 
 from keel import workspace
-from keel.markdown_edit import remove_line_under_heading
+from keel.markdown_edit import remove_bullet_under_heading
 from keel.output import Output
 from keel.prompts import confirm_destructive
 
@@ -79,24 +79,16 @@ def cmd_rm(
     # Clean up parent CLAUDE.md
     parent_claude = workspace.project_dir(project) / "design" / "CLAUDE.md"
     if parent_claude.is_file():
-        # Match the format used by `deliverable add`: `- **{name}**: ...`
-        text = parent_claude.read_text()
-        # Find the line(s) starting with the deliverable bullet and remove them
-        new_lines = [
-            line for line in text.splitlines(keepends=True)
-            if not line.lstrip().startswith(f"- **{name}**:")
-        ]
-        parent_claude.write_text("".join(new_lines))
+        parent_claude.write_text(
+            remove_bullet_under_heading(parent_claude.read_text(), "Deliverables", f"- **{name}**:")
+        )
 
     # Clean up parent design.md
     parent_design = workspace.project_dir(project) / "design" / "design.md"
     if parent_design.is_file():
-        text = parent_design.read_text()
-        new_lines = [
-            line for line in text.splitlines(keepends=True)
-            if not line.lstrip().startswith(f"- **{name}**:")
-        ]
-        parent_design.write_text("".join(new_lines))
+        parent_design.write_text(
+            remove_bullet_under_heading(parent_design.read_text(), "Deliverables", f"- **{name}**:")
+        )
 
     # Clean up sibling deliverable CLAUDE.md files
     siblings_dir = workspace.project_dir(project) / "deliverables"
@@ -106,13 +98,9 @@ def cmd_rm(
                 continue
             sibling_claude = sibling / "design" / "CLAUDE.md"
             if sibling_claude.is_file():
-                text = sibling_claude.read_text()
-                # Sibling lines look like: `- {name}: ../{name}/design/ -- description`
-                new_lines = [
-                    line for line in text.splitlines(keepends=True)
-                    if not line.lstrip().startswith(f"- {name}:")
-                ]
-                sibling_claude.write_text("".join(new_lines))
+                sibling_claude.write_text(
+                    remove_bullet_under_heading(sibling_claude.read_text(), "Sibling deliverables", f"- {name}:")
+                )
 
     out.info(f"Removed deliverable: {deliv}")
     out.result({"removed": str(deliv)}, human_text=f"Deliverable removed: {deliv}")

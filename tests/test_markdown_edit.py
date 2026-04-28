@@ -111,6 +111,33 @@ content
     assert "\n\n\n## B" not in out
 
 
+def test_remove_bullet_by_prefix() -> None:
+    """Remove all body lines under a section that start with the given prefix."""
+    text = """# Title
+
+## Deliverables
+
+- **alpha**: ../deliverables/alpha/design/ -- the alpha
+- **beta**: ../deliverables/beta/design/ -- the beta
+- **gamma**: ../deliverables/gamma/design/ -- the gamma
+
+## Other
+"""
+    from keel.markdown_edit import remove_bullet_under_heading
+    out = remove_bullet_under_heading(text, "Deliverables", "- **beta**:")
+    assert "**beta**" not in out
+    assert "**alpha**" in out
+    assert "**gamma**" in out
+    assert "## Other" in out
+
+
+def test_remove_bullet_no_match_is_noop() -> None:
+    text = "# T\n\n## D\n- **a**: x\n"
+    from keel.markdown_edit import remove_bullet_under_heading
+    out = remove_bullet_under_heading(text, "D", "- **z**:")
+    assert out == text
+
+
 def test_replace_section_appends_with_consistent_spacing() -> None:
     """When the section doesn't exist, the appended section is well-spaced."""
     text = "# Title\n\n## A\n- a\n"

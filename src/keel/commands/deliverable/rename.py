@@ -4,7 +4,7 @@ import shutil
 import typer
 
 from keel import workspace
-from keel.markdown_edit import insert_under_heading
+from keel.markdown_edit import insert_under_heading, remove_bullet_under_heading
 from keel.manifest import (
     DeliverableManifest, DeliverableMeta,
     load_deliverable_manifest, save_deliverable_manifest,
@@ -79,29 +79,18 @@ def cmd_rename(
     description = m.deliverable.description
     parent_claude = workspace.project_dir(project) / "design" / "CLAUDE.md"
     if parent_claude.is_file():
-        text = parent_claude.read_text()
-        new_lines = []
-        for line in text.splitlines(keepends=True):
-            if line.lstrip().startswith(f"- **{old}**:"):
-                indent = line[:len(line) - len(line.lstrip())]
-                new_lines.append(f"{indent}- **{new}**: ../deliverables/{new}/design/ -- {description}\n")
-            else:
-                new_lines.append(line)
-        parent_claude.write_text("".join(new_lines))
+        text = remove_bullet_under_heading(parent_claude.read_text(), "Deliverables", f"- **{old}**:")
+        text = insert_under_heading(text, "Deliverables", f"- **{new}**: ../deliverables/{new}/design/ -- {description}\n")
+        parent_claude.write_text(text)
 
     parent_design = workspace.project_dir(project) / "design" / "design.md"
     if parent_design.is_file():
-        text = parent_design.read_text()
-        new_lines = []
-        for line in text.splitlines(keepends=True):
-            if line.lstrip().startswith(f"- **{old}**:"):
-                indent = line[:len(line) - len(line.lstrip())]
-                new_lines.append(
-                    f"{indent}- **{new}**: {description}. See [design](../deliverables/{new}/design/design.md).\n"
-                )
-            else:
-                new_lines.append(line)
-        parent_design.write_text("".join(new_lines))
+        text = remove_bullet_under_heading(parent_design.read_text(), "Deliverables", f"- **{old}**:")
+        text = insert_under_heading(
+            text, "Deliverables",
+            f"- **{new}**: {description}. See [design](../deliverables/{new}/design/design.md).\n",
+        )
+        parent_design.write_text(text)
 
     # 4. Update sibling deliverable CLAUDE.md files
     siblings_dir = workspace.project_dir(project) / "deliverables"
@@ -111,15 +100,9 @@ def cmd_rename(
                 continue
             sibling_claude = sibling / "design" / "CLAUDE.md"
             if sibling_claude.is_file():
-                text = sibling_claude.read_text()
-                new_lines = []
-                for line in text.splitlines(keepends=True):
-                    if line.lstrip().startswith(f"- {old}:"):
-                        indent = line[:len(line) - len(line.lstrip())]
-                        new_lines.append(f"{indent}- {new}: ../{new}/design/ -- {description}\n")
-                    else:
-                        new_lines.append(line)
-                sibling_claude.write_text("".join(new_lines))
+                text = remove_bullet_under_heading(sibling_claude.read_text(), "Sibling deliverables", f"- {old}:")
+                text = insert_under_heading(text, "Sibling deliverables", f"- {new}: ../{new}/design/ -- {description}\n")
+                sibling_claude.write_text(text)
 
     # 5. (Optional) branch rename
     code_dir = new_path / "code"

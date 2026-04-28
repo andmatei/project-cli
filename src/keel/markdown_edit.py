@@ -124,6 +124,25 @@ def replace_section(text: str, title: str, new_body: str) -> str:
     return "".join(head) + body + "".join(tail)
 
 
+def remove_bullet_under_heading(text: str, title: str, line_prefix: str) -> str:
+    """Remove every line in section `title` whose left-stripped form starts with `line_prefix`.
+
+    Useful for removing bullet entries by their bullet-prefix pattern (e.g.
+    `- **alpha**:` or `- alpha:`) without needing exact-byte equality.
+    """
+    text = _ensure_trailing_newline(text)
+    sections = _find_sections(text)
+    target = next((s for s in sections if s.title == title), None)
+    if target is None:
+        return text
+    lines = text.splitlines(keepends=True)
+    body = [
+        line for line in lines[target.body_start:target.body_end]
+        if not line.lstrip().startswith(line_prefix)
+    ]
+    return "".join(lines[:target.body_start]) + "".join(body) + "".join(lines[target.body_end:])
+
+
 def remove_line_under_heading(text: str, title: str, line_to_remove: str) -> str:
     """Remove a specific line from a section's body. No-op if absent."""
     line_to_remove = _ensure_trailing_newline(line_to_remove)
