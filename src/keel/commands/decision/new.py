@@ -13,6 +13,7 @@ from keel.util import slugify
 
 
 def cmd_new(
+    ctx: typer.Context,
     title: str = typer.Argument(...),
     deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
     project: str | None = typer.Option(None, "--project", "-p"),
@@ -24,7 +25,7 @@ def cmd_new(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Create a new decision record at the current scope (project or deliverable)."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(project, deliverable)

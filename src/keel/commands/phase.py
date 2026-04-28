@@ -27,6 +27,7 @@ def _read_phase(path: Path) -> tuple[str, list[str]]:
 
 
 def cmd_phase(
+    ctx: typer.Context,
     phase: str | None = typer.Argument(None),
     next_phase: bool = typer.Option(False, "--next"),
     deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
@@ -38,7 +39,7 @@ def cmd_phase(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Show or transition the phase."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(project, deliverable)

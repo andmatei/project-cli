@@ -38,11 +38,12 @@ def _scan(project_name: str) -> list[_DeliverableRow]:
 
 
 def cmd_list(
+    ctx: typer.Context,
     project: str | None = typer.Option(None, "--project", "-p"),
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """List deliverables in a project."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(project, None, allow_deliverable=False)
     project = scope.project

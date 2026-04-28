@@ -42,11 +42,12 @@ def _scan(projects_root) -> list[_ProjectRow]:
 
 
 def cmd_list(
+    ctx: typer.Context,
     phase: str | None = typer.Option(None, "--phase", help="Filter by phase."),
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """List projects in the workspace."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
     rows = _scan(workspace.projects_dir())
     total = len(rows)
     if phase:

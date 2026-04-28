@@ -51,6 +51,16 @@ class Output:
         if not self.json_mode:
             self._stdout.print(renderable)
 
+    @classmethod
+    def from_context(cls, ctx, *, json_mode: bool = False) -> "Output":
+        """Build an Output instance using global --quiet/--verbose flags from a Typer context."""
+        obj = (ctx.obj or {}) if hasattr(ctx, "obj") else {}
+        return cls(
+            quiet=obj.get("quiet", False),
+            verbose=obj.get("verbose", False),
+            json_mode=json_mode,
+        )
+
     def result(self, payload: Any, *, human_text: str | None = None) -> None:
         """Emit a command result.
 

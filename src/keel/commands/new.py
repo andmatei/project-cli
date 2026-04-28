@@ -15,6 +15,7 @@ from keel.util import slugify
 
 
 def cmd_new(
+    ctx: typer.Context,
     name: str = typer.Argument(..., help="Project name (will be slugified)."),
     description: str | None = typer.Option(None, "-d", "--description"),
     repos: list[str] | None = typer.Option(None, "-r", "--repo", help="Source repo path (repeatable)."),
@@ -26,7 +27,7 @@ def cmd_new(
     """Create a new project workspace."""
     from keel import git_ops
 
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
     slug = slugify(name)
     if not slug:
         out.error("invalid project name", code="invalid_name")

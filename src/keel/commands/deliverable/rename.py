@@ -13,6 +13,7 @@ from keel.output import Output
 
 
 def cmd_rename(
+    ctx: typer.Context,
     old: str = typer.Argument(...),
     new: str = typer.Argument(...),
     project: str | None = typer.Option(None, "--project", "-p"),
@@ -22,7 +23,7 @@ def cmd_rename(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Rename a deliverable."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(project, None, allow_deliverable=False)

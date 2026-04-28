@@ -10,6 +10,7 @@ from keel.prompts import confirm_destructive
 
 
 def cmd_rm(
+    ctx: typer.Context,
     name: str = typer.Argument(...),
     project: str | None = typer.Option(None, "--project", "-p"),
     keep_code: bool = typer.Option(False, "--keep-code"),
@@ -20,7 +21,7 @@ def cmd_rm(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Remove a deliverable, including its design dir, worktree, and parent references."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(project, None, allow_deliverable=False)

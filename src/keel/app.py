@@ -19,6 +19,7 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(
         False, "--version", callback=_version_callback, is_eager=True,
         help="Show version and exit.",
@@ -26,9 +27,10 @@ def main(
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Suppress info logs."),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose logs."),
 ) -> None:
-    """keel: manage the ~/projects/ workspace."""
+    """keel: scope-driven development scaffolder for ~/projects/."""
     if quiet and verbose:
         raise typer.BadParameter("--quiet and --verbose are mutually exclusive.")
+    ctx.obj = {"quiet": quiet, "verbose": verbose}
 
 
 from keel.commands.new import cmd_new

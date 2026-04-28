@@ -15,6 +15,7 @@ from keel.util import slugify
 
 
 def cmd_add(
+    ctx: typer.Context,
     name: str = typer.Argument(..., help="Deliverable name (will be slugified)."),
     description: str | None = typer.Option(None, "-d", "--description"),
     project: str | None = typer.Option(None, "--project", "-p", help="Parent project (auto-detected from CWD)."),
@@ -25,7 +26,7 @@ def cmd_add(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Create a new deliverable inside a project."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(project, None, allow_deliverable=False)

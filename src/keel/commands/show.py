@@ -10,11 +10,12 @@ from keel.output import Output
 
 
 def cmd_show(
+    ctx: typer.Context,
     name: str | None = typer.Argument(None, help="Project name. Auto-detected from CWD if omitted."),
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Show a project's structure and current state."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(name, None, allow_deliverable=False)
     name = scope.project

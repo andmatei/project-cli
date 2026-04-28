@@ -37,6 +37,7 @@ def _find_decision(decisions_dir: Path, slug: str) -> Path | None:
 
 
 def cmd_show(
+    ctx: typer.Context,
     slug: str = typer.Argument(...),
     deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
     project: str | None = typer.Option(None, "--project", "-p"),
@@ -44,7 +45,7 @@ def cmd_show(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Show a decision record."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(project, deliverable)

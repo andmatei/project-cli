@@ -58,6 +58,7 @@ def _scan(decisions_dir: Path) -> list[_DecisionRow]:
 
 
 def cmd_list(
+    ctx: typer.Context,
     deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
     project: str | None = typer.Option(None, "--project", "-p"),
     all_scopes: bool = typer.Option(False, "--all", help="Include parent project decisions when at deliverable scope."),
@@ -66,7 +67,7 @@ def cmd_list(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """List decisions at the current scope."""
-    out = Output(json_mode=json_mode)
+    out = Output.from_context(ctx, json_mode=json_mode)
 
     from keel.workspace import resolve_cli_scope
     scope = resolve_cli_scope(project, deliverable)
