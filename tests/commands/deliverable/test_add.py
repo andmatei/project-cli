@@ -87,3 +87,37 @@ def test_add_updates_sibling_deliverable_claude_md(projects, make_project) -> No
     sibling_claude = (projects / "foo" / "deliverables" / "alpha" / "design" / "CLAUDE.md").read_text()
     # alpha's CLAUDE.md should mention beta:
     assert "beta" in sibling_claude
+
+
+def test_add_with_repo_creates_worktree(projects, make_project, source_repo) -> None:
+    make_project("foo")
+    result = runner.invoke(
+        app,
+        ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo", "-r", str(source_repo)],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0, result.stderr
+    deliv = projects / "foo" / "deliverables" / "bar"
+    assert (deliv / "code").is_dir()
+    assert (deliv / "code" / "README").is_file()
+
+
+def test_add_with_repo_writes_repo_to_manifest(projects, make_project, source_repo) -> None:
+    make_project("foo")
+    runner.invoke(
+        app,
+        ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo", "-r", str(source_repo)],
+    )
+    from keel.manifest import load_deliverable_manifest
+    m = load_deliverable_manifest(projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml")
+    assert len(m.repos) == 1
+    assert m.repos[0].worktree == "code"
+
+
+def test_add_shared_marks_manifest_and_no_repos(projects, make_project) -> None:
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo", "--shared"])
+    from keel.manifest import load_deliverable_manifest
+    m = load_deliverable_manifest(projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml")
+    assert m.deliverable.shared_worktree is True
+    assert m.repos == []

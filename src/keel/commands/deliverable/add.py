@@ -58,6 +58,20 @@ def cmd_add(
 
     description = require_or_fail(description, arg_name="--description", label="Description")
 
+    from keel import git_ops
+    from keel.manifest import RepoSpec
+
+    # Validate --repo if provided
+    repo_path = None
+    if repo and shared:
+        out.error("--repo and --shared are mutually exclusive", code="conflicting_flags")
+        raise typer.Exit(code=2)
+    if repo:
+        repo_path = Path(repo).expanduser().resolve()
+        if not git_ops.is_git_repo(repo_path):
+            out.error(f"not a git repo: {repo_path}", code="not_a_repo")
+            raise typer.Exit(code=1)
+
     if dry_run:
         from keel.dryrun import OpLog
         log = OpLog()
@@ -73,7 +87,19 @@ def cmd_add(
     # Create directories
     (deliv / "design" / "decisions").mkdir(parents=True)
 
-    # Manifest
+    # Build manifest
+    repo_specs: list[RepoSpec] = []
+    if repo_path is not None:
+        try:
+            user_slug = git_ops.git_user_slug(repo_path)
+        except Exception:
+            user_slug = "user"
+        repo_specs.append(RepoSpec(
+            remote=str(repo_path),
+            local_hint=str(repo_path),
+            worktree="code",
+            branch_prefix=f"{user_slug}/{project}-{slug}",
+        ))
     manifest = DeliverableManifest(
         deliverable=DeliverableMeta(
             name=slug,
@@ -82,7 +108,7 @@ def cmd_add(
             created=date.today(),
             shared_worktree=shared,
         ),
-        repos=[],
+        repos=repo_specs,
     )
     save_deliverable_manifest(deliv / "design" / "deliverable.toml", manifest)
 
@@ -104,6 +130,18 @@ def cmd_add(
     )
 
     out.info(f"Created deliverable: {deliv}")
+
+    # Create worktree if --repo
+    created_worktree = None
+    if repo_path is not None:
+        wt_dest = deliv / "code"
+        try:
+            git_ops.create_worktree(repo_path, wt_dest, branch=repo_specs[0].branch_prefix)
+            created_worktree = str(wt_dest)
+        except git_ops.GitError as e:
+            out.error(f"worktree creation failed: {e}", code="git_failed")
+            out.info(f"Design files are at {deliv / 'design'}; clean up manually if needed.")
+            raise typer.Exit(code=1)
 
     # AST-edit the parent's CLAUDE.md to list this deliverable
     from keel.markdown_edit import insert_under_heading
@@ -141,6 +179,10 @@ def cmd_add(
         modified_files.append(str(parent_design_path))
     modified_files.extend(sibling_modifications)
     out.result(
-        {"deliverable_path": str(deliv), "modified_files": modified_files},
+        {
+            "deliverable_path": str(deliv),
+            "modified_files": modified_files,
+            "worktree": created_worktree,
+        },
         human_text=f"Deliverable created: {deliv}",
     )
