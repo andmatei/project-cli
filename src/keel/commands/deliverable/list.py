@@ -27,8 +27,7 @@ def _scan(project_name: str) -> list[_DeliverableRow]:
         if not manifest_path.is_file():
             continue
         m = load_deliverable_manifest(manifest_path)
-        phase_file = child / "design" / ".phase"
-        phase = phase_file.read_text().splitlines()[0].strip() if phase_file.is_file() else "scoping"
+        phase = workspace.read_phase(child / "design")
         rows.append(_DeliverableRow(
             name=m.deliverable.name,
             phase=phase,

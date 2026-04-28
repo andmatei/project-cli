@@ -97,6 +97,17 @@ def resolve_cli_scope(
     return Scope(project=project, deliverable=deliverable)
 
 
+def read_phase(design_dir: Path) -> str:
+    """Read the current phase from `<design_dir>/.phase`. Returns 'scoping' if the file is missing or empty."""
+    phase_file = design_dir / ".phase"
+    if not phase_file.is_file():
+        return "scoping"
+    lines = phase_file.read_text().splitlines()
+    if not lines:
+        return "scoping"
+    return lines[0].strip() or "scoping"
+
+
 def decisions_dir(project: str, deliverable: str | None = None) -> Path:
     """Path to the decisions/ directory for the given scope."""
     if deliverable:

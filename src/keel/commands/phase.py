@@ -19,12 +19,11 @@ def _phase_path(project: str, deliverable: str | None) -> Path:
 
 def _read_phase(path: Path) -> tuple[str, list[str]]:
     """Returns (current_phase, history_lines). History lines are everything after line 1."""
+    current = workspace.read_phase(path.parent)
     if not path.is_file():
-        return "scoping", []
+        return current, []
     lines = path.read_text().splitlines()
-    if not lines:
-        return "scoping", []
-    return lines[0].strip() or "scoping", lines[1:]
+    return current, lines[1:]
 
 
 def cmd_phase(

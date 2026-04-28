@@ -1,6 +1,5 @@
 """`keel show`."""
 from __future__ import annotations
-from pathlib import Path
 import typer
 from rich.panel import Panel
 from rich.table import Table
@@ -24,7 +23,7 @@ def cmd_show(
     manifest_path = proj / "design" / "project.toml"
 
     m = load_project_manifest(manifest_path)
-    phase = (proj / "design" / ".phase").read_text().splitlines()[0].strip() if (proj / "design" / ".phase").is_file() else "scoping"
+    phase = workspace.read_phase(proj / "design")
     decisions = sorted((proj / "design" / "decisions").glob("*.md"))
     decision_count = len(decisions)
 
@@ -34,8 +33,7 @@ def cmd_show(
         for d in sorted(d_dir.iterdir()):
             d_manifest = d / "design" / "deliverable.toml"
             if d_manifest.is_file():
-                d_phase_file = d / "design" / ".phase"
-                d_phase = d_phase_file.read_text().splitlines()[0].strip() if d_phase_file.is_file() else "scoping"
+                d_phase = workspace.read_phase(d / "design")
                 deliverables.append((d.name, d_phase))
 
     if json_mode:

@@ -144,6 +144,23 @@ def test_resolve_cli_scope_unknown_project_exits(monkeypatch, tmp_path) -> None:
     assert exc.value.exit_code == 1
 
 
+def test_read_phase_default_when_missing(tmp_path) -> None:
+    from keel.workspace import read_phase
+    assert read_phase(tmp_path) == "scoping"
+
+
+def test_read_phase_default_when_empty(tmp_path) -> None:
+    (tmp_path / ".phase").write_text("")
+    from keel.workspace import read_phase
+    assert read_phase(tmp_path) == "scoping"
+
+
+def test_read_phase_value(tmp_path) -> None:
+    (tmp_path / ".phase").write_text("implementing\n2026-04-28  scoping → implementing\n")
+    from keel.workspace import read_phase
+    assert read_phase(tmp_path) == "implementing"
+
+
 def test_decisions_dir_project(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import decisions_dir

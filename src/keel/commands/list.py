@@ -27,8 +27,7 @@ def _scan(projects_root) -> list[_ProjectRow]:
         if not manifest.is_file():
             continue
         m = load_project_manifest(manifest)
-        phase_file = design / ".phase"
-        phase = phase_file.read_text().splitlines()[0].strip() if phase_file.is_file() else "scoping"
+        phase = workspace.read_phase(design)
         d_dir = child / "deliverables"
         d_count = 0
         if d_dir.is_dir():
