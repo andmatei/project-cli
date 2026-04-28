@@ -1,6 +1,6 @@
 """Edge-case coverage for the slugifier used by `keel new`."""
 import pytest
-from keel.commands.new import _slugify
+from keel.util import slugify as _slugify
 
 
 def test_slugify_lowercases_and_replaces_spaces() -> None:

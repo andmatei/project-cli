@@ -2,7 +2,6 @@
 from __future__ import annotations
 from datetime import date
 from pathlib import Path
-import re
 import typer
 
 from keel import templates, workspace
@@ -12,15 +11,7 @@ from keel.manifest import (
 )
 from keel.output import Output
 from keel.prompts import require_or_fail
-
-
-_SLUG_RE = re.compile(r"[^a-z0-9-]+")
-
-
-def _slugify(name: str) -> str:
-    s = name.lower().strip().replace(" ", "-")
-    s = _SLUG_RE.sub("", s)
-    return s
+from keel.util import slugify
 
 
 def cmd_new(
@@ -36,7 +27,7 @@ def cmd_new(
     from keel import git_ops
 
     out = Output(json_mode=json_mode)
-    slug = _slugify(name)
+    slug = slugify(name)
     if not slug:
         out.error("invalid project name", code="invalid_name")
         raise typer.Exit(code=2)

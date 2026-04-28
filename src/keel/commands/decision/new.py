@@ -9,14 +9,7 @@ import typer
 
 from keel import templates, workspace
 from keel.output import Output
-
-
-_SLUG_RE = re.compile(r"[^a-z0-9-]+")
-
-
-def _slugify_title(title: str) -> str:
-    s = title.lower().strip().replace(" ", "-")
-    return _SLUG_RE.sub("", s)
+from keel.util import slugify
 
 
 def cmd_new(
@@ -57,7 +50,7 @@ def cmd_new(
         scope_label = "project"
 
     today = date.today().isoformat()
-    slug_value = slug or _slugify_title(title)
+    slug_value = slug or slugify(title)
     if not slug_value:
         out.error("invalid title (slug is empty)", code="invalid_title")
         raise typer.Exit(code=2)
