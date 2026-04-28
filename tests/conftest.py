@@ -46,3 +46,40 @@ def source_repo(tmp_path) -> Path:
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
     return repo
+
+
+from keel.manifest import (
+    DeliverableManifest, DeliverableMeta,
+    save_deliverable_manifest,
+)
+
+
+@pytest.fixture
+def make_deliverable(make_project) -> Callable[..., Path]:
+    """Factory: create a deliverable inside a (possibly new) project."""
+    def _make(
+        project_name: str = "foo",
+        name: str = "bar",
+        description: str = "test deliverable",
+        shared_worktree: bool = False,
+    ) -> Path:
+        from keel import workspace
+        if not workspace.project_exists(project_name):
+            make_project(project_name)
+        deliv = workspace.deliverable_dir(project_name, name)
+        (deliv / "design" / "decisions").mkdir(parents=True)
+        from datetime import date as _date
+        m = DeliverableManifest(
+            deliverable=DeliverableMeta(
+                name=name,
+                parent_project=project_name,
+                description=description,
+                created=_date(2026, 4, 28),
+                shared_worktree=shared_worktree,
+            ),
+            repos=[],
+        )
+        save_deliverable_manifest(deliv / "design" / "deliverable.toml", m)
+        (deliv / "design" / ".phase").write_text("scoping\n")
+        return deliv
+    return _make

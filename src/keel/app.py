@@ -39,3 +39,6 @@ app.command(name="list")(cmd_list)
 
 from keel.commands.show import cmd_show
 app.command(name="show")(cmd_show)
+
+from keel.commands.deliverable import app as deliverable_app
+app.add_typer(deliverable_app, name="deliverable")
