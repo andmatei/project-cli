@@ -121,3 +121,13 @@ def test_add_shared_marks_manifest_and_no_repos(projects, make_project) -> None:
     m = load_deliverable_manifest(projects / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml")
     assert m.deliverable.shared_worktree is True
     assert m.repos == []
+
+
+def test_add_lists_existing_siblings_in_new_deliverable_claude(projects, make_project) -> None:
+    """When adding B after A exists, B's own CLAUDE.md should list A as a sibling."""
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"])
+    runner.invoke(app, ["deliverable", "add", "beta", "-d", "beta thing", "-y", "--project", "foo"])
+    beta_claude = (projects / "foo" / "deliverables" / "beta" / "design" / "CLAUDE.md").read_text()
+    # Both directions of sibling reference should be present:
+    assert "alpha" in beta_claude

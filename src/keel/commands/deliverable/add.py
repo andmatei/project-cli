@@ -112,9 +112,27 @@ def cmd_add(
     )
     save_deliverable_manifest(deliv / "design" / "deliverable.toml", manifest)
 
+    # Discover existing siblings for the new deliverable's CLAUDE.md
+    existing_siblings: list[dict[str, str]] = []
+    siblings_dir_for_render = workspace.project_dir(project) / "deliverables"
+    if siblings_dir_for_render.is_dir():
+        for sibling in sorted(siblings_dir_for_render.iterdir()):
+            if not sibling.is_dir():
+                continue
+            sib_manifest = sibling / "design" / "deliverable.toml"
+            if not sib_manifest.is_file():
+                continue
+            from keel.manifest import load_deliverable_manifest
+            sm = load_deliverable_manifest(sib_manifest)
+            existing_siblings.append({"name": sm.deliverable.name, "description": sm.deliverable.description})
+
     # Templates
     (deliv / "design" / "CLAUDE.md").write_text(
-        templates.render("claude_md.j2", name=slug, description=description, repos=[], deliverables=[], siblings=[])
+        templates.render(
+            "claude_md.j2",
+            name=slug, description=description,
+            repos=[], deliverables=[], siblings=existing_siblings,
+        )
     )
     (deliv / "design" / "design.md").write_text(
         templates.render("design_md.j2", name=slug, description=description)
