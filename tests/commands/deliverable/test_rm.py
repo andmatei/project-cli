@@ -53,3 +53,23 @@ def test_rm_calls_remove_worktree_if_code_dir_present(projects, make_project, ma
     monkeypatch.setattr("keel.git_ops.remove_worktree", fake_remove)
     runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo"])
     assert calls == [(str(deliv / "code"), False)]
+
+
+def test_rm_keep_code_preserves_code_dir(projects, make_project, make_deliverable, monkeypatch) -> None:
+    """--keep-code must not destroy the code/ worktree directory."""
+    deliv = make_deliverable(project_name="foo", name="bar", description="d")
+    (deliv / "code").mkdir()
+    (deliv / "code" / "marker.txt").write_text("preserve me")
+    # Stub out git_ops to avoid hitting real git for this test
+    monkeypatch.setattr("keel.git_ops.remove_worktree", lambda *a, **kw: (_ for _ in ()).throw(AssertionError("should not be called when --keep-code")))
+    runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo", "--keep-code"])
+    # design dir gone, but code/ preserved with its contents
+    assert not (deliv / "design").exists()
+    assert (deliv / "code" / "marker.txt").read_text() == "preserve me"
+
+
+def test_rm_keep_design_preserves_design_dir(projects, make_project, make_deliverable) -> None:
+    """--keep-design must not destroy the design dir."""
+    deliv = make_deliverable(project_name="foo", name="bar", description="d")
+    runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo", "--keep-design"])
+    assert (deliv / "design" / "deliverable.toml").is_file()

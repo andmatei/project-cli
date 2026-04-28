@@ -65,9 +65,19 @@ def cmd_rm(
             out.error(f"failed to remove worktree at {code_dir}: {e}", code="git_failed")
             raise typer.Exit(code=1)
 
-    # Remove design dir
+    # Remove design dir (unless --keep-design)
     if not keep_design:
-        shutil.rmtree(deliv)
+        design_dir = deliv / "design"
+        if design_dir.is_dir():
+            shutil.rmtree(design_dir)
+
+    # If the deliverable dir is now empty (no code/ kept, no design/ kept), rmdir it.
+    # If --keep-code preserved code/, leave the dir in place containing just the worktree.
+    try:
+        if deliv.is_dir() and not any(deliv.iterdir()):
+            deliv.rmdir()
+    except OSError:
+        pass  # best-effort
 
     # Clean up parent CLAUDE.md
     parent_claude = workspace.project_dir(project) / "design" / "CLAUDE.md"
