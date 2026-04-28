@@ -58,3 +58,62 @@ def test_detect_scope_in_project_subdir(monkeypatch, tmp_path) -> None:
     (tmp_path / "foo" / "code").mkdir(parents=True)
     monkeypatch.chdir(tmp_path / "foo" / "code")
     assert detect_scope() == Scope(project="foo", deliverable=None)
+
+
+def test_resolve_scope_or_fail_returns_existing_project(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    (tmp_path / "foo" / "design").mkdir(parents=True)
+    (tmp_path / "foo" / "design" / "project.toml").write_text(
+        '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-28\n'
+    )
+    monkeypatch.chdir(tmp_path / "foo" / "design")
+    from keel.workspace import resolve_scope_or_fail
+    scope = resolve_scope_or_fail()
+    assert scope.project == "foo"
+    assert scope.deliverable is None
+
+
+def test_resolve_scope_or_fail_rejects_missing_manifest(monkeypatch, tmp_path) -> None:
+    """Path is structurally inside ~/projects/<X>/ but no project.toml there."""
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    (tmp_path / "ghost" / "design").mkdir(parents=True)  # no project.toml
+    monkeypatch.chdir(tmp_path / "ghost" / "design")
+    from keel.workspace import resolve_scope_or_fail
+    import typer
+    with pytest.raises(typer.Exit) as exc:
+        resolve_scope_or_fail()
+    assert exc.value.exit_code == 1
+
+
+def test_deliverable_exists_true(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    (tmp_path / "foo" / "deliverables" / "bar" / "design").mkdir(parents=True)
+    (tmp_path / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml").write_text(
+        '[deliverable]\nname = "bar"\nparent_project = "foo"\ndescription = "d"\ncreated = 2026-04-28\nshared_worktree = false\n'
+    )
+    from keel.workspace import deliverable_exists
+    assert deliverable_exists("foo", "bar") is True
+
+
+def test_deliverable_exists_false(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import deliverable_exists
+    assert deliverable_exists("foo", "bar") is False
+
+
+def test_resolve_scope_or_fail_returns_deliverable(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    proj = tmp_path / "foo" / "deliverables" / "bar" / "design"
+    proj.mkdir(parents=True)
+    (proj.parent.parent.parent / "design").mkdir(parents=True)
+    (proj.parent.parent.parent / "design" / "project.toml").write_text(
+        '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-28\n'
+    )
+    (proj / "deliverable.toml").write_text(
+        '[deliverable]\nname = "bar"\nparent_project = "foo"\ndescription = "d"\ncreated = 2026-04-28\nshared_worktree = false\n'
+    )
+    monkeypatch.chdir(proj)
+    from keel.workspace import resolve_scope_or_fail
+    scope = resolve_scope_or_fail()
+    assert scope.project == "foo"
+    assert scope.deliverable == "bar"
