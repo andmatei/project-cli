@@ -26,20 +26,10 @@ def cmd_new(
     """Create a new decision record at the current scope (project or deliverable)."""
     out = Output(json_mode=json_mode)
 
-    # Resolve scope
-    if project is None or (deliverable is None and workspace.detect_scope().deliverable):
-        scope = workspace.detect_scope()
-        project = project or scope.project
-        deliverable = deliverable if deliverable is not None else scope.deliverable
-    if project is None:
-        out.error("no project specified and none detected from CWD", code="no_project")
-        raise typer.Exit(code=1)
-    if not workspace.project_exists(project):
-        out.error(f"project not found: {project}", code="not_found")
-        raise typer.Exit(code=1)
-    if deliverable is not None and not workspace.deliverable_exists(project, deliverable):
-        out.error(f"deliverable not found: {project}/{deliverable}", code="not_found")
-        raise typer.Exit(code=1)
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(project, deliverable)
+    project = scope.project
+    deliverable = scope.deliverable
 
     # Compute target dir
     if deliverable:

@@ -16,18 +16,12 @@ def cmd_show(
 ) -> None:
     """Show a project's structure and current state."""
     out = Output(json_mode=json_mode)
-    if name is None:
-        scope = workspace.detect_scope()
-        if scope.project is None:
-            out.error("no project specified and none detected from CWD", code="no_project")
-            raise typer.Exit(code=1)
-        name = scope.project
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(name, None, allow_deliverable=False)
+    name = scope.project
 
     proj = workspace.project_dir(name)
     manifest_path = proj / "design" / "project.toml"
-    if not manifest_path.is_file():
-        out.error(f"project not found: {name}", code="not_found")
-        raise typer.Exit(code=1)
 
     m = load_project_manifest(manifest_path)
     phase = (proj / "design" / ".phase").read_text().splitlines()[0].strip() if (proj / "design" / ".phase").is_file() else "scoping"

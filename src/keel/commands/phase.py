@@ -41,16 +41,10 @@ def cmd_phase(
     """Show or transition the phase."""
     out = Output(json_mode=json_mode)
 
-    if project is None:
-        scope = workspace.detect_scope()
-        project = scope.project
-        deliverable = deliverable if deliverable is not None else scope.deliverable
-    if project is None:
-        out.error("no project specified and none detected from CWD", code="no_project")
-        raise typer.Exit(code=1)
-    if deliverable is not None and not workspace.deliverable_exists(project, deliverable):
-        out.error(f"deliverable not found: {project}/{deliverable}", code="not_found")
-        raise typer.Exit(code=1)
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(project, deliverable)
+    project = scope.project
+    deliverable = scope.deliverable
 
     path = _phase_path(project, deliverable)
     current, history = _read_phase(path)

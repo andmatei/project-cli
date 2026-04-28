@@ -27,16 +27,9 @@ def cmd_add(
     """Create a new deliverable inside a project."""
     out = Output(json_mode=json_mode)
 
-    # Determine parent project: explicit --project overrides; else CWD-detect; else fail.
-    if project is None:
-        scope = workspace.detect_scope()
-        project = scope.project
-    if project is None:
-        out.error("no parent project specified and none detected from CWD", code="no_project")
-        raise typer.Exit(code=1)
-    if not workspace.project_exists(project):
-        out.error(f"parent project not found: {project}", code="not_found")
-        raise typer.Exit(code=1)
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(project, None, allow_deliverable=False)
+    project = scope.project
 
     slug = slugify(name)
     if not slug:

@@ -22,12 +22,9 @@ def cmd_rm(
     """Remove a deliverable, including its design dir, worktree, and parent references."""
     out = Output(json_mode=json_mode)
 
-    if project is None:
-        scope = workspace.detect_scope()
-        project = scope.project
-    if project is None:
-        out.error("no project specified and none detected from CWD", code="no_project")
-        raise typer.Exit(code=1)
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(project, None, allow_deliverable=False)
+    project = scope.project
     if not workspace.deliverable_exists(project, name):
         out.error(f"deliverable not found: {project}/{name}", code="not_found")
         raise typer.Exit(code=1)

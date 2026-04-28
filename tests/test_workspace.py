@@ -101,6 +101,49 @@ def test_deliverable_exists_false(monkeypatch, tmp_path) -> None:
     assert deliverable_exists("foo", "bar") is False
 
 
+def test_resolve_cli_scope_explicit_project(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    (tmp_path / "foo" / "design").mkdir(parents=True)
+    (tmp_path / "foo" / "design" / "project.toml").write_text(
+        '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-28\n'
+    )
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(project="foo", deliverable=None)
+    assert scope.project == "foo"
+    assert scope.deliverable is None
+
+
+def test_resolve_cli_scope_falls_back_to_cwd(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    (tmp_path / "foo" / "design").mkdir(parents=True)
+    (tmp_path / "foo" / "design" / "project.toml").write_text(
+        '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-28\n'
+    )
+    monkeypatch.chdir(tmp_path / "foo" / "design")
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(project=None)
+    assert scope.project == "foo"
+
+
+def test_resolve_cli_scope_missing_project_exits(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    from keel.workspace import resolve_cli_scope
+    import typer
+    with pytest.raises(typer.Exit) as exc:
+        resolve_cli_scope(project=None)
+    assert exc.value.exit_code == 1
+
+
+def test_resolve_cli_scope_unknown_project_exits(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import resolve_cli_scope
+    import typer
+    with pytest.raises(typer.Exit) as exc:
+        resolve_cli_scope(project="ghost")
+    assert exc.value.exit_code == 1
+
+
 def test_resolve_scope_or_fail_returns_deliverable(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     proj = tmp_path / "foo" / "deliverables" / "bar" / "design"

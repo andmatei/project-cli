@@ -44,15 +44,9 @@ def cmd_list(
 ) -> None:
     """List deliverables in a project."""
     out = Output(json_mode=json_mode)
-    if project is None:
-        scope = workspace.detect_scope()
-        project = scope.project
-    if project is None:
-        out.error("no project specified and none detected from CWD", code="no_project")
-        raise typer.Exit(code=1)
-    if not workspace.project_exists(project):
-        out.error(f"project not found: {project}", code="not_found")
-        raise typer.Exit(code=1)
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(project, None, allow_deliverable=False)
+    project = scope.project
 
     rows = _scan(project)
 

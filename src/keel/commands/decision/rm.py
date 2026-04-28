@@ -20,13 +20,10 @@ def cmd_rm(
     """Remove a decision file (the typical 'changed my mind' pattern is `decision new --supersedes` instead)."""
     out = Output(json_mode=json_mode)
 
-    if project is None:
-        scope = workspace.detect_scope()
-        project = scope.project
-        deliverable = deliverable if deliverable is not None else scope.deliverable
-    if project is None:
-        out.error("no project specified and none detected from CWD", code="no_project")
-        raise typer.Exit(code=1)
+    from keel.workspace import resolve_cli_scope
+    scope = resolve_cli_scope(project, deliverable)
+    project = scope.project
+    deliverable = scope.deliverable
 
     if deliverable:
         target_dir = workspace.deliverable_dir(project, deliverable) / "design" / "decisions"
