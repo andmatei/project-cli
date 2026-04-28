@@ -97,6 +97,13 @@ def resolve_cli_scope(
     return Scope(project=project, deliverable=deliverable)
 
 
+def decisions_dir(project: str, deliverable: str | None = None) -> Path:
+    """Path to the decisions/ directory for the given scope."""
+    if deliverable:
+        return deliverable_dir(project, deliverable) / "design" / "decisions"
+    return project_dir(project) / "design" / "decisions"
+
+
 def resolve_scope_or_fail(cwd: Path | None = None) -> Scope:
     """Like detect_scope, but verifies the scope's manifests exist on disk.
 

@@ -144,6 +144,18 @@ def test_resolve_cli_scope_unknown_project_exits(monkeypatch, tmp_path) -> None:
     assert exc.value.exit_code == 1
 
 
+def test_decisions_dir_project(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import decisions_dir
+    assert decisions_dir("foo") == tmp_path / "foo" / "design" / "decisions"
+
+
+def test_decisions_dir_deliverable(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import decisions_dir
+    assert decisions_dir("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "design" / "decisions"
+
+
 def test_resolve_scope_or_fail_returns_deliverable(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     proj = tmp_path / "foo" / "deliverables" / "bar" / "design"

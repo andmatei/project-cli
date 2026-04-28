@@ -106,8 +106,7 @@ def cmd_phase(
         log.modify_file(path, diff=f"{current} → {target}")
         if not no_decision:
             today = date.today().isoformat()
-            decisions_dir = path.parent / "decisions"
-            log.create_file(decisions_dir / f"{today}-phase-{target}.md", size=0)
+            log.create_file(workspace.decisions_dir(project, deliverable) / f"{today}-phase-{target}.md", size=0)
         out.info(log.format_summary())
         return
 
@@ -122,9 +121,9 @@ def cmd_phase(
     # Auto-create phase decision file
     if not no_decision:
         from keel import templates
-        decisions_dir = path.parent / "decisions"
-        decisions_dir.mkdir(parents=True, exist_ok=True)
-        decision_path = decisions_dir / f"{today}-phase-{target}.md"
+        _decisions_dir = workspace.decisions_dir(project, deliverable)
+        _decisions_dir.mkdir(parents=True, exist_ok=True)
+        decision_path = _decisions_dir / f"{today}-phase-{target}.md"
         if not decision_path.exists():
             decision_path.write_text(
                 templates.render(

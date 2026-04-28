@@ -25,10 +25,7 @@ def cmd_rm(
     project = scope.project
     deliverable = scope.deliverable
 
-    if deliverable:
-        target_dir = workspace.deliverable_dir(project, deliverable) / "design" / "decisions"
-    else:
-        target_dir = workspace.project_dir(project) / "design" / "decisions"
+    target_dir = workspace.decisions_dir(project, deliverable)
 
     path = _find_decision(target_dir, slug)
     if path is None:

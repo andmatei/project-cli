@@ -32,12 +32,8 @@ def cmd_new(
     deliverable = scope.deliverable
 
     # Compute target dir
-    if deliverable:
-        target_dir = workspace.deliverable_dir(project, deliverable) / "design" / "decisions"
-        scope_label = "deliverable"
-    else:
-        target_dir = workspace.project_dir(project) / "design" / "decisions"
-        scope_label = "project"
+    target_dir = workspace.decisions_dir(project, deliverable)
+    scope_label = "deliverable" if deliverable else "project"
 
     today = date.today().isoformat()
     slug_value = slug or slugify(title)
