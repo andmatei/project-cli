@@ -26,3 +26,40 @@ def test_require_or_fail_prompts_when_missing_and_interactive(monkeypatch) -> No
     monkeypatch.setattr("keel.prompts.is_interactive", lambda: True)
     monkeypatch.setattr("keel.prompts._prompt_text", lambda label: "filled-in")
     assert require_or_fail(None, arg_name="--description", label="Description") == "filled-in"
+
+
+def test_confirm_destructive_skipped_when_yes() -> None:
+    from keel.prompts import confirm_destructive
+    confirm_destructive("delete?", yes=True)  # no exception, no prompt
+
+
+def test_confirm_destructive_fails_loud_non_tty(monkeypatch) -> None:
+    monkeypatch.setattr("keel.prompts.is_interactive", lambda: False)
+    from keel.prompts import confirm_destructive
+    import typer
+    with pytest.raises(typer.Exit) as exc:
+        confirm_destructive("delete?", yes=False)
+    assert exc.value.exit_code == 1
+
+
+def test_confirm_destructive_decline_exits(monkeypatch) -> None:
+    monkeypatch.setattr("keel.prompts.is_interactive", lambda: True)
+    class _Q:
+        def unsafe_ask(self):
+            return False
+    monkeypatch.setattr("questionary.confirm", lambda *a, **kw: _Q())
+    from keel.prompts import confirm_destructive
+    import typer
+    with pytest.raises(typer.Exit) as exc:
+        confirm_destructive("delete?", yes=False)
+    assert exc.value.exit_code == 1
+
+
+def test_confirm_destructive_accept_returns(monkeypatch) -> None:
+    monkeypatch.setattr("keel.prompts.is_interactive", lambda: True)
+    class _Q:
+        def unsafe_ask(self):
+            return True
+    monkeypatch.setattr("questionary.confirm", lambda *a, **kw: _Q())
+    from keel.prompts import confirm_destructive
+    confirm_destructive("delete?", yes=False)  # returns None on accept

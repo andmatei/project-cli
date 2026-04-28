@@ -64,3 +64,17 @@ def test_result_json_is_parseable_long_payload(capsys) -> None:
     payload = json.loads(captured.out)
     assert payload["path"] == long_path
     assert len(payload["items"]) == 20
+
+
+def test_warn_goes_to_stderr_with_yellow(capsys) -> None:
+    o = Output(quiet=False)
+    o.warn("careful now")
+    captured = capsys.readouterr()
+    assert "careful now" in captured.err
+    assert captured.out == ""
+
+
+def test_warn_suppressed_when_quiet(capsys) -> None:
+    o = Output(quiet=True)
+    o.warn("careful now")
+    assert capsys.readouterr().err == ""
