@@ -63,3 +63,17 @@ def test_new_supersedes_marks_old_decision(projects, make_project, monkeypatch) 
     old_body = old_files[0].read_text()
     assert "status: superseded" in old_body
     assert new_slug in old_body  # references the new decision
+
+
+def test_new_supersedes_wrong_slug_fails_loud(projects, make_project, monkeypatch) -> None:
+    """--supersedes with no matching decision must exit 1 and not create the new decision."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(
+        app,
+        ["decision", "new", "New choice", "--no-edit", "--supersedes", "nonexistent-decision"],
+    )
+    assert result.exit_code == 1
+    # New decision file should NOT have been created
+    new_files = list((proj / "design" / "decisions").glob("*-new-choice.md"))
+    assert new_files == []
