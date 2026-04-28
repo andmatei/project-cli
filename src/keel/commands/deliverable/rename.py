@@ -16,11 +16,11 @@ def cmd_rename(
     ctx: typer.Context,
     old: str = typer.Argument(...),
     new: str = typer.Argument(...),
-    project: str | None = typer.Option(None, "--project", "-p"),
-    rename_branch: bool = typer.Option(True, "--rename-branch/--no-rename-branch"),
-    yes: bool = typer.Option(False, "-y", "--yes"),
-    dry_run: bool = typer.Option(False, "--dry-run"),
-    json_mode: bool = typer.Option(False, "--json"),
+    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
+    rename_branch: bool = typer.Option(True, "--rename-branch/--no-rename-branch", help="Also rename the worktree's git branch (default true)."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Rename a deliverable."""
     out = Output.from_context(ctx, json_mode=json_mode)

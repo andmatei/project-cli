@@ -59,12 +59,12 @@ def _scan(decisions_dir: Path) -> list[_DecisionRow]:
 
 def cmd_list(
     ctx: typer.Context,
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
+    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Decision scope: a deliverable instead of the project. Auto-detected from CWD."),
+    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
     all_scopes: bool = typer.Option(False, "--all", help="Include parent project decisions when at deliverable scope."),
-    status: str | None = typer.Option(None, "--status"),
-    since: str | None = typer.Option(None, "--since"),
-    json_mode: bool = typer.Option(False, "--json"),
+    status: str | None = typer.Option(None, "--status", help="Filter by frontmatter 'status' (e.g., proposed, accepted, superseded)."),
+    since: str | None = typer.Option(None, "--since", help="Show only decisions on or after this date (YYYY-MM-DD)."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """List decisions at the current scope."""
     out = Output.from_context(ctx, json_mode=json_mode)

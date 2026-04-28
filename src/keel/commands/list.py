@@ -43,8 +43,8 @@ def _scan(projects_root) -> list[_ProjectRow]:
 
 def cmd_list(
     ctx: typer.Context,
-    phase: str | None = typer.Option(None, "--phase", help="Filter by phase."),
-    json_mode: bool = typer.Option(False, "--json"),
+    phase: str | None = typer.Option(None, "--phase", help="Filter to projects in the given phase."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """List projects in the workspace."""
     out = Output.from_context(ctx, json_mode=json_mode)

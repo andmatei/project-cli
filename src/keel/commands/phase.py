@@ -28,15 +28,15 @@ def _read_phase(path: Path) -> tuple[str, list[str]]:
 
 def cmd_phase(
     ctx: typer.Context,
-    phase: str | None = typer.Argument(None),
-    next_phase: bool = typer.Option(False, "--next"),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
-    message: str | None = typer.Option(None, "-m", "--message"),
-    no_decision: bool = typer.Option(False, "--no-decision"),
-    yes: bool = typer.Option(False, "-y", "--yes"),
-    dry_run: bool = typer.Option(False, "--dry-run"),
-    json_mode: bool = typer.Option(False, "--json"),
+    phase: str | None = typer.Argument(None, help="Target phase to transition to. Mutually exclusive with --next."),
+    next_phase: bool = typer.Option(False, "--next", help="Advance one step in the lifecycle."),
+    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Phase scope: deliverable instead of project."),
+    project: str | None = typer.Option(None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."),
+    message: str | None = typer.Option(None, "-m", "--message", help="Optional note recorded in the phase history."),
+    no_decision: bool = typer.Option(False, "--no-decision", help="Skip auto-creating a phase-transition decision file."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Show or transition the phase."""
     out = Output.from_context(ctx, json_mode=json_mode)

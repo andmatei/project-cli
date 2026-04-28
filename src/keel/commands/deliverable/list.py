@@ -39,8 +39,8 @@ def _scan(project_name: str) -> list[_DeliverableRow]:
 
 def cmd_list(
     ctx: typer.Context,
-    project: str | None = typer.Option(None, "--project", "-p"),
-    json_mode: bool = typer.Option(False, "--json"),
+    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """List deliverables in a project."""
     out = Output.from_context(ctx, json_mode=json_mode)

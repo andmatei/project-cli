@@ -11,12 +11,12 @@ from keel.prompts import confirm_destructive
 
 def cmd_rm(
     ctx: typer.Context,
-    slug: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
-    yes: bool = typer.Option(False, "-y", "--yes"),
-    dry_run: bool = typer.Option(False, "--dry-run"),
-    json_mode: bool = typer.Option(False, "--json"),
+    slug: str = typer.Argument(..., help="Decision slug (date prefix optional) or full filename."),
+    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Decision scope: a deliverable instead of the project. Auto-detected from CWD."),
+    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Remove a decision file (the typical 'changed my mind' pattern is `decision new --supersedes` instead)."""
     out = Output.from_context(ctx, json_mode=json_mode)

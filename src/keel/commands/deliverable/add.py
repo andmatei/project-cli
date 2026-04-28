@@ -17,13 +17,13 @@ from keel.util import slugify
 def cmd_add(
     ctx: typer.Context,
     name: str = typer.Argument(..., help="Deliverable name (will be slugified)."),
-    description: str | None = typer.Option(None, "-d", "--description"),
-    project: str | None = typer.Option(None, "--project", "-p", help="Parent project (auto-detected from CWD)."),
-    repo: str | None = typer.Option(None, "-r", "--repo", help="Source repo for the deliverable's worktree."),
-    shared: bool = typer.Option(False, "--shared", help="Share parent's worktree (no own [[repos]])."),
-    dry_run: bool = typer.Option(False, "--dry-run"),
-    yes: bool = typer.Option(False, "-y", "--yes"),
-    json_mode: bool = typer.Option(False, "--json"),
+    description: str | None = typer.Option(None, "-d", "--description", help="Brief deliverable description; required."),
+    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
+    repo: str | None = typer.Option(None, "-r", "--repo", help="Source git repo for the deliverable's own worktree. Mutually exclusive with --shared."),
+    shared: bool = typer.Option(False, "--shared", help="Use the parent project's worktree (no own [[repos]])."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new deliverable inside a project."""
     out = Output.from_context(ctx, json_mode=json_mode)

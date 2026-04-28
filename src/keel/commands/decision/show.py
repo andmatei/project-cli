@@ -38,11 +38,11 @@ def _find_decision(decisions_dir: Path, slug: str) -> Path | None:
 
 def cmd_show(
     ctx: typer.Context,
-    slug: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
-    raw: bool = typer.Option(False, "--raw"),
-    json_mode: bool = typer.Option(False, "--json"),
+    slug: str = typer.Argument(..., help="Decision slug (date prefix optional) or full filename."),
+    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Decision scope: a deliverable instead of the project. Auto-detected from CWD."),
+    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
+    raw: bool = typer.Option(False, "--raw", help="Print the raw file contents unchanged (pipe-friendly)."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Show a decision record."""
     out = Output.from_context(ctx, json_mode=json_mode)

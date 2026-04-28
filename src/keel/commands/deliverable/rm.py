@@ -12,13 +12,13 @@ from keel.prompts import confirm_destructive
 def cmd_rm(
     ctx: typer.Context,
     name: str = typer.Argument(...),
-    project: str | None = typer.Option(None, "--project", "-p"),
-    keep_code: bool = typer.Option(False, "--keep-code"),
-    keep_design: bool = typer.Option(False, "--keep-design"),
-    force: bool = typer.Option(False, "--force", help="Allow even if worktree is dirty."),
-    yes: bool = typer.Option(False, "-y", "--yes"),
-    dry_run: bool = typer.Option(False, "--dry-run"),
-    json_mode: bool = typer.Option(False, "--json"),
+    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
+    keep_code: bool = typer.Option(False, "--keep-code", help="Preserve the worktree dir even when removing the deliverable."),
+    keep_design: bool = typer.Option(False, "--keep-design", help="Preserve the design dir (rare; use to keep records of a removed deliverable)."),
+    force: bool = typer.Option(False, "--force", help="Allow removal even if the worktree has uncommitted changes."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Remove a deliverable, including its design dir, worktree, and parent references."""
     out = Output.from_context(ctx, json_mode=json_mode)

@@ -12,7 +12,7 @@ from keel.output import Output
 def cmd_show(
     ctx: typer.Context,
     name: str | None = typer.Argument(None, help="Project name. Auto-detected from CWD if omitted."),
-    json_mode: bool = typer.Option(False, "--json"),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Show a project's structure and current state."""
     out = Output.from_context(ctx, json_mode=json_mode)

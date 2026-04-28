@@ -17,12 +17,12 @@ from keel.util import slugify
 def cmd_new(
     ctx: typer.Context,
     name: str = typer.Argument(..., help="Project name (will be slugified)."),
-    description: str | None = typer.Option(None, "-d", "--description"),
-    repos: list[str] | None = typer.Option(None, "-r", "--repo", help="Source repo path (repeatable)."),
-    no_worktree: bool = typer.Option(False, "--no-worktree"),
-    dry_run: bool = typer.Option(False, "--dry-run"),
-    yes: bool = typer.Option(False, "-y", "--yes"),
-    json_mode: bool = typer.Option(False, "--json"),
+    description: str | None = typer.Option(None, "-d", "--description", help="Brief project description; required (prompted on TTY if missing)."),
+    repos: list[str] | None = typer.Option(None, "-r", "--repo", help="Source git repo for a worktree. Repeatable for multi-repo projects."),
+    no_worktree: bool = typer.Option(False, "--no-worktree", help="Skip worktree creation even if --repo provided."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new project workspace."""
     from keel import git_ops

@@ -15,14 +15,14 @@ from keel.util import slugify
 def cmd_new(
     ctx: typer.Context,
     title: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
-    slug: str | None = typer.Option(None, "--slug"),
-    supersedes: str | None = typer.Option(None, "--supersedes"),
-    no_edit: bool = typer.Option(False, "--no-edit"),
-    force: bool = typer.Option(False, "--force"),
-    dry_run: bool = typer.Option(False, "--dry-run"),
-    json_mode: bool = typer.Option(False, "--json"),
+    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Decision scope: a deliverable instead of the project. Auto-detected from CWD."),
+    project: str | None = typer.Option(None, "--project", "-p", help="Parent project. Auto-detected from CWD if omitted."),
+    slug: str | None = typer.Option(None, "--slug", help="Override the auto-generated slug from the title."),
+    supersedes: str | None = typer.Option(None, "--supersedes", help="Mark an existing decision as superseded and link forward to this one. Pass the slug or the full filename."),
+    no_edit: bool = typer.Option(False, "--no-edit", help="Don't open $EDITOR after creating the decision file."),
+    force: bool = typer.Option(False, "--force", help="Overwrite an existing decision file with the same name."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new decision record at the current scope (project or deliverable)."""
     out = Output.from_context(ctx, json_mode=json_mode)
