@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import os
 import pytest
-from project_cli.workspace import (
+from keel.workspace import (
     projects_dir,
     project_dir,
     deliverable_dir,

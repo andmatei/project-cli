@@ -1,13 +1,17 @@
-# project-cli
+# keel
 
-[![CI](https://github.com/andmatei/project-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/andmatei/project-cli/actions/workflows/ci.yml)
+[![CI](https://github.com/andmatei/keel/actions/workflows/ci.yml/badge.svg)](https://github.com/andmatei/keel/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 
-A CLI for managing a personal "projects workspace" — a directory of design
-documents, decision records, and code worktrees, one folder per project. Each
-project (and optionally each deliverable inside a project) gets its own scope,
-design, decisions, and `.phase` lifecycle marker. A per-unit TOML manifest
+A scope-driven development scaffolder — the keel is the first structural element
+laid down on a ship, and everything else is built relative to it; scope is laid
+first here too, separate and load-bearing, with design and decisions built on top.
+
+Concretely: a CLI for managing a personal "projects workspace" — a directory of
+design documents, decision records, and code worktrees, one folder per project.
+Each project (and optionally each deliverable inside a project) gets its own
+scope, design, decisions, and `.phase` lifecycle marker. A per-unit TOML manifest
 records linked source repositories so a fresh clone of the workspace can
 reconstruct local worktrees.
 
@@ -20,11 +24,11 @@ or the modules are useful to others.
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/andmatei/project-cli.git
-cd project-cli
+git clone https://github.com/andmatei/keel.git
+cd keel
 uv tool install --editable .
 
-project-cli --help
+keel --help
 ```
 
 ## Usage
@@ -35,46 +39,46 @@ and help. More commands are planned (see [Roadmap](#roadmap)).
 ### Create a project
 
 ```bash
-project-cli new my-project -d "Build a thing" --no-worktree
+keel new my-project -d "Build a thing" --no-worktree
 ```
 
 With a source repo (creates a worktree):
 
 ```bash
-project-cli new my-project -d "Build a thing" -r ~/some-source-repo
+keel new my-project -d "Build a thing" -r ~/some-source-repo
 ```
 
 Multiple repos:
 
 ```bash
-project-cli new multi -d "Two repos" -r ~/repo-a -r ~/repo-b
+keel new multi -d "Two repos" -r ~/repo-a -r ~/repo-b
 ```
 
 Dry-run (prints planned operations, writes nothing):
 
 ```bash
-project-cli new my-project -d "Preview" --no-worktree --dry-run
+keel new my-project -d "Preview" --no-worktree --dry-run
 ```
 
 ### List projects
 
 ```bash
-project-cli list
-project-cli list --phase implementing
-project-cli list --json
+keel list
+keel list --phase implementing
+keel list --json
 ```
 
 ### Show a project
 
 ```bash
-project-cli show my-project
-project-cli show --json my-project
+keel show my-project
+keel show --json my-project
 ```
 
 `show` auto-detects the project from `$PWD`:
 
 ```bash
-cd ~/projects/my-project/design && project-cli show
+cd ~/projects/my-project/design && keel show
 ```
 
 ### Global flags
@@ -127,14 +131,14 @@ Each plan ships independently usable software. See
 ## Development
 
 ```bash
-git clone https://github.com/andmatei/project-cli.git
-cd project-cli
+git clone https://github.com/andmatei/keel.git
+cd keel
 
 # Run tests
 uv run --extra dev pytest
 
 # Run from source without installing globally
-uv run python -m project_cli --help
+uv run python -m keel --help
 ```
 
 ## Contributing

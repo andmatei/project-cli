@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 import io
-from project_cli.output import Output
+from keel.output import Output
 
 
 def test_info_goes_to_stderr(capsys) -> None:

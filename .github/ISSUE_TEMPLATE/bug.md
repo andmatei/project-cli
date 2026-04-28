@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a problem with project-cli
+about: Report a problem with keel
 labels: bug
 ---
 
@@ -14,7 +14,7 @@ Steps to reproduce. Ideally a minimal example:
 
 ```bash
 # What you ran
-project-cli ...
+keel ...
 ```
 
 ## Expected behavior
@@ -31,7 +31,7 @@ What actually happened. Paste any relevant output (use `--verbose` if useful):
 
 ## Environment
 
-- `project-cli --version`:
+- `keel --version`:
 - OS / version:
 - Python version (`python --version`):
 - `git --version`:

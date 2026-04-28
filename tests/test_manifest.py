@@ -2,7 +2,7 @@
 from __future__ import annotations
 import pytest
 from pydantic import ValidationError
-from project_cli.manifest import RepoSpec
+from keel.manifest import RepoSpec
 
 
 def test_repo_spec_minimal() -> None:
@@ -36,7 +36,7 @@ def test_repo_spec_rejects_absolute_worktree() -> None:
 
 
 from datetime import date
-from project_cli.manifest import ProjectManifest, ProjectMeta, DeliverableManifest, DeliverableMeta
+from keel.manifest import ProjectManifest, ProjectMeta, DeliverableManifest, DeliverableMeta
 
 
 def test_project_manifest_minimal() -> None:
@@ -93,7 +93,7 @@ def test_deliverable_manifest_owned_with_repos_ok() -> None:
     )
 
 
-from project_cli.manifest import load_project_manifest, save_project_manifest, load_deliverable_manifest, save_deliverable_manifest
+from keel.manifest import load_project_manifest, save_project_manifest, load_deliverable_manifest, save_deliverable_manifest
 
 
 def test_project_manifest_roundtrip(tmp_path) -> None:

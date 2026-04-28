@@ -1,4 +1,4 @@
-# project-cli
+# keel
 
 ## Scope Document
 

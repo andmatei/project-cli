@@ -5,13 +5,13 @@ from pathlib import Path
 import re
 import typer
 
-from project_cli import templates, workspace
-from project_cli.manifest import (
+from keel import templates, workspace
+from keel.manifest import (
     ProjectManifest, ProjectMeta,
     save_project_manifest,
 )
-from project_cli.output import Output
-from project_cli.prompts import require_or_fail
+from keel.output import Output
+from keel.prompts import require_or_fail
 
 
 _SLUG_RE = re.compile(r"[^a-z0-9-]+")
@@ -33,7 +33,7 @@ def cmd_new(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Create a new project workspace."""
-    from project_cli import git_ops
+    from keel import git_ops
 
     out = Output(json_mode=json_mode)
     slug = _slugify(name)
@@ -59,7 +59,7 @@ def cmd_new(
             repo_paths.append(rp)
 
     if dry_run:
-        from project_cli.dryrun import OpLog
+        from keel.dryrun import OpLog
         log = OpLog()
         log.create_file(proj / "design" / "project.toml", size=0)
         log.create_file(proj / "design" / "CLAUDE.md", size=0)
@@ -83,7 +83,7 @@ def cmd_new(
     (proj / "design" / "decisions").mkdir(parents=True)
 
     # Build manifest with repos (worktree path defaults to "code" when single, "code-<repo>" otherwise)
-    from project_cli.manifest import RepoSpec
+    from keel.manifest import RepoSpec
     repo_specs: list[RepoSpec] = []
     for rp in repo_paths:
         worktree_name = "code" if len(repo_paths) == 1 else f"code-{rp.name}"

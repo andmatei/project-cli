@@ -1,7 +1,7 @@
 """Tests for `project-cli show`."""
 import json
 from typer.testing import CliRunner
-from project_cli.app import app
+from keel.app import app
 
 runner = CliRunner()
 

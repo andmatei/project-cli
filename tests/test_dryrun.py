@@ -1,6 +1,6 @@
 """Tests for the dry-run op tracker."""
 from pathlib import Path
-from project_cli.dryrun import OpLog, Op
+from keel.dryrun import OpLog, Op
 
 
 def test_op_log_records_creates() -> None:

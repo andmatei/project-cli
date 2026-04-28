@@ -1,4 +1,4 @@
-from project_cli.app import app
+from keel.app import app
 
 if __name__ == "__main__":
     app()

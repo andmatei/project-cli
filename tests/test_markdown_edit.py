@@ -1,7 +1,7 @@
 """Tests for AST-aware markdown editing."""
 from __future__ import annotations
 import pytest
-from project_cli.markdown_edit import (
+from keel.markdown_edit import (
     insert_under_heading,
     replace_section,
     section_exists,
@@ -72,7 +72,7 @@ def test_replace_section_missing_heading_appends() -> None:
 
 def test_remove_line_under_heading() -> None:
     """Removing a specific line preserves other content under the heading."""
-    from project_cli.markdown_edit import remove_line_under_heading
+    from keel.markdown_edit import remove_line_under_heading
     out = remove_line_under_heading(SAMPLE, "Workflow", "- Do thing A\n")
     assert "- Do thing A" not in out
     assert "- Do thing B" in out

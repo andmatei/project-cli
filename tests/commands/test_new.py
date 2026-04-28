@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typer.testing import CliRunner
-from project_cli.app import app
-from project_cli.manifest import load_project_manifest
+from keel.app import app
+from keel.manifest import load_project_manifest
 
 runner = CliRunner()
 

@@ -13,7 +13,7 @@ What's the use case? What's currently hard or impossible to do?
 What would you like the CLI to do? A concrete command-line example helps:
 
 ```bash
-project-cli ...
+keel ...
 ```
 
 ## Alternatives considered

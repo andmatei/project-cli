@@ -1,4 +1,4 @@
-# project-cli
+# keel
 
 Python rewrite of the projects workspace CLI
 ## Workflow

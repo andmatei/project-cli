@@ -1,4 +1,4 @@
-# Contributing to project-cli
+# Contributing to keel
 
 Thanks for your interest in contributing! This document describes how to set
 up a development environment, the conventions used in the codebase, and how
@@ -9,15 +9,15 @@ contributions are reviewed.
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/andmatei/project-cli.git
-cd project-cli
+git clone https://github.com/andmatei/keel.git
+cd keel
 
 # Run tests in an isolated venv (uv handles deps automatically)
 uv run --extra dev pytest
 
 # Install the CLI for end-to-end testing
 uv tool install --editable .
-project-cli --help
+keel --help
 ```
 
 Tests are isolated via a `PROJECTS_DIR` environment override and `pytest`'s
@@ -69,7 +69,7 @@ explains the *why*.
 ## Where things live
 
 ```
-src/project_cli/
+src/keel/
 ├── app.py                  # Typer top-level app + global flags
 ├── manifest.py             # Pydantic models + TOML I/O
 ├── workspace.py            # paths + CWD scope detection
@@ -107,7 +107,7 @@ Use the [bug report issue template](.github/ISSUE_TEMPLATE/bug.md). Include:
 
 - Reproduction steps
 - Expected vs actual behavior
-- `project-cli --version`, OS, Python version
+- `keel --version`, OS, Python version
 - Relevant `--verbose` output if applicable
 
 ## Reporting security issues

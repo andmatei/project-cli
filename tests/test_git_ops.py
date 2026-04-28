@@ -6,7 +6,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 import pytest
-from project_cli.git_ops import (
+from keel.git_ops import (
     GitError,
     create_worktree,
     default_branch,
@@ -103,7 +103,7 @@ def test_create_then_remove_worktree(tmp_path) -> None:
     wt = tmp_path / "wt"
     create_worktree(repo, wt, branch="me/feat")
     assert wt.is_dir()
-    from project_cli.git_ops import remove_worktree
+    from keel.git_ops import remove_worktree
     remove_worktree(wt)
     assert not wt.exists()
 
@@ -115,7 +115,7 @@ def test_remove_worktree_dirty_fails_without_force(tmp_path) -> None:
     wt = tmp_path / "wt"
     create_worktree(repo, wt, branch="me/feat")
     (wt / "dirty.txt").write_text("dirty")
-    from project_cli.git_ops import remove_worktree, GitError
+    from keel.git_ops import remove_worktree, GitError
     with pytest.raises(GitError):
         remove_worktree(wt)
     # With force=True, it should succeed

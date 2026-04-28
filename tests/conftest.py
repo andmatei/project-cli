@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import date
 from typing import Callable
 import pytest
-from project_cli.manifest import (
+from keel.manifest import (
     ProjectManifest, ProjectMeta, RepoSpec,
     save_project_manifest,
 )

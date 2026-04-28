@@ -4,9 +4,9 @@ from dataclasses import dataclass
 import typer
 from rich.tree import Tree
 
-from project_cli import workspace
-from project_cli.manifest import load_project_manifest
-from project_cli.output import Output
+from keel import workspace
+from keel.manifest import load_project_manifest
+from keel.output import Output
 
 
 @dataclass

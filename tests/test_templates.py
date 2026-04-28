@@ -1,5 +1,5 @@
 """Tests for the template renderer."""
-from project_cli.templates import render
+from keel.templates import render
 
 
 def test_render_claude_md() -> None:

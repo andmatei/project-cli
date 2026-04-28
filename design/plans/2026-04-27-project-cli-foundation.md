@@ -1,10 +1,10 @@
-# project-cli: Foundation Implementation Plan
+# keel: Foundation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the foundation modules and the minimum viable CLI: `project-cli new`, `project-cli list`, `project-cli show`, plus `--help` and `--version`. Result: a working installable Python tool that creates and inspects projects (no deliverables, decisions, phases, code worktrees, validate, or export yet — those come in follow-up plans).
+**Goal:** Build the foundation modules and the minimum viable CLI: `keel new`, `keel list`, `keel show`, plus `--help` and `--version`. Result: a working installable Python tool that creates and inspects projects (no deliverables, decisions, phases, code worktrees, validate, or export yet — those come in follow-up plans).
 
-**Architecture:** Typer-based CLI with cross-cutting modules — manifest schema (Pydantic), AST-aware markdown editing (markdown-it-py), CWD-based scope detection, output formatting (Rich + JSON), dry-run op tracker, interactive prompts (questionary), and a thin git-ops wrapper. Tests run in isolated tmpdir workspaces via pytest's `tmp_path` and a `PROJECTS_DIR` env override. Each command lives in its own module under `src/project_cli/commands/`.
+**Architecture:** Typer-based CLI with cross-cutting modules — manifest schema (Pydantic), AST-aware markdown editing (markdown-it-py), CWD-based scope detection, output formatting (Rich + JSON), dry-run op tracker, interactive prompts (questionary), and a thin git-ops wrapper. Tests run in isolated tmpdir workspaces via pytest's `tmp_path` and a `PROJECTS_DIR` env override. Each command lives in its own module under `src/keel/commands/`.
 
 **Tech Stack:** Python 3.11+, Typer ≥0.12, Rich, Pydantic v2, markdown-it-py, Jinja2, tomlkit, questionary, pytest, pytest-snapshot.
 
@@ -14,26 +14,26 @@
 
 These were left open in the spec; settled here for this plan.
 
-1. **Source location**: `~/projects/project-cli/` (the project root itself). Source under `src/project_cli/`, tests under `tests/`, design under `design/` (already there).
-2. **Entry point name during development**: `project-cli` (the binary name when installed). This avoids a PATH conflict with the existing Bash `~/projects/bin/project` during development. Plan 4 (cutover) will rename to `project` and remove the Bash version atomically.
+1. **Source location**: `~/projects/keel/` (the project root itself). Source under `src/keel/`, tests under `tests/`, design under `design/` (already there).
+2. **Entry point name during development: `keel` (the binary name when installed) (the binary name when installed). This avoids a PATH conflict with the existing Bash `~/projects/bin/project` during development. Plan 4 (cutover) will rename to `project` and remove the Bash version atomically.
 3. **Test isolation strategy**: pytest fixtures override `PROJECTS_DIR` env to a `tmp_path`. Git ops tests use real `git init`'d repos under `tmp_path` (no mocks — git is fast in tmpdir).
-4. **Cutover with the Bash CLI**: deferred to Plan 4. During Plans 1–3 the new tool runs alongside, under the name `project-cli`.
+4. **Cutover with the Bash CLI**: deferred to Plan 4. During Plans 1–3 the new tool ran alongside, under the name `project-cli`; the tool is now named `keel`.
 
 ---
 
 ## File Structure
 
 ```
-~/projects/project-cli/
+~/projects/keel/
 ├── design/                                    # Already created (scope.md, design.md, decisions/)
 ├── plans/                                     # Already created
 ├── pyproject.toml                             # Task 1.1
 ├── README.md                                  # Task 1.1
 ├── .gitignore                                 # Task 1.1
 ├── src/
-│   └── project_cli/
+│   └── keel/
 │       ├── __init__.py                        # Task 1.1 — exports __version__
-│       ├── __main__.py                        # Task 1.1 — `python -m project_cli` entry
+│       ├── __main__.py                        # Task 1.1 — `python -m keel` entry
 │       ├── app.py                             # Task 1.1 — top-level Typer app, global flags
 │       ├── manifest.py                        # Task 1.2, 1.3, 1.4
 │       ├── workspace.py                       # Task 1.5
@@ -90,10 +90,10 @@ These were left open in the spec; settled here for this plan.
 - Create: `pyproject.toml`
 - Create: `README.md`
 - Create: `.gitignore`
-- Create: `src/project_cli/__init__.py`
-- Create: `src/project_cli/__main__.py`
-- Create: `src/project_cli/app.py`
-- Create: `src/project_cli/commands/__init__.py`
+- Create: `src/keel/__init__.py`
+- Create: `src/keel/__main__.py`
+- Create: `src/keel/app.py`
+- Create: `src/keel/commands/__init__.py`
 - Create: `tests/__init__.py`
 
 - [ ] **Step 1: Write `pyproject.toml`**
@@ -104,7 +104,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "project-cli"
+name = "keel-cli"
 version = "0.1.0"
 description = "CLI for the projects workspace"
 requires-python = ">=3.11"
@@ -126,10 +126,10 @@ dev = [
 ]
 
 [project.scripts]
-project-cli = "project_cli.app:app"
+keel = "keel.app:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/project_cli"]
+packages = ["src/keel"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -152,7 +152,7 @@ build/
 - [ ] **Step 3: Write `README.md`**
 
 ```markdown
-# project-cli
+# keel
 
 Python CLI for the `~/projects/` workspace. See `design/` for the spec.
 
@@ -162,39 +162,39 @@ Python CLI for the `~/projects/` workspace. See `design/` for the spec.
 
 ## Usage
 
-    project-cli --help
+    keel --help
 ```
 
-- [ ] **Step 4: Write `src/project_cli/__init__.py`**
+- [ ] **Step 4: Write `src/keel/__init__.py`**
 
 ```python
 from importlib.metadata import version, PackageNotFoundError
 
 try:
-    __version__ = version("project-cli")
+    __version__ = version("keel-cli")
 except PackageNotFoundError:  # not installed (running from source without install)
     __version__ = "0+unknown"
 ```
 
-- [ ] **Step 5: Write `src/project_cli/__main__.py`**
+- [ ] **Step 5: Write `src/keel/__main__.py`**
 
 ```python
-from project_cli.app import app
+from keel.app import app
 
 if __name__ == "__main__":
     app()
 ```
 
-- [ ] **Step 6: Write `src/project_cli/app.py` skeleton**
+- [ ] **Step 6: Write `src/keel/app.py` skeleton**
 
 ```python
 """Top-level Typer app and global flags."""
 from __future__ import annotations
 import typer
-from project_cli import __version__
+from keel import __version__
 
 app = typer.Typer(
-    name="project-cli",
+    name="keel",
     help="Manage the ~/projects/ workspace.",
     no_args_is_help=True,
     add_completion=True,
@@ -216,7 +216,7 @@ def main(
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Suppress info logs."),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose logs."),
 ) -> None:
-    """project-cli: manage the ~/projects/ workspace."""
+    """keel: manage the ~/projects/ workspace."""
     if quiet and verbose:
         raise typer.BadParameter("--quiet and --verbose are mutually exclusive.")
 ```
@@ -224,7 +224,7 @@ def main(
 - [ ] **Step 7: Write empty package init files**
 
 ```python
-# src/project_cli/commands/__init__.py
+# src/keel/commands/__init__.py
 """Subcommand modules."""
 ```
 
@@ -236,9 +236,9 @@ def main(
 
 Run:
 ```bash
-cd ~/projects/project-cli && uv tool install --editable .
-project-cli --version
-project-cli --help
+cd ~/projects/keel && uv tool install --editable .
+keel --version
+keel --help
 ```
 Expected: prints `0.1.0`, then prints help text.
 
@@ -246,7 +246,7 @@ Expected: prints `0.1.0`, then prints help text.
 
 ```bash
 git add pyproject.toml README.md .gitignore src/ tests/
-git commit -m "feat(project-cli): initialize package skeleton with Typer app"
+git commit -m "feat(keel): initialize package skeleton with Typer app"
 ```
 
 ---
@@ -254,7 +254,7 @@ git commit -m "feat(project-cli): initialize package skeleton with Typer app"
 ### Task 1.2: Manifest models — `RepoSpec` and shared base
 
 **Files:**
-- Create: `src/project_cli/manifest.py`
+- Create: `src/keel/manifest.py`
 - Create: `tests/test_manifest.py`
 
 - [ ] **Step 1: Write the failing test in `tests/test_manifest.py`**
@@ -264,7 +264,7 @@ git commit -m "feat(project-cli): initialize package skeleton with Typer app"
 from __future__ import annotations
 import pytest
 from pydantic import ValidationError
-from project_cli.manifest import RepoSpec
+from keel.manifest import RepoSpec
 
 
 def test_repo_spec_minimal() -> None:
@@ -302,7 +302,7 @@ def test_repo_spec_rejects_absolute_worktree() -> None:
 Run: `pytest tests/test_manifest.py -v`
 Expected: FAIL with `ImportError` or `ModuleNotFoundError` (manifest.py doesn't exist yet).
 
-- [ ] **Step 3: Implement `RepoSpec` in `src/project_cli/manifest.py`**
+- [ ] **Step 3: Implement `RepoSpec` in `src/keel/manifest.py`**
 
 ```python
 """Manifest schema (Pydantic) and TOML round-trip helpers.
@@ -351,8 +351,8 @@ Expected: 4 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/manifest.py tests/test_manifest.py
-git commit -m "feat(project-cli): add RepoSpec manifest model"
+git add src/keel/manifest.py tests/test_manifest.py
+git commit -m "feat(keel): add RepoSpec manifest model"
 ```
 
 ---
@@ -360,7 +360,7 @@ git commit -m "feat(project-cli): add RepoSpec manifest model"
 ### Task 1.3: Manifest models — `ProjectManifest` and `DeliverableManifest`
 
 **Files:**
-- Modify: `src/project_cli/manifest.py`
+- Modify: `src/keel/manifest.py`
 - Modify: `tests/test_manifest.py`
 
 - [ ] **Step 1: Add failing tests**
@@ -369,7 +369,7 @@ Append to `tests/test_manifest.py`:
 
 ```python
 from datetime import date
-from project_cli.manifest import ProjectManifest, ProjectMeta, DeliverableManifest, DeliverableMeta
+from keel.manifest import ProjectManifest, ProjectMeta, DeliverableManifest, DeliverableMeta
 
 
 def test_project_manifest_minimal() -> None:
@@ -433,7 +433,7 @@ Expected: 5 PASS (existing) + 5 FAIL (new) due to missing classes.
 
 - [ ] **Step 3: Implement the manifest classes**
 
-Append to `src/project_cli/manifest.py`:
+Append to `src/keel/manifest.py`:
 
 ```python
 from datetime import date as _date
@@ -491,8 +491,8 @@ Expected: 9 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/manifest.py tests/test_manifest.py
-git commit -m "feat(project-cli): add ProjectManifest and DeliverableManifest models"
+git add src/keel/manifest.py tests/test_manifest.py
+git commit -m "feat(keel): add ProjectManifest and DeliverableManifest models"
 ```
 
 ---
@@ -500,7 +500,7 @@ git commit -m "feat(project-cli): add ProjectManifest and DeliverableManifest mo
 ### Task 1.4: Manifest TOML round-trip (`load_manifest`, `save_manifest`)
 
 **Files:**
-- Modify: `src/project_cli/manifest.py`
+- Modify: `src/keel/manifest.py`
 - Modify: `tests/test_manifest.py`
 
 - [ ] **Step 1: Add failing tests**
@@ -508,7 +508,7 @@ git commit -m "feat(project-cli): add ProjectManifest and DeliverableManifest mo
 Append to `tests/test_manifest.py`:
 
 ```python
-from project_cli.manifest import load_project_manifest, save_project_manifest, load_deliverable_manifest, save_deliverable_manifest
+from keel.manifest import load_project_manifest, save_project_manifest, load_deliverable_manifest, save_deliverable_manifest
 
 
 def test_project_manifest_roundtrip(tmp_path) -> None:
@@ -554,7 +554,7 @@ Expected: previous PASSes + 3 FAIL (no load/save fns).
 
 - [ ] **Step 3: Implement load/save helpers**
 
-Append to `src/project_cli/manifest.py`:
+Append to `src/keel/manifest.py`:
 
 ```python
 import tomllib
@@ -605,8 +605,8 @@ Expected: all 12 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/manifest.py tests/test_manifest.py
-git commit -m "feat(project-cli): add manifest TOML load/save round-trip"
+git add src/keel/manifest.py tests/test_manifest.py
+git commit -m "feat(keel): add manifest TOML load/save round-trip"
 ```
 
 ---
@@ -614,7 +614,7 @@ git commit -m "feat(project-cli): add manifest TOML load/save round-trip"
 ### Task 1.5: Workspace module — paths and CWD scope detection
 
 **Files:**
-- Create: `src/project_cli/workspace.py`
+- Create: `src/keel/workspace.py`
 - Create: `tests/test_workspace.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -625,7 +625,7 @@ from __future__ import annotations
 from pathlib import Path
 import os
 import pytest
-from project_cli.workspace import (
+from keel.workspace import (
     projects_dir,
     project_dir,
     deliverable_dir,
@@ -748,8 +748,8 @@ Expected: 8 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/workspace.py tests/test_workspace.py
-git commit -m "feat(project-cli): add workspace paths and CWD scope detection"
+git add src/keel/workspace.py tests/test_workspace.py
+git commit -m "feat(keel): add workspace paths and CWD scope detection"
 ```
 
 ---
@@ -757,7 +757,7 @@ git commit -m "feat(project-cli): add workspace paths and CWD scope detection"
 ### Task 1.6: Markdown AST helpers — `find_section`, `replace_section`, `insert_under_heading`
 
 **Files:**
-- Create: `src/project_cli/markdown_edit.py`
+- Create: `src/keel/markdown_edit.py`
 - Create: `tests/test_markdown_edit.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -766,7 +766,7 @@ git commit -m "feat(project-cli): add workspace paths and CWD scope detection"
 """Tests for AST-aware markdown editing."""
 from __future__ import annotations
 import pytest
-from project_cli.markdown_edit import (
+from keel.markdown_edit import (
     insert_under_heading,
     replace_section,
     section_exists,
@@ -837,7 +837,7 @@ def test_replace_section_missing_heading_appends() -> None:
 
 def test_remove_line_under_heading() -> None:
     """Removing a specific line preserves other content under the heading."""
-    from project_cli.markdown_edit import remove_line_under_heading
+    from keel.markdown_edit import remove_line_under_heading
     out = remove_line_under_heading(SAMPLE, "Workflow", "- Do thing A\n")
     assert "- Do thing A" not in out
     assert "- Do thing B" in out
@@ -982,8 +982,8 @@ Expected: 8 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/markdown_edit.py tests/test_markdown_edit.py
-git commit -m "feat(project-cli): add AST-aware markdown section editing"
+git add src/keel/markdown_edit.py tests/test_markdown_edit.py
+git commit -m "feat(keel): add AST-aware markdown section editing"
 ```
 
 ---
@@ -991,18 +991,18 @@ git commit -m "feat(project-cli): add AST-aware markdown section editing"
 ### Task 1.7: Jinja2 templates and renderer
 
 **Files:**
-- Create: `src/project_cli/templates.py`
-- Create: `src/project_cli/_templates/claude_md.j2`
-- Create: `src/project_cli/_templates/scope_md.j2`
-- Create: `src/project_cli/_templates/design_md.j2`
-- Create: `src/project_cli/_templates/decision_entry.j2`
+- Create: `src/keel/templates.py`
+- Create: `src/keel/_templates/claude_md.j2`
+- Create: `src/keel/_templates/scope_md.j2`
+- Create: `src/keel/_templates/design_md.j2`
+- Create: `src/keel/_templates/decision_entry.j2`
 - Create: `tests/test_templates.py`
 
 - [ ] **Step 1: Write failing tests**
 
 ```python
 """Tests for the template renderer."""
-from project_cli.templates import render
+from keel.templates import render
 
 
 def test_render_claude_md() -> None:
@@ -1071,7 +1071,7 @@ Expected: FAIL — templates module missing.
 
 - [ ] **Step 3: Write the templates**
 
-`src/project_cli/_templates/claude_md.j2`:
+`src/keel/_templates/claude_md.j2`:
 
 ```jinja
 # {{ name }}
@@ -1106,7 +1106,7 @@ Expected: FAIL — templates module missing.
 - If implementation reveals the scope needs to change, flag it explicitly
 ```
 
-`src/project_cli/_templates/scope_md.j2`:
+`src/keel/_templates/scope_md.j2`:
 
 ```jinja
 # {{ name }}
@@ -1140,7 +1140,7 @@ Expected: FAIL — templates module missing.
 -
 ```
 
-`src/project_cli/_templates/design_md.j2`:
+`src/keel/_templates/design_md.j2`:
 
 ```jinja
 # {{ name }} — Design
@@ -1160,7 +1160,7 @@ Initial design. Living source of truth — update as understanding evolves.
 ## Open questions
 ```
 
-`src/project_cli/_templates/decision_entry.j2`:
+`src/keel/_templates/decision_entry.j2`:
 
 ```jinja
 ---
@@ -1208,7 +1208,7 @@ class _PackageLoader(BaseLoader):
 
     def get_source(self, environment, template):
         try:
-            data = (files("project_cli") / "_templates" / template).read_text()
+            data = (files("keel") / "_templates" / template).read_text()
         except FileNotFoundError as e:
             raise TemplateNotFound(template) from e
         return data, template, lambda: True
@@ -1233,8 +1233,8 @@ Add to `[tool.hatch.build.targets.wheel]`:
 
 ```toml
 [tool.hatch.build.targets.wheel]
-packages = ["src/project_cli"]
-include = ["src/project_cli/_templates/*.j2"]
+packages = ["src/keel"]
+include = ["src/keel/_templates/*.j2"]
 ```
 
 - [ ] **Step 6: Reinstall and run tests**
@@ -1245,8 +1245,8 @@ Expected: 6 PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/project_cli/templates.py src/project_cli/_templates/ tests/test_templates.py pyproject.toml
-git commit -m "feat(project-cli): add Jinja2 templates for design artifacts"
+git add src/keel/templates.py src/keel/_templates/ tests/test_templates.py pyproject.toml
+git commit -m "feat(keel): add Jinja2 templates for design artifacts"
 ```
 
 ---
@@ -1254,7 +1254,7 @@ git commit -m "feat(project-cli): add Jinja2 templates for design artifacts"
 ### Task 1.8: Output module (Rich console + JSON)
 
 **Files:**
-- Create: `src/project_cli/output.py`
+- Create: `src/keel/output.py`
 - Create: `tests/test_output.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -1264,7 +1264,7 @@ git commit -m "feat(project-cli): add Jinja2 templates for design artifacts"
 from __future__ import annotations
 import json
 import io
-from project_cli.output import Output
+from keel.output import Output
 
 
 def test_info_goes_to_stderr(capsys) -> None:
@@ -1382,8 +1382,8 @@ Expected: 6 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/output.py tests/test_output.py
-git commit -m "feat(project-cli): add unified human/JSON output module"
+git add src/keel/output.py tests/test_output.py
+git commit -m "feat(keel): add unified human/JSON output module"
 ```
 
 ---
@@ -1391,7 +1391,7 @@ git commit -m "feat(project-cli): add unified human/JSON output module"
 ### Task 1.9: Dry-run op tracker
 
 **Files:**
-- Create: `src/project_cli/dryrun.py`
+- Create: `src/keel/dryrun.py`
 - Create: `tests/test_dryrun.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -1399,7 +1399,7 @@ git commit -m "feat(project-cli): add unified human/JSON output module"
 ```python
 """Tests for the dry-run op tracker."""
 from pathlib import Path
-from project_cli.dryrun import OpLog, Op
+from keel.dryrun import OpLog, Op
 
 
 def test_op_log_records_creates() -> None:
@@ -1526,8 +1526,8 @@ Expected: 4 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/dryrun.py tests/test_dryrun.py
-git commit -m "feat(project-cli): add dry-run op tracker"
+git add src/keel/dryrun.py tests/test_dryrun.py
+git commit -m "feat(keel): add dry-run op tracker"
 ```
 
 ---
@@ -1535,7 +1535,7 @@ git commit -m "feat(project-cli): add dry-run op tracker"
 ### Task 1.10: Prompts module (TTY-aware)
 
 **Files:**
-- Create: `src/project_cli/prompts.py`
+- Create: `src/keel/prompts.py`
 - Create: `tests/test_prompts.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -1544,7 +1544,7 @@ git commit -m "feat(project-cli): add dry-run op tracker"
 """Tests for prompts module."""
 import sys
 import pytest
-from project_cli.prompts import is_interactive, require_or_fail
+from keel.prompts import is_interactive, require_or_fail
 
 
 def test_is_interactive_false_when_stdin_not_tty(monkeypatch) -> None:
@@ -1558,15 +1558,15 @@ def test_require_or_fail_returns_value_when_present() -> None:
 
 
 def test_require_or_fail_fails_when_missing_and_non_interactive(monkeypatch) -> None:
-    monkeypatch.setattr("project_cli.prompts.is_interactive", lambda: False)
+    monkeypatch.setattr("keel.prompts.is_interactive", lambda: False)
     with pytest.raises(SystemExit) as exc:
         require_or_fail(None, arg_name="--description")
     assert exc.value.code == 2  # usage error
 
 
 def test_require_or_fail_prompts_when_missing_and_interactive(monkeypatch) -> None:
-    monkeypatch.setattr("project_cli.prompts.is_interactive", lambda: True)
-    monkeypatch.setattr("project_cli.prompts._prompt_text", lambda label: "filled-in")
+    monkeypatch.setattr("keel.prompts.is_interactive", lambda: True)
+    monkeypatch.setattr("keel.prompts._prompt_text", lambda label: "filled-in")
     assert require_or_fail(None, arg_name="--description", label="Description") == "filled-in"
 ```
 
@@ -1645,8 +1645,8 @@ Expected: 4 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/prompts.py tests/test_prompts.py
-git commit -m "feat(project-cli): add TTY-aware prompts module"
+git add src/keel/prompts.py tests/test_prompts.py
+git commit -m "feat(keel): add TTY-aware prompts module"
 ```
 
 ---
@@ -1654,7 +1654,7 @@ git commit -m "feat(project-cli): add TTY-aware prompts module"
 ### Task 1.11: Git ops module
 
 **Files:**
-- Create: `src/project_cli/git_ops.py`
+- Create: `src/keel/git_ops.py`
 - Create: `tests/test_git_ops.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -1668,7 +1668,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 import pytest
-from project_cli.git_ops import (
+from keel.git_ops import (
     GitError,
     create_worktree,
     default_branch,
@@ -1856,8 +1856,8 @@ Expected: 8 PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/git_ops.py tests/test_git_ops.py
-git commit -m "feat(project-cli): add git ops wrapper"
+git add src/keel/git_ops.py tests/test_git_ops.py
+git commit -m "feat(keel): add git ops wrapper"
 ```
 
 ---
@@ -1878,7 +1878,7 @@ from pathlib import Path
 from datetime import date
 from typing import Callable
 import pytest
-from project_cli.manifest import (
+from keel.manifest import (
     ProjectManifest, ProjectMeta, RepoSpec,
     save_project_manifest,
 )
@@ -1937,29 +1937,29 @@ Expected: all previous tests still PASS (~46 tests so far).
 
 ```bash
 git add tests/conftest.py tests/commands/__init__.py
-git commit -m "test(project-cli): add shared fixtures for isolated workspaces"
+git commit -m "test(keel): add shared fixtures for isolated workspaces"
 ```
 
 ---
 
-## Milestone 2: `project-cli new`
+## Milestone 2: `keel new`
 
 ### Task 2.1: `new` command — happy path with `--no-worktree`
 
 **Files:**
-- Create: `src/project_cli/commands/new.py`
+- Create: `src/keel/commands/new.py`
 - Create: `tests/commands/test_new.py`
-- Modify: `src/project_cli/app.py` (register the command)
+- Modify: `src/keel/app.py` (register the command)
 
 - [ ] **Step 1: Write failing test**
 
 ```python
-"""Tests for `project-cli new`."""
+"""Tests for `keel new`."""
 from __future__ import annotations
 from pathlib import Path
 from typer.testing import CliRunner
-from project_cli.app import app
-from project_cli.manifest import load_project_manifest
+from keel.app import app
+from keel.manifest import load_project_manifest
 
 runner = CliRunner(mix_stderr=False)
 
@@ -2007,10 +2007,10 @@ def test_new_fails_without_description_non_tty(projects) -> None:
 Run: `pytest tests/commands/test_new.py -v`
 Expected: FAIL — no `new` subcommand.
 
-- [ ] **Step 3: Implement `src/project_cli/commands/new.py`**
+- [ ] **Step 3: Implement `src/keel/commands/new.py`**
 
 ```python
-"""`project-cli new <name>`."""
+"""`keel new <name>`."""
 from __future__ import annotations
 from datetime import date
 from pathlib import Path
@@ -2018,13 +2018,13 @@ import re
 import shutil
 import typer
 
-from project_cli import templates, workspace
-from project_cli.manifest import (
+from keel import templates, workspace
+from keel.manifest import (
     ProjectManifest, ProjectMeta,
     save_project_manifest,
 )
-from project_cli.output import Output
-from project_cli.prompts import require_or_fail
+from keel.output import Output
+from keel.prompts import require_or_fail
 
 
 _SLUG_RE = re.compile(r"[^a-z0-9-]+")
@@ -2101,12 +2101,12 @@ def cmd_new(
     )
 ```
 
-- [ ] **Step 4: Register `new` in `src/project_cli/app.py`**
+- [ ] **Step 4: Register `new` in `src/keel/app.py`**
 
 Append to `app.py`:
 
 ```python
-from project_cli.commands.new import cmd_new
+from keel.commands.new import cmd_new
 app.command(name="new")(cmd_new)
 ```
 
@@ -2119,7 +2119,7 @@ Expected: 4 PASS.
 
 Run:
 ```bash
-PROJECTS_DIR=/tmp/projcli-smoke project-cli new smoketest -d "smoke" --no-worktree -y
+PROJECTS_DIR=/tmp/projcli-smoke keel new smoketest -d "smoke" --no-worktree -y
 ls /tmp/projcli-smoke/smoketest/design/
 rm -rf /tmp/projcli-smoke
 ```
@@ -2128,8 +2128,8 @@ Expected: `CLAUDE.md  decisions  design.md  project.toml  scope.md  .phase`
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/project_cli/commands/new.py src/project_cli/app.py tests/commands/test_new.py
-git commit -m "feat(project-cli): implement 'new' command with --no-worktree"
+git add src/keel/commands/new.py src/keel/app.py tests/commands/test_new.py
+git commit -m "feat(keel): implement 'new' command with --no-worktree"
 ```
 
 ---
@@ -2168,7 +2168,7 @@ Expected: PASS (Output module already handles `--json` correctly per Task 1.8).
 
 ```bash
 git add tests/commands/test_new.py
-git commit -m "test(project-cli): cover 'new --json' output shape"
+git commit -m "test(keel): cover 'new --json' output shape"
 ```
 
 ---
@@ -2176,7 +2176,7 @@ git commit -m "test(project-cli): cover 'new --json' output shape"
 ### Task 2.3: `new` with `--repo` (single repo, creates worktree)
 
 **Files:**
-- Modify: `src/project_cli/commands/new.py`
+- Modify: `src/keel/commands/new.py`
 - Modify: `tests/commands/test_new.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -2225,7 +2225,7 @@ Replace the body of `cmd_new` after the `(proj / "design" / "decisions").mkdir(.
         rp = Path(r).expanduser().resolve()
         if not (rp / ".git").exists() and not (rp / ".git").is_file():
             # also check via is_git_repo for worktree-style .git files
-            from project_cli import git_ops
+            from keel import git_ops
             if not git_ops.is_git_repo(rp):
                 # we already created the design dir above? no — move dir creation below this check.
                 raise typer.Exit(code=1)
@@ -2245,7 +2245,7 @@ def cmd_new(
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Create a new project workspace."""
-    from project_cli import git_ops
+    from keel import git_ops
 
     out = Output(json_mode=json_mode)
     slug = _slugify(name)
@@ -2278,7 +2278,7 @@ def cmd_new(
     (proj / "design" / "decisions").mkdir(parents=True)
 
     # Build manifest with repos (worktree path defaults to "code" when single, "code-<repo>" otherwise)
-    from project_cli.manifest import RepoSpec
+    from keel.manifest import RepoSpec
     repo_specs: list[RepoSpec] = []
     for rp in repo_paths:
         worktree_name = "code" if len(repo_paths) == 1 else f"code-{rp.name}"
@@ -2349,8 +2349,8 @@ Expected: 7 PASS (4 existing + 3 new).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/commands/new.py tests/commands/test_new.py
-git commit -m "feat(project-cli): support --repo on 'new' (single-repo worktree)"
+git add src/keel/commands/new.py tests/commands/test_new.py
+git commit -m "feat(keel): support --repo on 'new' (single-repo worktree)"
 ```
 
 ---
@@ -2401,7 +2401,7 @@ Expected: PASS — Task 2.3 implementation already handles multi-repo.
 
 ```bash
 git add tests/commands/test_new.py
-git commit -m "test(project-cli): cover 'new' with multiple --repo flags"
+git commit -m "test(keel): cover 'new' with multiple --repo flags"
 ```
 
 ---
@@ -2409,7 +2409,7 @@ git commit -m "test(project-cli): cover 'new' with multiple --repo flags"
 ### Task 2.5: `new --dry-run` shows planned op list, writes nothing
 
 **Files:**
-- Modify: `src/project_cli/commands/new.py`
+- Modify: `src/keel/commands/new.py`
 - Modify: `tests/commands/test_new.py`
 
 - [ ] **Step 1: Write failing tests**
@@ -2444,7 +2444,7 @@ Expected: 2 FAIL — current dry-run path is too terse.
 
 - [ ] **Step 3: Replace the dry-run block in `cmd_new`**
 
-In `src/project_cli/commands/new.py`, replace:
+In `src/keel/commands/new.py`, replace:
 
 ```python
     if dry_run:
@@ -2456,7 +2456,7 @@ with:
 
 ```python
     if dry_run:
-        from project_cli.dryrun import OpLog
+        from keel.dryrun import OpLog
         log = OpLog()
         log.create_file(proj / "design" / "project.toml", size=0)
         log.create_file(proj / "design" / "CLAUDE.md", size=0)
@@ -2485,27 +2485,27 @@ Expected: all tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/project_cli/commands/new.py tests/commands/test_new.py
-git commit -m "feat(project-cli): implement 'new --dry-run' op list"
+git add src/keel/commands/new.py tests/commands/test_new.py
+git commit -m "feat(keel): implement 'new --dry-run' op list"
 ```
 
 ---
 
-## Milestone 3: `project-cli list` and `project-cli show`
+## Milestone 3: `keel list` and `keel show`
 
 ### Task 3.1: `list` — bare invocation lists projects
 
 **Files:**
-- Create: `src/project_cli/commands/list_cmd.py`
+- Create: `src/keel/commands/list_cmd.py`
 - Create: `tests/commands/test_list.py`
-- Modify: `src/project_cli/app.py`
+- Modify: `src/keel/app.py`
 
 - [ ] **Step 1: Write failing tests**
 
 ```python
-"""Tests for `project-cli list`."""
+"""Tests for `keel list`."""
 from typer.testing import CliRunner
-from project_cli.app import app
+from keel.app import app
 
 runner = CliRunner(mix_stderr=False)
 
@@ -2538,15 +2538,15 @@ Expected: FAIL.
 - [ ] **Step 3: Implement `list_cmd.py`**
 
 ```python
-"""`project-cli list`."""
+"""`keel list`."""
 from __future__ import annotations
 from dataclasses import dataclass
 import typer
 from rich.tree import Tree
 
-from project_cli import workspace
-from project_cli.manifest import load_project_manifest, load_deliverable_manifest
-from project_cli.output import Output
+from keel import workspace
+from keel.manifest import load_project_manifest, load_deliverable_manifest
+from keel.output import Output
 
 
 @dataclass
@@ -2617,7 +2617,7 @@ def cmd_list(
 
 Note: the `out._stdout.print(tree)` access is intentional — `Output.result` doesn't render Rich objects. We could alternatively expose a `print_rich` method on `Output`. Add it:
 
-In `src/project_cli/output.py`, add:
+In `src/keel/output.py`, add:
 
 ```python
     def print_rich(self, renderable) -> None:
@@ -2633,7 +2633,7 @@ Then change the `cmd_list` line to `out.print_rich(tree)`.
 Append:
 
 ```python
-from project_cli.commands.list_cmd import cmd_list
+from keel.commands.list_cmd import cmd_list
 app.command(name="list")(cmd_list)
 ```
 
@@ -2645,8 +2645,8 @@ Expected: 3 PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/project_cli/commands/list_cmd.py src/project_cli/app.py src/project_cli/output.py tests/commands/test_list.py
-git commit -m "feat(project-cli): implement 'list' command"
+git add src/keel/commands/list_cmd.py src/keel/app.py src/keel/output.py tests/commands/test_list.py
+git commit -m "feat(keel): implement 'list' command"
 ```
 
 ---
@@ -2691,7 +2691,7 @@ Expected: PASS (Task 3.1 already implemented JSON shape).
 
 ```bash
 git add tests/commands/test_list.py
-git commit -m "test(project-cli): cover 'list --json' shape"
+git commit -m "test(keel): cover 'list --json' shape"
 ```
 
 ---
@@ -2726,7 +2726,7 @@ Expected: PASS — Task 3.1 implements `--phase` filter.
 
 ```bash
 git add tests/commands/test_list.py
-git commit -m "test(project-cli): cover 'list --phase' filter"
+git commit -m "test(keel): cover 'list --phase' filter"
 ```
 
 ---
@@ -2734,16 +2734,16 @@ git commit -m "test(project-cli): cover 'list --phase' filter"
 ### Task 3.4: `show` — basic project card
 
 **Files:**
-- Create: `src/project_cli/commands/show.py`
+- Create: `src/keel/commands/show.py`
 - Create: `tests/commands/test_show.py`
-- Modify: `src/project_cli/app.py`
+- Modify: `src/keel/app.py`
 
 - [ ] **Step 1: Write failing tests**
 
 ```python
-"""Tests for `project-cli show`."""
+"""Tests for `keel show`."""
 from typer.testing import CliRunner
-from project_cli.app import app
+from keel.app import app
 
 runner = CliRunner(mix_stderr=False)
 
@@ -2779,16 +2779,16 @@ Expected: FAIL.
 - [ ] **Step 3: Implement `show.py`**
 
 ```python
-"""`project-cli show`."""
+"""`keel show`."""
 from __future__ import annotations
 from pathlib import Path
 import typer
 from rich.panel import Panel
 from rich.table import Table
 
-from project_cli import workspace
-from project_cli.manifest import load_project_manifest
-from project_cli.output import Output
+from keel import workspace
+from keel.manifest import load_project_manifest
+from keel.output import Output
 
 
 def cmd_show(
@@ -2853,7 +2853,7 @@ def cmd_show(
 - [ ] **Step 4: Register in `app.py`**
 
 ```python
-from project_cli.commands.show import cmd_show
+from keel.commands.show import cmd_show
 app.command(name="show")(cmd_show)
 ```
 
@@ -2865,8 +2865,8 @@ Expected: 3 PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/project_cli/commands/show.py src/project_cli/app.py tests/commands/test_show.py
-git commit -m "feat(project-cli): implement 'show' command"
+git add src/keel/commands/show.py src/keel/app.py tests/commands/test_show.py
+git commit -m "feat(keel): implement 'show' command"
 ```
 
 ---
@@ -2905,7 +2905,7 @@ Expected: PASS.
 
 ```bash
 git add tests/commands/test_show.py
-git commit -m "test(project-cli): cover 'show --json' shape"
+git commit -m "test(keel): cover 'show --json' shape"
 ```
 
 ---
@@ -2922,12 +2922,12 @@ Expected: all tests pass (~60+ tests across 11 test files).
 - [ ] **Step 2: Manual smoke check**
 
 ```bash
-PROJECTS_DIR=/tmp/projcli-final project-cli new alpha -d "first" --no-worktree -y
-PROJECTS_DIR=/tmp/projcli-final project-cli new beta  -d "second" --no-worktree -y
-PROJECTS_DIR=/tmp/projcli-final project-cli list
-PROJECTS_DIR=/tmp/projcli-final project-cli list --json
-PROJECTS_DIR=/tmp/projcli-final project-cli show alpha
-cd /tmp/projcli-final/alpha/design && PROJECTS_DIR=/tmp/projcli-final project-cli show
+PROJECTS_DIR=/tmp/projcli-final keel new alpha -d "first" --no-worktree -y
+PROJECTS_DIR=/tmp/projcli-final keel new beta  -d "second" --no-worktree -y
+PROJECTS_DIR=/tmp/projcli-final keel list
+PROJECTS_DIR=/tmp/projcli-final keel list --json
+PROJECTS_DIR=/tmp/projcli-final keel show alpha
+cd /tmp/projcli-final/alpha/design && PROJECTS_DIR=/tmp/projcli-final keel show
 cd /tmp && rm -rf /tmp/projcli-final
 ```
 
@@ -2936,17 +2936,17 @@ Expected: all commands run without errors, list shows alpha+beta, show works bot
 - [ ] **Step 3: Tag the foundation milestone**
 
 ```bash
-git tag project-cli-foundation
+git tag keel-foundation
 ```
 
-- [ ] **Step 4: Update `~/projects/project-cli/design/.phase` to `implementing`**
+- [ ] **Step 4: Update `~/projects/keel/design/.phase` to `implementing`**
 
 (Currently `scoping`; we have working code now.)
 
 ```bash
-cd ~/projects/project-cli/design && echo -e "implementing\n2026-04-27 scoping → implementing  (Plan 1 complete)" > .phase && cd -
-git add ~/projects/project-cli/design/.phase
-git commit -m "chore(project-cli): advance phase to implementing after foundation plan"
+cd ~/projects/keel/design && echo -e "implementing\n2026-04-27 scoping → implementing  (Plan 1 complete)" > .phase && cd -
+git add ~/projects/keel/design/.phase
+git commit -m "chore(keel): advance phase to implementing after foundation plan"
 ```
 
 ---
@@ -2984,14 +2984,14 @@ What's deferred to follow-up plans:
 
 ## Follow-up plans (sketch)
 
-### Plan 2: Deliverable, decision, phase (`2026-XX-XX-project-cli-deliverable-decision-phase.md`)
+### Plan 2: Deliverable, decision, phase (`2026-XX-XX-keel-deliverable-decision-phase.md`)
 
 Tasks: deliverable add/rm/rename/list, decision new/list/show/rm + --supersedes, phase show/transition (project + per-deliverable). Adds AST-mutation of parent CLAUDE.md/design.md and sibling deliverable CLAUDE.md files. Adds the `phase decision` auto-creation.
 
-### Plan 3: Validate, design export, code group, archive, rename (`2026-XX-XX-project-cli-validate-export-code.md`)
+### Plan 3: Validate, design export, code group, archive, rename (`2026-XX-XX-keel-validate-export-code.md`)
 
 Tasks: validate (structural and content checks), design export (project- and deliverable-level with composition), code list/status/init/add/rm, archive (soft-delete), rename (project-level with branch renames).
 
-### Plan 4: Migration, completion, slash commands, cutover (`2026-XX-XX-project-cli-migration-cutover.md`)
+### Plan 4: Migration, completion, slash commands, cutover (`2026-XX-XX-keel-migration-cutover.md`)
 
-Tasks: `project migrate` one-shot tool to populate manifests from existing CLAUDE.md text on `~/projects/api-ai-agents/`, `~/projects/project-cli/`, etc. Shell completion install. Rewrite slash command bodies (`/decide`, `/phase`, `/export-design`) to call the new CLI. Rename entry point from `project-cli` to `project`, remove `~/projects/bin/project` Bash and friends.
+Tasks: `project migrate` one-shot tool to populate manifests from existing CLAUDE.md text on `~/projects/api-ai-agents/`, `~/projects/keel/`, etc. Shell completion install. Rewrite slash command bodies (`/decide`, `/phase`, `/export-design`) to call the new CLI. Rename entry point from `keel` to `project`, remove `~/projects/bin/project` Bash and friends.

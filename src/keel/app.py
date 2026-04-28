@@ -1,7 +1,7 @@
 """Top-level Typer app and global flags."""
 from __future__ import annotations
 import typer
-from project_cli import __version__
+from keel import __version__
 
 app = typer.Typer(
     name="project-cli",
@@ -31,11 +31,11 @@ def main(
         raise typer.BadParameter("--quiet and --verbose are mutually exclusive.")
 
 
-from project_cli.commands.new import cmd_new
+from keel.commands.new import cmd_new
 app.command(name="new")(cmd_new)
 
-from project_cli.commands.list_cmd import cmd_list
+from keel.commands.list_cmd import cmd_list
 app.command(name="list")(cmd_list)
 
-from project_cli.commands.show import cmd_show
+from keel.commands.show import cmd_show
 app.command(name="show")(cmd_show)

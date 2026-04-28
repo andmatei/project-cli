@@ -9,7 +9,7 @@ class _PackageLoader(BaseLoader):
 
     def get_source(self, environment, template):
         try:
-            data = (files("project_cli") / "_templates" / template).read_text()
+            data = (files("keel") / "_templates" / template).read_text()
         except FileNotFoundError as e:
             raise TemplateNotFound(template) from e
         return data, template, lambda: True

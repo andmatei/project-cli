@@ -1,4 +1,4 @@
-# project-cli — Design
+# keel — Design
 
 ## Status
 
@@ -533,7 +533,7 @@ a hidden `--legacy` command in case new old-style projects ever appear).
 - **Where does the Python source code live?**
   - In `~/projects/bin/` alongside the existing Bash tool until cutover, then
     replace?
-  - In a new top-level dir, e.g., `~/projects/.tools/project-cli/`?
+  - In a new top-level dir, e.g., `~/projects/.tools/keel/`?
   - In its own git repo, separate from `~/projects/`?
   - Decide during implementation planning (writing-plans skill).
 - **Cutover strategy**: do we run new + old in parallel for a period, or

@@ -2,7 +2,7 @@
 import sys
 import pytest
 import typer
-from project_cli.prompts import is_interactive, require_or_fail
+from keel.prompts import is_interactive, require_or_fail
 
 
 def test_is_interactive_false_when_stdin_not_tty(monkeypatch) -> None:
@@ -16,13 +16,13 @@ def test_require_or_fail_returns_value_when_present() -> None:
 
 
 def test_require_or_fail_fails_when_missing_and_non_interactive(monkeypatch) -> None:
-    monkeypatch.setattr("project_cli.prompts.is_interactive", lambda: False)
+    monkeypatch.setattr("keel.prompts.is_interactive", lambda: False)
     with pytest.raises(typer.Exit) as exc:
         require_or_fail(None, arg_name="--description")
     assert exc.value.exit_code == 2  # usage error
 
 
 def test_require_or_fail_prompts_when_missing_and_interactive(monkeypatch) -> None:
-    monkeypatch.setattr("project_cli.prompts.is_interactive", lambda: True)
-    monkeypatch.setattr("project_cli.prompts._prompt_text", lambda label: "filled-in")
+    monkeypatch.setattr("keel.prompts.is_interactive", lambda: True)
+    monkeypatch.setattr("keel.prompts._prompt_text", lambda label: "filled-in")
     assert require_or_fail(None, arg_name="--description", label="Description") == "filled-in"
