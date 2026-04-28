@@ -16,3 +16,6 @@ app.command(name="list")(cmd_list)
 
 from keel.commands.deliverable.rm import cmd_rm
 app.command(name="rm")(cmd_rm)
+
+from keel.commands.deliverable.rename import cmd_rename
+app.command(name="rename")(cmd_rename)
