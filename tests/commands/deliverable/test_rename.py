@@ -42,3 +42,42 @@ def test_rename_updates_parent_references(projects, make_project) -> None:
     parent_claude = (projects / "foo" / "design" / "CLAUDE.md").read_text()
     assert "**bar**" not in parent_claude
     assert "**baz**" in parent_claude
+
+
+def test_rename_uses_git_worktree_move_when_code_present(projects, make_project, make_deliverable, monkeypatch, tmp_path) -> None:
+    """When deliv/code/ exists, rename calls git_ops.move_worktree, not shutil.move on it."""
+    deliv = make_deliverable(project_name="foo", name="bar", description="d")
+    (deliv / "code").mkdir()
+    (deliv / "code" / "x.txt").write_text("data")
+    move_calls = []
+    def fake_move_worktree(old_dest, new_dest):
+        # Simulate git's move: move the directory contents.
+        import shutil
+        shutil.move(str(old_dest), str(new_dest))
+        move_calls.append((str(old_dest), str(new_dest)))
+    monkeypatch.setattr("keel.git_ops.move_worktree", fake_move_worktree)
+    # Avoid the rename_branch path's git ops (it'll run because branch_prefix is None on this fixture)
+    # The fixture's manifest has repos=[] so branch rename is skipped naturally.
+    runner.invoke(app, ["deliverable", "rename", "bar", "baz", "-y", "--project", "foo"])
+    new = projects / "foo" / "deliverables" / "baz"
+    assert not deliv.exists()
+    assert new.is_dir()
+    assert (new / "code" / "x.txt").read_text() == "data"
+    # git_ops.move_worktree was called exactly once with the correct paths:
+    assert move_calls == [(str(deliv / "code"), str(new / "code"))]
+
+
+def test_rename_does_not_call_git_worktree_repair(projects, make_project, make_deliverable, monkeypatch) -> None:
+    """The old shutil.move + git worktree repair dance should be gone."""
+    deliv = make_deliverable(project_name="foo", name="bar", description="d")
+    (deliv / "code").mkdir()
+    (deliv / "code" / "x.txt").write_text("x")
+    monkeypatch.setattr("keel.git_ops.move_worktree", lambda *a: None)
+    # Fail loudly if `git worktree repair` is invoked via subprocess.run
+    import subprocess
+    real_run = subprocess.run
+    def assert_no_repair(args, **kwargs):
+        assert "repair" not in args, f"unexpected git worktree repair: {args}"
+        return real_run(args, **kwargs)
+    monkeypatch.setattr("subprocess.run", assert_no_repair)
+    runner.invoke(app, ["deliverable", "rename", "bar", "baz", "-y", "--project", "foo"])

@@ -47,8 +47,21 @@ def cmd_rename(
         out.info(log.format_summary())
         return
 
-    # 1. Move the design dir
-    shutil.move(str(old_path), str(new_path))
+    # 1a. If a worktree exists, move it properly via git first
+    old_code = old_path / "code"
+    if old_code.is_dir():
+        from keel import git_ops
+        new_path.mkdir(parents=True, exist_ok=True)
+        git_ops.move_worktree(old_code, new_path / "code")
+
+    # 1b. Move the design dir (and any other contents)
+    new_path.mkdir(parents=True, exist_ok=True)
+    for child in list(old_path.iterdir()):
+        shutil.move(str(child), str(new_path / child.name))
+
+    # 1c. rmdir the now-empty old path
+    if old_path.exists() and not any(old_path.iterdir()):
+        old_path.rmdir()
 
     # 2. Update manifest's `name`
     manifest_path = new_path / "design" / "deliverable.toml"
@@ -111,28 +124,17 @@ def cmd_rename(
                         new_lines.append(line)
                 sibling_claude.write_text("".join(new_lines))
 
-    # 5. (Optional) git worktree move + branch rename
+    # 5. (Optional) branch rename
     code_dir = new_path / "code"
-    if code_dir.is_dir():
+    if code_dir.is_dir() and rename_branch and m.repos:
         from keel import git_ops
-        # The worktree directory was moved by shutil.move; we need to tell git.
-        # Use `git worktree repair` if available; otherwise skip.
-        try:
-            import subprocess
-            subprocess.run(
-                ["git", "-C", str(code_dir), "worktree", "repair"],
-                check=True, capture_output=True,
-            )
-        except subprocess.CalledProcessError:
-            out.warn("git worktree repair failed after rename — verify worktree state manually")
-        if rename_branch and m.repos:
-            old_branch = m.repos[0].branch_prefix
-            if old_branch and old_branch.endswith(f"-{old}"):
-                new_branch = old_branch[: -len(f"-{old}")] + f"-{new}"
-                try:
-                    git_ops.rename_branch(code_dir, old=old_branch, new=new_branch)
-                except git_ops.GitError as e:
-                    out.warn(f"branch rename failed: {e}")
+        old_branch = m.repos[0].branch_prefix
+        if old_branch and old_branch.endswith(f"-{old}"):
+            new_branch = old_branch[: -len(f"-{old}")] + f"-{new}"
+            try:
+                git_ops.rename_branch(code_dir, old=old_branch, new=new_branch)
+            except git_ops.GitError as e:
+                out.warn(f"branch rename failed: {e}")
 
     out.info(f"Renamed {old} → {new}")
     out.result(
