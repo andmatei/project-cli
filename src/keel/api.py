@@ -27,7 +27,10 @@ from keel.workspace import (
     decisions_dir,
     deliverable_dir,
     deliverable_exists,
+    design_dir,
     detect_scope,
+    manifest_path,
+    phase_file,
     project_dir,
     project_exists,
     projects_dir,
@@ -49,7 +52,8 @@ __all__ = [
     "slugify",
     # Workspace
     "Scope",
-    "decisions_dir", "deliverable_dir", "deliverable_exists",
-    "detect_scope", "project_dir", "project_exists", "projects_dir",
+    "decisions_dir", "design_dir", "deliverable_dir", "deliverable_exists",
+    "detect_scope", "manifest_path", "phase_file",
+    "project_dir", "project_exists", "projects_dir",
     "read_phase",
 ]

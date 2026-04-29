@@ -8,9 +8,9 @@ from pathlib import Path
 import typer
 
 from keel import workspace
+from keel.lifecycle import PHASES
+from keel.lifecycle import next_phase as _next_phase
 from keel.output import Output
-
-PHASES = ["scoping", "designing", "poc", "implementing", "shipping", "done"]
 
 
 def _phase_path(project: str, deliverable: str | None) -> Path:
@@ -94,11 +94,11 @@ def cmd_phase(
         if current not in PHASES:
             out.error(f"invalid current phase: {current}", code="invalid_phase")
             raise typer.Exit(code=1)
-        idx = PHASES.index(current)
-        if idx + 1 >= len(PHASES):
+        nxt = _next_phase(current)
+        if nxt is None:
             out.error(f"no phase after {current}", code="end_of_lifecycle")
             raise typer.Exit(code=1)
-        target = PHASES[idx + 1]
+        target = nxt
 
     if target not in PHASES:
         out.error(

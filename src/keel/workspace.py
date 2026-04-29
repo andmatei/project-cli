@@ -129,14 +129,15 @@ def resolve_cli_scope(
 
 
 def read_phase(design_dir: Path) -> str:
-    """Read the current phase from `<design_dir>/.phase`. Returns 'scoping' if the file is missing or empty."""
-    phase_file = design_dir / ".phase"
-    if not phase_file.is_file():
-        return "scoping"
-    lines = phase_file.read_text().splitlines()
+    """Read the current phase from `<design_dir>/.phase`. Returns DEFAULT_PHASE if the file is missing or empty."""
+    from keel.lifecycle import DEFAULT_PHASE
+    phase_file_path = design_dir / ".phase"
+    if not phase_file_path.is_file():
+        return DEFAULT_PHASE
+    lines = phase_file_path.read_text().splitlines()
     if not lines:
-        return "scoping"
-    return lines[0].strip() or "scoping"
+        return DEFAULT_PHASE
+    return lines[0].strip() or DEFAULT_PHASE
 
 
 def decisions_dir(project: str, deliverable: str | None = None) -> Path:
