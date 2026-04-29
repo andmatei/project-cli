@@ -80,7 +80,7 @@ def cmd_rename(
         old_path.rmdir()
 
     # 2. Update manifest's `name`
-    manifest_path = new_path / "design" / "deliverable.toml"
+    manifest_path = workspace.manifest_path(project, new)
     m = load_deliverable_manifest(manifest_path)
     new_manifest = DeliverableManifest(
         deliverable=DeliverableMeta(
@@ -96,7 +96,7 @@ def cmd_rename(
 
     # 3. Update parent CLAUDE.md and design.md references
     description = m.deliverable.description
-    parent_claude = workspace.project_dir(project) / "design" / "CLAUDE.md"
+    parent_claude = workspace.design_dir(project) / "CLAUDE.md"
     if parent_claude.is_file():
         text = remove_bullet_under_heading(
             parent_claude.read_text(), "Deliverables", f"- **{old}**:"
@@ -106,7 +106,7 @@ def cmd_rename(
         )
         parent_claude.write_text(text)
 
-    parent_design = workspace.project_dir(project) / "design" / "design.md"
+    parent_design = workspace.design_dir(project) / "design.md"
     if parent_design.is_file():
         text = remove_bullet_under_heading(
             parent_design.read_text(), "Deliverables", f"- **{old}**:"

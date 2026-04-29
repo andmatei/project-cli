@@ -121,17 +121,18 @@ def cmd_export(
     appendix: list[_Decision] = []
 
     if deliverable:
-        unit_dir = workspace.deliverable_dir(project, deliverable)
-        m = load_deliverable_manifest(unit_dir / "design" / "deliverable.toml")
+        unit_dir = scope.unit_dir
+        unit_design = scope.design_dir
+        m = load_deliverable_manifest(scope.manifest_path)
         title = m.deliverable.name
         sections.append(f"# {title}\n")
         if include_scope:
-            scope_path = unit_dir / "design" / "scope.md"
+            scope_path = unit_design / "scope.md"
             if scope_path.is_file():
                 sections.append("## Scope\n\n" + scope_path.read_text().strip())
         decisions = (
             _collect_decisions(
-                unit_dir / "design" / "decisions",
+                scope.decisions_dir,
                 include_superseded=include_superseded,
                 start_index=1,
             )
@@ -139,26 +140,27 @@ def cmd_export(
             else []
         )
         appendix.extend(decisions)
-        design_path = unit_dir / "design" / "design.md"
+        design_path = unit_design / "design.md"
         if design_path.is_file():
             text = design_path.read_text().strip()
             text = _replace_decision_links(text, decisions)
             sections.append("## Design\n\n" + text)
     else:
         # Project-level composition
-        unit_dir = workspace.project_dir(project)
-        m = load_project_manifest(unit_dir / "design" / "project.toml")
+        unit_dir = scope.unit_dir
+        unit_design = scope.design_dir
+        m = load_project_manifest(scope.manifest_path)
         title = m.project.name
         sections.append(f"# {title}\n")
         if include_scope:
-            scope_path = unit_dir / "design" / "scope.md"
+            scope_path = unit_design / "scope.md"
             if scope_path.is_file():
                 sections.append("## Scope\n\n" + scope_path.read_text().strip())
 
         # Project decisions get D.1...
         proj_decisions = (
             _collect_decisions(
-                unit_dir / "design" / "decisions",
+                scope.decisions_dir,
                 include_superseded=include_superseded,
                 start_index=1,
             )
@@ -169,7 +171,7 @@ def cmd_export(
         next_idx = len(proj_decisions) + 1
 
         # Project design
-        design_path = unit_dir / "design" / "design.md"
+        design_path = unit_design / "design.md"
         if design_path.is_file():
             text = design_path.read_text().strip()
             text = _replace_decision_links(text, proj_decisions)

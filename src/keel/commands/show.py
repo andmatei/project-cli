@@ -26,11 +26,10 @@ def cmd_show(
     name = scope.project
 
     proj = workspace.project_dir(name)
-    manifest_path = proj / "design" / "project.toml"
 
-    m = load_project_manifest(manifest_path)
-    phase = workspace.read_phase(proj / "design")
-    decisions = sorted((proj / "design" / "decisions").glob("*.md"))
+    m = load_project_manifest(scope.manifest_path)
+    phase = workspace.read_phase(scope.design_dir)
+    decisions = sorted(scope.decisions_dir.glob("*.md"))
     decision_count = len(decisions)
 
     deliverables: list[tuple[str, str]] = []

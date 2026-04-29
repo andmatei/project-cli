@@ -78,21 +78,22 @@ def cmd_add(
             out.error(f"not a git repo: {repo_path}", code="not_a_repo")
             raise typer.Exit(code=1)
 
+    deliv_design = workspace.design_dir(project, slug)
     if dry_run:
         from keel.dryrun import OpLog
 
         log = OpLog()
-        log.create_file(deliv / "design" / "deliverable.toml", size=0)
-        log.create_file(deliv / "design" / "CLAUDE.md", size=0)
-        log.create_file(deliv / "design" / "design.md", size=0)
-        log.create_file(deliv / "design" / ".phase", size=0)
+        log.create_file(deliv_design / "deliverable.toml", size=0)
+        log.create_file(deliv_design / "CLAUDE.md", size=0)
+        log.create_file(deliv_design / "design.md", size=0)
+        log.create_file(deliv_design / ".phase", size=0)
         today = date.today().isoformat()
-        log.create_file(deliv / "design" / "decisions" / f"{today}-deliverable-created.md", size=0)
+        log.create_file(deliv_design / "decisions" / f"{today}-deliverable-created.md", size=0)
         out.info(log.format_summary())
         return
 
     # Create directories
-    (deliv / "design" / "decisions").mkdir(parents=True)
+    workspace.decisions_dir(project, slug).mkdir(parents=True)
 
     # Build manifest
     repo_specs: list[RepoSpec] = []
@@ -119,7 +120,7 @@ def cmd_add(
         ),
         repos=repo_specs,
     )
-    save_deliverable_manifest(deliv / "design" / "deliverable.toml", manifest)
+    save_deliverable_manifest(workspace.manifest_path(project, slug), manifest)
 
     # Discover existing siblings for the new deliverable's CLAUDE.md
     existing_siblings: list[dict[str, str]] = []
@@ -139,7 +140,7 @@ def cmd_add(
             )
 
     # Templates
-    (deliv / "design" / "CLAUDE.md").write_text(
+    (deliv_design / "CLAUDE.md").write_text(
         templates.render(
             "claude_md.j2",
             name=slug,
@@ -149,16 +150,16 @@ def cmd_add(
             siblings=existing_siblings,
         )
     )
-    (deliv / "design" / "design.md").write_text(
+    (deliv_design / "design.md").write_text(
         templates.render("design_md.j2", name=slug, description=description)
     )
 
     # Phase
-    (deliv / "design" / ".phase").write_text("scoping\n")
+    workspace.phase_file(project, slug).write_text("scoping\n")
 
     # Initial decision
     today = date.today().isoformat()
-    (deliv / "design" / "decisions" / f"{today}-deliverable-created.md").write_text(
+    (workspace.decisions_dir(project, slug) / f"{today}-deliverable-created.md").write_text(
         templates.render("decision_entry.j2", date=today, title=f"Create deliverable {slug}")
     )
 
@@ -179,14 +180,14 @@ def cmd_add(
     # AST-edit the parent's CLAUDE.md to list this deliverable
     from keel.markdown_edit import insert_under_heading
 
-    parent_claude_path = workspace.project_dir(project) / "design" / "CLAUDE.md"
+    parent_claude_path = workspace.design_dir(project) / "CLAUDE.md"
     if parent_claude_path.is_file():
         line = f"- **{slug}**: ../deliverables/{slug}/design/ -- {description}\n"
         new_text = insert_under_heading(parent_claude_path.read_text(), "Deliverables", line)
         parent_claude_path.write_text(new_text)
 
     # AST-edit the parent's design.md
-    parent_design_path = workspace.project_dir(project) / "design" / "design.md"
+    parent_design_path = workspace.design_dir(project) / "design.md"
     if parent_design_path.is_file():
         line = (
             f"- **{slug}**: {description}. See [design](../deliverables/{slug}/design/design.md).\n"
@@ -195,7 +196,7 @@ def cmd_add(
         parent_design_path.write_text(new_text)
 
     # AST-edit existing siblings' CLAUDE.md to add this new deliverable
-    siblings_dir = workspace.project_dir(project) / "deliverables"
+    siblings_dir = workspace.project_dir(project) / "deliverables"  # siblings live in deliverables/, not design/
     sibling_modifications = []
     if siblings_dir.is_dir():
         for sibling in sorted(siblings_dir.iterdir()):

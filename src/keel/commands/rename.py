@@ -56,7 +56,7 @@ def cmd_rename(
         yes=yes,
     )
 
-    m = load_project_manifest(old_path / "design" / "project.toml")
+    m = load_project_manifest(workspace.manifest_path(old))
 
     # Move worktrees with git_ops.move_worktree (preserves linkage)
     branch_renames: list[tuple[str, str]] = []
@@ -99,7 +99,7 @@ def cmd_rename(
         ),
         repos=new_repos,
     )
-    save_project_manifest(new_path / "design" / "project.toml", new_manifest)
+    save_project_manifest(workspace.manifest_path(new_slug), new_manifest)
 
     out.info(f"Renamed {old} → {new_slug}")
     out.result(

@@ -57,11 +57,11 @@ def cmd_rm(
         if not keep_design:
             log.delete_file(deliv)
         log.modify_file(
-            workspace.project_dir(project) / "design" / "CLAUDE.md",
+            workspace.design_dir(project) / "CLAUDE.md",
             diff=f"- - **{name}**: ...",
         )
         log.modify_file(
-            workspace.project_dir(project) / "design" / "design.md",
+            workspace.design_dir(project) / "design.md",
             diff=f"- - **{name}**: ...",
         )
         out.info(log.format_summary())
@@ -98,14 +98,14 @@ def cmd_rm(
         pass  # best-effort
 
     # Clean up parent CLAUDE.md
-    parent_claude = workspace.project_dir(project) / "design" / "CLAUDE.md"
+    parent_claude = workspace.design_dir(project) / "CLAUDE.md"
     if parent_claude.is_file():
         parent_claude.write_text(
             remove_bullet_under_heading(parent_claude.read_text(), "Deliverables", f"- **{name}**:")
         )
 
     # Clean up parent design.md
-    parent_design = workspace.project_dir(project) / "design" / "design.md"
+    parent_design = workspace.design_dir(project) / "design.md"
     if parent_design.is_file():
         parent_design.write_text(
             remove_bullet_under_heading(parent_design.read_text(), "Deliverables", f"- **{name}**:")

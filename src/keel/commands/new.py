@@ -70,17 +70,18 @@ def cmd_new(
                 raise typer.Exit(code=1)
             repo_paths.append(rp)
 
+    design = workspace.design_dir(slug)
     if dry_run:
         from keel.dryrun import OpLog
 
         log = OpLog()
-        log.create_file(proj / "design" / "project.toml", size=0)
-        log.create_file(proj / "design" / "CLAUDE.md", size=0)
-        log.create_file(proj / "design" / "scope.md", size=0)
-        log.create_file(proj / "design" / "design.md", size=0)
-        log.create_file(proj / "design" / ".phase", size=0)
+        log.create_file(design / "project.toml", size=0)
+        log.create_file(design / "CLAUDE.md", size=0)
+        log.create_file(design / "scope.md", size=0)
+        log.create_file(design / "design.md", size=0)
+        log.create_file(design / ".phase", size=0)
         today = date.today().isoformat()
-        log.create_file(proj / "design" / "decisions" / f"{today}-project-setup.md", size=0)
+        log.create_file(design / "decisions" / f"{today}-project-setup.md", size=0)
         for rp in repo_paths:
             wt_name = "code" if len(repo_paths) == 1 else f"code-{rp.name}"
             try:
@@ -93,7 +94,7 @@ def cmd_new(
         return
 
     # Make directories
-    (proj / "design" / "decisions").mkdir(parents=True)
+    workspace.decisions_dir(slug).mkdir(parents=True)
 
     # Build manifest with repos (worktree path defaults to "code" when single, "code-<repo>" otherwise)
     from keel.manifest import RepoSpec
@@ -119,13 +120,13 @@ def cmd_new(
         project=ProjectMeta(name=slug, description=description, created=date.today()),
         repos=repo_specs,
     )
-    save_project_manifest(proj / "design" / "project.toml", manifest)
+    save_project_manifest(workspace.manifest_path(slug), manifest)
 
     # Templates
     repos_for_template = [
         {"worktree": r.worktree, "remote": r.remote, "local_hint": r.local_hint} for r in repo_specs
     ]
-    (proj / "design" / "CLAUDE.md").write_text(
+    (design / "CLAUDE.md").write_text(
         templates.render(
             "claude_md.j2",
             name=slug,
@@ -134,19 +135,19 @@ def cmd_new(
             deliverables=[],
         )
     )
-    (proj / "design" / "scope.md").write_text(
+    (design / "scope.md").write_text(
         templates.render("scope_md.j2", name=slug, description=description)
     )
-    (proj / "design" / "design.md").write_text(
+    (design / "design.md").write_text(
         templates.render("design_md.j2", name=slug, description=description)
     )
 
     # Phase
-    (proj / "design" / ".phase").write_text("scoping\n")
+    workspace.phase_file(slug).write_text("scoping\n")
 
     # Initial decision file
     today = date.today().isoformat()
-    decision_path = proj / "design" / "decisions" / f"{today}-project-setup.md"
+    decision_path = workspace.decisions_dir(slug) / f"{today}-project-setup.md"
     decision_path.write_text(
         templates.render("decision_entry.j2", date=today, title="Project workspace setup")
     )
@@ -167,6 +168,6 @@ def cmd_new(
 
     out.info(f"Created project: {proj}")
     out.result(
-        {"path": str(proj), "design": str(proj / "design"), "worktrees": created_worktrees},
+        {"path": str(proj), "design": str(design), "worktrees": created_worktrees},
         human_text=f"Project created: {proj}",
     )

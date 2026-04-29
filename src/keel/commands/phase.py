@@ -14,9 +14,7 @@ from keel.output import Output
 
 
 def _phase_path(project: str, deliverable: str | None) -> Path:
-    if deliverable:
-        return workspace.deliverable_dir(project, deliverable) / "design" / ".phase"
-    return workspace.project_dir(project) / "design" / ".phase"
+    return workspace.phase_file(project, deliverable)
 
 
 def _read_phase(path: Path) -> tuple[str, list[str]]:
