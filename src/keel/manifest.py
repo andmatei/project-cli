@@ -36,7 +36,13 @@ class RepoSpec(BaseModel):
 
     @field_validator("worktree")
     @classmethod
-    def _worktree_relative(cls, v: str) -> str:
+    def _worktree_single_component(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("worktree must be a non-empty string")
+        if "/" in v or "\\" in v:
+            raise ValueError("worktree must be a single path component (no slashes)")
+        if v in (".", ".."):
+            raise ValueError("worktree must not be '.' or '..'")
         if Path(v).is_absolute():
             raise ValueError("worktree must be a relative subdir name")
         return v

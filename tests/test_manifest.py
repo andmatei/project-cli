@@ -147,3 +147,30 @@ def test_deliverable_manifest_roundtrip(tmp_path) -> None:
     save_deliverable_manifest(path, original)
     loaded = load_deliverable_manifest(path)
     assert loaded == original
+
+
+def test_repo_spec_rejects_worktree_with_slash() -> None:
+    with pytest.raises(ValidationError):
+        RepoSpec(remote="git@e.com:o/r.git", worktree="sub/dir")
+
+
+def test_repo_spec_rejects_worktree_dotdot() -> None:
+    with pytest.raises(ValidationError):
+        RepoSpec(remote="git@e.com:o/r.git", worktree="..")
+
+
+def test_repo_spec_rejects_worktree_dot() -> None:
+    with pytest.raises(ValidationError):
+        RepoSpec(remote="git@e.com:o/r.git", worktree=".")
+
+
+def test_repo_spec_rejects_worktree_with_backslash() -> None:
+    with pytest.raises(ValidationError):
+        RepoSpec(remote="git@e.com:o/r.git", worktree=r"sub\dir")
+
+
+def test_repo_spec_accepts_normal_name() -> None:
+    s = RepoSpec(remote="git@e.com:o/r.git", worktree="code")
+    assert s.worktree == "code"
+    s2 = RepoSpec(remote="git@e.com:o/r.git", worktree="code-foo")
+    assert s2.worktree == "code-foo"
