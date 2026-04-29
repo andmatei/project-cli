@@ -195,6 +195,37 @@ def test_decisions_dir_deliverable(monkeypatch, tmp_path) -> None:
     )
 
 
+def test_design_dir_project(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import design_dir
+    assert design_dir("foo") == tmp_path / "foo" / "design"
+
+
+def test_design_dir_deliverable(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import design_dir
+    assert design_dir("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "design"
+
+
+def test_manifest_path_project(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import manifest_path
+    assert manifest_path("foo").name == "project.toml"
+
+
+def test_manifest_path_deliverable(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import manifest_path
+    assert manifest_path("foo", "bar").name == "deliverable.toml"
+
+
+def test_phase_file(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import phase_file
+    assert phase_file("foo") == tmp_path / "foo" / "design" / ".phase"
+    assert phase_file("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "design" / ".phase"
+
+
 def test_resolve_scope_or_fail_returns_deliverable(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     proj = tmp_path / "foo" / "deliverables" / "bar" / "design"

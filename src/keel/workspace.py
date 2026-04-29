@@ -120,6 +120,25 @@ def decisions_dir(project: str, deliverable: str | None = None) -> Path:
     return project_dir(project) / "design" / "decisions"
 
 
+def design_dir(project: str, deliverable: str | None = None) -> Path:
+    """Path to the design/ directory for the given scope."""
+    if deliverable:
+        return deliverable_dir(project, deliverable) / "design"
+    return project_dir(project) / "design"
+
+
+def manifest_path(project: str, deliverable: str | None = None) -> Path:
+    """Path to the manifest TOML file for the given scope."""
+    if deliverable:
+        return design_dir(project, deliverable) / "deliverable.toml"
+    return design_dir(project) / "project.toml"
+
+
+def phase_file(project: str, deliverable: str | None = None) -> Path:
+    """Path to the .phase file for the given scope."""
+    return design_dir(project, deliverable) / ".phase"
+
+
 def resolve_scope_or_fail(cwd: Path | None = None) -> Scope:
     """Like detect_scope, but verifies the scope's manifests exist on disk.
 
