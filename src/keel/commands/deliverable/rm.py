@@ -45,7 +45,11 @@ def cmd_rm(
     scope = resolve_cli_scope(project, None, allow_deliverable=False)
     project = scope.project
     if not workspace.deliverable_exists(project, name):
-        out.error(f"deliverable not found: {project}/{name}", code="not_found")
+        from keel.errors import HINT_LIST_DELIVERABLES
+        out.error(
+            f"deliverable not found: {project}/{name}\n  {HINT_LIST_DELIVERABLES}",
+            code="not_found",
+        )
         raise typer.Exit(code=1)
 
     deliv = workspace.deliverable_dir(project, name)

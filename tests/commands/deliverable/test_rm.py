@@ -86,3 +86,11 @@ def test_rm_keep_design_preserves_design_dir(projects, make_project, make_delive
     deliv = make_deliverable(project_name="foo", name="bar", description="d")
     runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo", "--keep-design"])
     assert (deliv / "design" / "deliverable.toml").is_file()
+
+
+def test_rm_unknown_deliverable_includes_hint(projects, make_project) -> None:
+    make_project("foo")
+    result = runner.invoke(app, ["deliverable", "rm", "ghost", "-y", "--project", "foo"])
+    assert result.exit_code == 1
+    assert "Hint" in result.stderr
+    assert "keel deliverable list" in result.stderr

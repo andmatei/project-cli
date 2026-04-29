@@ -82,8 +82,9 @@ def cmd_new(
         )
         candidate_paths = [c for c in candidate_paths if c.is_file()]
         if not candidate_paths:
+            from keel.errors import HINT_LIST_DECISIONS
             out.error(
-                f"--supersedes: no decision matching '{supersedes}' found in {target_dir}",
+                f"--supersedes: no decision matching '{supersedes}' found in {target_dir}\n  {HINT_LIST_DECISIONS}",
                 code="not_found",
             )
             raise typer.Exit(code=1)

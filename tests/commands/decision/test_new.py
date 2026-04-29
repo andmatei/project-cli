@@ -89,3 +89,15 @@ def test_new_does_not_print_duplicate_messages(projects, make_project, monkeypat
     result = runner.invoke(app, ["decision", "new", "Some choice", "--no-edit"])
     assert "Created decision:" not in result.stderr
     assert result.stdout  # non-empty
+
+
+def test_new_supersedes_nonexistent_includes_hint(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(
+        app,
+        ["decision", "new", "New choice", "--no-edit", "--supersedes", "nonexistent-decision"],
+    )
+    assert result.exit_code == 1
+    assert "Hint" in result.stderr
+    assert "keel decision list" in result.stderr

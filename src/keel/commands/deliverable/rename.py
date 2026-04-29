@@ -45,7 +45,11 @@ def cmd_rename(
     scope = resolve_cli_scope(project, None, allow_deliverable=False)
     project = scope.project
     if not workspace.deliverable_exists(project, old):
-        out.error(f"deliverable not found: {project}/{old}", code="not_found")
+        from keel.errors import HINT_LIST_DELIVERABLES
+        out.error(
+            f"deliverable not found: {project}/{old}\n  {HINT_LIST_DELIVERABLES}",
+            code="not_found",
+        )
         raise typer.Exit(code=1)
     if workspace.deliverable_exists(project, new):
         out.error(f"target already exists: {project}/{new}", code="exists")

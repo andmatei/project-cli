@@ -32,6 +32,21 @@ def test_show_auto_detects_project_from_cwd(projects, make_project, monkeypatch)
     assert "foo" in result.stdout
 
 
+def test_show_unknown_project_includes_hint(projects) -> None:
+    result = runner.invoke(app, ["show", "ghost"])
+    assert result.exit_code == 1
+    assert "Hint" in result.stderr
+    assert "keel list" in result.stderr
+
+
+def test_show_no_project_detected_includes_hint(projects, monkeypatch, tmp_path) -> None:
+    """When run outside a project dir with no arg, error includes a hint."""
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["show"])
+    assert result.exit_code == 1
+    assert "Hint" in result.stderr
+
+
 def test_show_json_shape(projects, make_project) -> None:
     make_project("foo", "the foo project")
     result = runner.invoke(app, ["show", "foo", "--json"])

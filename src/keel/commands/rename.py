@@ -35,7 +35,8 @@ def cmd_rename(
         raise typer.Exit(code=2)
 
     if not workspace.project_exists(old):
-        out.error(f"project not found: {old}", code="not_found")
+        from keel.errors import HINT_LIST_PROJECTS
+        out.error(f"project not found: {old}\n  {HINT_LIST_PROJECTS}", code="not_found")
         raise typer.Exit(code=1)
     if workspace.project_exists(new_slug):
         out.error(f"target project already exists: {new_slug}", code="exists")

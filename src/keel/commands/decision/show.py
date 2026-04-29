@@ -68,7 +68,8 @@ def cmd_show(
 
     path = _find_decision(target_dir, slug)
     if path is None:
-        out.error(f"decision not found: {slug}", code="not_found")
+        from keel.errors import HINT_LIST_DECISIONS
+        out.error(f"decision not found: {slug}\n  {HINT_LIST_DECISIONS}", code="not_found")
         raise typer.Exit(code=1)
 
     text = path.read_text()

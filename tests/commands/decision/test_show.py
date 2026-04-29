@@ -43,3 +43,12 @@ def test_show_unknown_slug(projects, make_project, monkeypatch) -> None:
     monkeypatch.chdir(proj / "design")
     result = runner.invoke(app, ["decision", "show", "nonexistent"])
     assert result.exit_code == 1
+
+
+def test_show_unknown_slug_includes_hint(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(app, ["decision", "show", "nonexistent"])
+    assert result.exit_code == 1
+    assert "Hint" in result.stderr
+    assert "keel decision list" in result.stderr
