@@ -31,62 +31,104 @@ uv tool install --editable .
 keel --help
 ```
 
-## Usage
-
-The current release (Plan 1: foundation) implements three commands plus version
-and help. More commands are planned (see [Roadmap](#roadmap)).
-
-### Create a project
+Optionally install shell completion:
 
 ```bash
-keel new my-project -d "Build a thing" --no-worktree
+keel completion zsh --install   # or bash, fish
 ```
 
-With a source repo (creates a worktree):
+## Quick start
 
 ```bash
-keel new my-project -d "Build a thing" -r ~/some-source-repo
+# Create a new project
+keel new my-project -d "Build a thing"
+
+# Add a deliverable (mini-project nested under the parent)
+keel deliverable add my-project api -d "REST API surface"
+
+# Record a decision without opening an editor
+keel decision new "Pick the storage backend" --no-edit
+
+# Advance the phase
+keel phase designing
+
+# Export design + decisions to a single markdown document
+keel design export
 ```
 
-Multiple repos:
+## Commands
 
-```bash
-keel new multi -d "Two repos" -r ~/repo-a -r ~/repo-b
-```
+### Project lifecycle
 
-Dry-run (prints planned operations, writes nothing):
+| Command | Purpose | Example |
+|---|---|---|
+| `new` | Create a new project workspace | `keel new my-project -d "..."` |
+| `list` | List projects, optionally filtered | `keel list --phase implementing` |
+| `show` | Show a project's structure and state | `keel show my-project` |
+| `phase` | Show or transition the lifecycle phase | `keel phase implementing` |
+| `validate` | Check project structure and content | `keel validate --content` |
+| `archive` | Soft-delete: remove worktrees, move to `.archive/` | `keel archive my-project` |
+| `rename` | Rename directory, worktrees, and branch prefixes | `keel rename old-name new-name` |
 
-```bash
-keel new my-project -d "Preview" --no-worktree --dry-run
-```
-
-### List projects
-
-```bash
-keel list
-keel list --phase implementing
-keel list --json
-```
-
-### Show a project
-
-```bash
-keel show my-project
-keel show --json my-project
-```
-
-`show` auto-detects the project from `$PWD`:
+`show` and most commands auto-detect the project from `$PWD`:
 
 ```bash
 cd ~/projects/my-project/design && keel show
 ```
 
-### Global flags
+See `keel <cmd> --help` for the full flag surface (dry-run, --json, --yes, etc.).
 
-- `--version` — print version and exit
-- `-q/--quiet` — suppress info logs (errors still go to stderr)
-- `-v/--verbose` — extra debug output
-- `NO_COLOR` env var — honored
+### Deliverables
+
+Mini-projects nested under a parent project; each gets its own `design/`, decisions, and code linkage.
+
+| Command | Purpose | Example |
+|---|---|---|
+| `deliverable add` | Create a new deliverable | `keel deliverable add my-project api -d "..."` |
+| `deliverable list` | List deliverables in a project | `keel deliverable list my-project` |
+| `deliverable rename` | Rename a deliverable | `keel deliverable rename my-project api rest-api` |
+| `deliverable rm` | Remove a deliverable and its artefacts | `keel deliverable rm my-project api` |
+
+### Decisions
+
+One file per decision, stored under `design/decisions/` at the project or deliverable scope.
+
+| Command | Purpose | Example |
+|---|---|---|
+| `decision new` | Create a decision record | `keel decision new "Use Postgres" --no-edit` |
+| `decision list` | List decisions at the current scope | `keel decision list` |
+| `decision show` | Print a decision file | `keel decision show 2024-01-15-use-postgres` |
+| `decision rm` | Delete a decision file | `keel decision rm 2024-01-15-use-postgres` |
+
+To supersede an existing decision: `keel decision new "Switch to SQLite" --supersedes 2024-01-15-use-postgres`.
+
+### Code linkage
+
+Manifest-driven worktrees: source repos are declared in `project.toml` and can be materialized on any machine.
+
+| Command | Purpose | Example |
+|---|---|---|
+| `code list` | List repos declared in the manifest | `keel code list` |
+| `code status` | Show per-repo worktree status | `keel code status` |
+| `code init` | Materialize worktrees from the manifest | `keel code init --clone-missing` |
+| `code add` | Add a repo to the manifest and create its worktree | `keel code add ~/some-repo` |
+| `code rm` | Remove a repo from the manifest and its worktree | `keel code rm some-repo` |
+
+### Design export
+
+```bash
+keel design export                        # design.md + decisions, stdout
+keel design export --include-scope        # prepend scope.md
+keel design export --no-deliverables      # parent project only
+keel design export -o exported.md         # write to file
+```
+
+### Migration and polish
+
+| Command | Purpose | Example |
+|---|---|---|
+| `migrate` | Migrate legacy Bash-CLI projects to manifest format | `keel migrate my-project --apply` |
+| `completion` | Print or install shell completion | `keel completion zsh --install` |
 
 ## How the workspace is laid out
 
@@ -111,22 +153,38 @@ The CLI manages directories under `$PROJECTS_DIR` (default: `~/projects`).
             └── code/
 ```
 
-See [`design/scope.md`](design/scope.md) and [`design/design.md`](design/design.md)
-for the full specification, including the planned `deliverable`, `decision`,
-`phase`, `validate`, `archive`, `rename`, `code`, and `design export`
-subcommands.
+`project.toml` is the manifest source of truth for code linkage and deliverable
+references. `CLAUDE.md` is generated from it and kept in sync by `keel`.
+
+## Migrating an existing Bash-CLI workspace
+
+If you used the older `~/projects/bin/project` Bash CLI, `keel migrate` converts
+legacy projects to manifest format:
+
+```bash
+# Preview what would change (dry-run by default)
+keel migrate my-project
+
+# Migrate one project
+keel migrate my-project --apply
+
+# Migrate every legacy project at once
+keel migrate --all --apply
+```
 
 ## Roadmap
 
-Plan 1 (this release) is one of four planned chunks:
+Plans 1-4 have all shipped:
 
-- **Plan 1 — Foundation (shipped):** core modules + `new`, `list`, `show`
-- **Plan 2 — Deliverable, decision, phase**
-- **Plan 3 — Validate, design export, code group, archive, rename**
-- **Plan 4 — Migration, completion, shell-completion install, cutover**
+- **Plan 1 — Foundation:** core modules + `new`, `list`, `show`
+- **Plan 2 — Deliverable, decision, phase:** `deliverable`, `decision`, `phase`
+- **Plan 3 — Validate, export, code, archive, rename:** `validate`, `design export`, `code`, `archive`, `rename`
+- **Plan 4 — Migration, completion, cutover:** `migrate`, `completion`, workspace cutover
 
-Each plan ships independently usable software. See
-[`design/plans/`](design/plans/) for the implementation plan documents.
+See [`design/plans/`](design/plans/) for the implementation plan documents and
+[`design/decisions/`](design/decisions/) for the rationale behind major choices.
+
+Open ideas not yet planned: milestone tracking, Jira link integration.
 
 ## Development
 
