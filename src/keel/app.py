@@ -1,6 +1,7 @@
 """Top-level Typer app and global flags."""
-
 from __future__ import annotations
+
+from importlib.metadata import entry_points
 
 import typer
 
@@ -14,6 +15,16 @@ app = typer.Typer(
 )
 
 
+# Empty subapp pre-registered so plugins can extend it via entry points.
+# Plan 5 will activate this with bundled providers.
+ticketing_app = typer.Typer(
+    name="ticketing",
+    help="Ticketing system integration (Jira, GitHub Issues, etc.). Provided by plugins.",
+    no_args_is_help=True,
+)
+app.add_typer(ticketing_app, name="ticketing")
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(__version__)
@@ -24,10 +35,7 @@ def _version_callback(value: bool) -> None:
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
-        False,
-        "--version",
-        callback=_version_callback,
-        is_eager=True,
+        False, "--version", callback=_version_callback, is_eager=True,
         help="Show version and exit.",
     ),
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Suppress info logs."),
@@ -39,6 +47,35 @@ def main(
     ctx.obj = {"quiet": quiet, "verbose": verbose}
 
 
+def _load_plugin_commands() -> None:
+    """Discover and load command-group plugins via the `keel.commands` entry-point group.
+
+    A plugin entry point should resolve to a callable that takes the keel `app`
+    (or a subapp like `ticketing_app`) and registers its commands on it. Example:
+
+        # In a plugin's pyproject.toml:
+        [project.entry-points."keel.commands"]
+        my_cmd = "my_pkg.cli:register"
+
+        # In my_pkg/cli.py:
+        def register(app: typer.Typer) -> None:
+            app.command(name="my-cmd")(my_cmd_func)
+
+    For ticketing-specific plugins, use `keel.ticket_providers` (Plan 5).
+    """
+    for ep in entry_points(group="keel.commands"):
+        try:
+            register = ep.load()
+            register(app)
+        except Exception as e:  # noqa: BLE001
+            # Don't crash the whole CLI if a plugin fails to load.
+            typer.echo(
+                f"warning: failed to load plugin '{ep.name}': {e}",
+                err=True,
+            )
+
+
+# Built-in commands — register first, then load plugins.
 from keel.commands.new import cmd_new  # noqa: E402
 
 app.command(name="new")(cmd_new)
@@ -51,29 +88,13 @@ from keel.commands.show import cmd_show  # noqa: E402
 
 app.command(name="show")(cmd_show)
 
-from keel.commands.deliverable import app as deliverable_app  # noqa: E402
-
-app.add_typer(deliverable_app, name="deliverable")
-
-from keel.commands.decision import app as decision_app  # noqa: E402
-
-app.add_typer(decision_app, name="decision")
-
 from keel.commands.phase import cmd_phase  # noqa: E402
 
 app.command(name="phase")(cmd_phase)
 
-from keel.commands.code import app as code_app  # noqa: E402
-
-app.add_typer(code_app, name="code")
-
 from keel.commands.validate import cmd_validate  # noqa: E402
 
 app.command(name="validate")(cmd_validate)
-
-from keel.commands.design import app as design_app  # noqa: E402
-
-app.add_typer(design_app, name="design")
 
 from keel.commands.archive import cmd_archive  # noqa: E402
 
@@ -90,3 +111,22 @@ app.command(name="migrate")(cmd_migrate)
 from keel.commands.completion import cmd_completion  # noqa: E402
 
 app.command(name="completion")(cmd_completion)
+
+from keel.commands.deliverable import app as deliverable_app  # noqa: E402
+
+app.add_typer(deliverable_app, name="deliverable")
+
+from keel.commands.decision import app as decision_app  # noqa: E402
+
+app.add_typer(decision_app, name="decision")
+
+from keel.commands.design import app as design_app  # noqa: E402
+
+app.add_typer(design_app, name="design")
+
+from keel.commands.code import app as code_app  # noqa: E402
+
+app.add_typer(code_app, name="code")
+
+# Load any third-party plugins last so they can extend existing groups.
+_load_plugin_commands()
