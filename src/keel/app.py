@@ -66,3 +66,7 @@ app.command(name="phase")(cmd_phase)
 from keel.commands.code import app as code_app  # noqa: E402
 
 app.add_typer(code_app, name="code")
+
+from keel.commands.validate import cmd_validate  # noqa: E402
+
+app.command(name="validate")(cmd_validate)
