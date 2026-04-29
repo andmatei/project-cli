@@ -130,6 +130,16 @@ keel design export -o exported.md         # write to file
 | `migrate` | Migrate legacy Bash-CLI projects to manifest format | `keel migrate my-project --apply` |
 | `completion` | Print or install shell completion | `keel completion zsh --install` |
 
+### Project name resolution
+
+Most commands accept the project name in one of three ways:
+
+1. **Positional argument**: `keel show foo`, `keel validate foo`, `keel archive foo`, `keel rename foo bar`, `keel migrate foo`, `keel design export foo`.
+2. **`--project NAME` flag**: works on every command.
+3. **CWD auto-detection**: when run from inside `~/projects/<name>/...`, the project is inferred. Pass `--project` to override.
+
+A few commands (`phase`, `deliverable *`, `decision *`, `code *`) do not have a positional project argument because their positional slot is taken by something else (a target phase, a deliverable name, etc.). Use `--project NAME` or CWD detection on those.
+
 ## How the workspace is laid out
 
 The CLI manages directories under `$PROJECTS_DIR` (default: `~/projects`).
