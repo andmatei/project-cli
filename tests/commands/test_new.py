@@ -138,3 +138,12 @@ def test_new_dry_run_lists_planned_ops(projects, source_repo) -> None:
     assert "design.md" in result.stderr
     assert "CLAUDE.md" in result.stderr
     assert "git worktree" in result.stderr.lower()
+
+
+def test_new_does_not_print_duplicate_messages(projects) -> None:
+    """The 'Created project: ...' (stderr) was redundant with 'Project created: ...' (stdout); only one survives."""
+    result = runner.invoke(app, ["new", "foo", "-d", "t", "--no-worktree", "-y"])
+    # The success line is on stdout; stderr should NOT also have a near-identical 'Created project:' line.
+    assert "Created project:" not in result.stderr
+    # The result line itself remains:
+    assert result.stdout  # non-empty

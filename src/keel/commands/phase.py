@@ -155,7 +155,6 @@ def cmd_phase(
                 )
             )
 
-    out.info(f"Phase: {current} → {target}")
     out.result(
         {
             "scope": "deliverable" if deliverable else "project",

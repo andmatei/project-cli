@@ -94,3 +94,14 @@ def test_phase_next_at_end_of_lifecycle(projects, make_project, monkeypatch) -> 
     result = runner.invoke(app, ["phase", "--next"])
     assert result.exit_code == 1
     assert "no phase after" in result.stderr.lower()
+
+
+def test_phase_does_not_print_duplicate_messages(projects, make_project, monkeypatch) -> None:
+    """'Phase: X → Y' (stderr) was redundant with 'Phase: X → Y' (stdout)."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(app, ["phase", "designing"])
+    assert result.exit_code == 0
+    # The transition line should appear only once (on stdout via out.result), not also on stderr
+    assert "scoping → designing" not in result.stderr
+    assert result.stdout  # non-empty

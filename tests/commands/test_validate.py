@@ -43,3 +43,12 @@ def test_validate_orphan_deliverable_dir_warns(projects, make_project, make_deli
     findings = payload["findings"]
     msgs = [f["message"] for f in findings]
     assert any("bar" in m or "missing" in m.lower() for m in msgs)
+
+
+def test_validate_summary_on_stdout_with_table(projects, make_project) -> None:
+    """The validate summary should travel on the same stream as the table (stdout)."""
+    make_project("foo")
+    result = runner.invoke(app, ["validate", "foo"])
+    assert result.exit_code == 0
+    # Either the summary appears on stdout, or it's omitted entirely from stderr
+    assert "summary:" not in result.stderr

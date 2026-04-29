@@ -80,3 +80,12 @@ def test_new_supersedes_wrong_slug_fails_loud(projects, make_project, monkeypatc
     # New decision file should NOT have been created
     new_files = list((proj / "design" / "decisions").glob("*-new-choice.md"))
     assert new_files == []
+
+
+def test_new_does_not_print_duplicate_messages(projects, make_project, monkeypatch) -> None:
+    """'Created decision: ...' (stderr) was redundant with 'Decision created: ...' (stdout)."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(app, ["decision", "new", "Some choice", "--no-edit"])
+    assert "Created decision:" not in result.stderr
+    assert result.stdout  # non-empty

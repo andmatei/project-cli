@@ -163,8 +163,6 @@ def cmd_add(
         templates.render("decision_entry.j2", date=today, title=f"Create deliverable {slug}")
     )
 
-    out.info(f"Created deliverable: {deliv}")
-
     # Create worktree if --repo
     created_worktree = None
     if repo_path is not None:

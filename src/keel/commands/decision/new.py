@@ -117,7 +117,6 @@ def cmd_new(
             new_text = new_text.rstrip("\n") + superseded_by_line
         supersedes_path.write_text(new_text)
 
-    out.info(f"Created decision: {path}")
     out.result(
         {"path": str(path), "scope": scope_label, "slug": slug_value, "supersedes": supersedes},
         human_text=f"Decision created: {path}",

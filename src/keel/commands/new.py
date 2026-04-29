@@ -166,7 +166,6 @@ def cmd_new(
             )
             raise typer.Exit(code=1) from None
 
-    out.info(f"Created project: {proj}")
     out.result(
         {"path": str(proj), "design": str(design), "worktrees": created_worktrees},
         human_text=f"Project created: {proj}",

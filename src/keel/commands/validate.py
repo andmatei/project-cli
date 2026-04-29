@@ -156,7 +156,10 @@ def cmd_validate(
                 color = {"pass": "green", "warn": "yellow", "fail": "red"}.get(f.level, "white")
                 table.add_row(f"[{color}]{f.level}[/{color}]", f.check, f.message)
             out.print_rich(table)
-            out.info(f"summary: {tally['pass']} pass, {tally['warn']} warn, {tally['fail']} fail")
+            out.result(
+                None,
+                human_text=f"summary: {tally['pass']} pass, {tally['warn']} warn, {tally['fail']} fail",
+            )
 
     # Exit code
     if tally["fail"] > 0:

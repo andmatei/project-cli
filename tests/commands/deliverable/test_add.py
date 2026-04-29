@@ -151,3 +151,14 @@ def test_add_lists_existing_siblings_in_new_deliverable_claude(projects, make_pr
     beta_claude = (projects / "foo" / "deliverables" / "beta" / "design" / "CLAUDE.md").read_text()
     # Both directions of sibling reference should be present:
     assert "alpha" in beta_claude
+
+
+def test_add_does_not_print_duplicate_messages(projects, make_project) -> None:
+    """'Created deliverable: ...' (stderr) was redundant with 'Deliverable created: ...' (stdout)."""
+    make_project("foo")
+    result = runner.invoke(
+        app,
+        ["deliverable", "add", "bar", "-d", "t", "-y", "--project", "foo"],
+    )
+    assert "Created deliverable:" not in result.stderr
+    assert result.stdout  # non-empty
