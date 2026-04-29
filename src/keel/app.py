@@ -82,3 +82,7 @@ app.command(name="archive")(cmd_archive)
 from keel.commands.rename import cmd_rename  # noqa: E402
 
 app.command(name="rename")(cmd_rename)
+
+from keel.commands.migrate import cmd_migrate  # noqa: E402
+
+app.command(name="migrate")(cmd_migrate)
