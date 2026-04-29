@@ -28,6 +28,32 @@ class Scope:
     project: str | None
     deliverable: str | None
 
+    @property
+    def unit_dir(self) -> Path:
+        if self.project is None:
+            raise ValueError("Scope has no project; cannot resolve unit_dir")
+        if self.deliverable:
+            return deliverable_dir(self.project, self.deliverable)
+        return project_dir(self.project)
+
+    @property
+    def design_dir(self) -> Path:
+        return self.unit_dir / "design"
+
+    @property
+    def manifest_path(self) -> Path:
+        if self.deliverable:
+            return self.design_dir / "deliverable.toml"
+        return self.design_dir / "project.toml"
+
+    @property
+    def phase_file(self) -> Path:
+        return self.design_dir / ".phase"
+
+    @property
+    def decisions_dir(self) -> Path:
+        return self.design_dir / "decisions"
+
 
 def detect_scope(cwd: Path | None = None) -> Scope:
     """Determine the (project, deliverable) scope from CWD.

@@ -226,6 +226,50 @@ def test_phase_file(monkeypatch, tmp_path) -> None:
     assert phase_file("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "design" / ".phase"
 
 
+def test_scope_unit_dir_project(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import Scope
+    s = Scope(project="foo", deliverable=None)
+    assert s.unit_dir == tmp_path / "foo"
+
+
+def test_scope_unit_dir_deliverable(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import Scope
+    s = Scope(project="foo", deliverable="bar")
+    assert s.unit_dir == tmp_path / "foo" / "deliverables" / "bar"
+
+
+def test_scope_design_dir(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import Scope
+    s = Scope(project="foo", deliverable="bar")
+    assert s.design_dir == tmp_path / "foo" / "deliverables" / "bar" / "design"
+
+
+def test_scope_manifest_path(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import Scope
+    s_proj = Scope(project="foo", deliverable=None)
+    s_deliv = Scope(project="foo", deliverable="bar")
+    assert s_proj.manifest_path.name == "project.toml"
+    assert s_deliv.manifest_path.name == "deliverable.toml"
+
+
+def test_scope_phase_file(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import Scope
+    s = Scope(project="foo", deliverable=None)
+    assert s.phase_file == tmp_path / "foo" / "design" / ".phase"
+
+
+def test_scope_decisions_dir(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import Scope
+    s = Scope(project="foo", deliverable="bar")
+    assert s.decisions_dir == tmp_path / "foo" / "deliverables" / "bar" / "design" / "decisions"
+
+
 def test_resolve_scope_or_fail_returns_deliverable(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     proj = tmp_path / "foo" / "deliverables" / "bar" / "design"
