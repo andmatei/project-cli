@@ -1,0 +1,91 @@
+"""`keel code init`."""
+from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+
+import typer
+
+from keel import git_ops, workspace
+from keel.dryrun import OpLog
+from keel.manifest import load_deliverable_manifest, load_project_manifest
+from keel.output import Output
+
+
+def cmd_init(
+    ctx: typer.Context,
+    project: str | None = typer.Option(None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."),
+    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Init worktrees declared at deliverable scope."),
+    clone_missing: bool = typer.Option(False, "--clone-missing", help="Clone any source repo whose local_hint is missing on disk."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
+) -> None:
+    """Materialize worktrees declared in the manifest. Idempotent."""
+    out = Output.from_context(ctx, json_mode=json_mode)
+    scope = workspace.resolve_cli_scope(project, deliverable)
+    project = scope.project
+    deliverable = scope.deliverable
+
+    if deliverable:
+        unit_dir = workspace.deliverable_dir(project, deliverable)
+        m = load_deliverable_manifest(unit_dir / "design" / "deliverable.toml")
+    else:
+        unit_dir = workspace.project_dir(project)
+        m = load_project_manifest(unit_dir / "design" / "project.toml")
+
+    if dry_run:
+        log = OpLog()
+        for r in m.repos:
+            wt = unit_dir / r.worktree
+            if not wt.is_dir():
+                source = Path(r.local_hint).expanduser() if r.local_hint else Path(r.remote)
+                log.create_worktree(wt, source=source, branch=r.branch_prefix or "main")
+        out.info(log.format_summary())
+        return
+
+    created: list[str] = []
+    for r in m.repos:
+        wt = unit_dir / r.worktree
+        if wt.is_dir():
+            continue  # idempotent — already there
+
+        # Resolve source repo on disk
+        source: Path | None = None
+        if r.local_hint:
+            candidate = Path(r.local_hint).expanduser()
+            if git_ops.is_git_repo(candidate):
+                source = candidate
+        if source is None:
+            if clone_missing and r.local_hint:
+                target = Path(r.local_hint).expanduser()
+                target.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    subprocess.run(
+                        ["git", "clone", r.remote, str(target)],
+                        check=True, capture_output=True,
+                    )
+                except subprocess.CalledProcessError as e:
+                    out.error(f"clone failed for {r.remote}: {e.stderr.decode()}", code="clone_failed")
+                    raise typer.Exit(code=1) from None
+                source = target
+            else:
+                out.error(
+                    f"source repo missing: {r.local_hint or r.remote}. "
+                    f"Pass --clone-missing to clone it, or set local_hint to a valid path.",
+                    code="source_missing",
+                )
+                raise typer.Exit(code=1)
+
+        try:
+            git_ops.create_worktree(source, wt, branch=r.branch_prefix or "main")
+            created.append(str(wt))
+        except git_ops.GitError as e:
+            out.error(f"worktree creation failed: {e}", code="git_failed")
+            raise typer.Exit(code=1) from None
+
+    out.info(f"Initialized {len(created)} worktree(s).")
+    out.result(
+        {"created": created, "scope": "deliverable" if deliverable else "project"},
+        human_text=f"Initialized {len(created)} worktree(s) for {project}{'/' + deliverable if deliverable else ''}.",
+    )

@@ -16,3 +16,7 @@ app.command(name="list")(cmd_list)
 from keel.commands.code.status import cmd_status  # noqa: E402
 
 app.command(name="status")(cmd_status)
+
+from keel.commands.code.init import cmd_init  # noqa: E402
+
+app.command(name="init")(cmd_init)
