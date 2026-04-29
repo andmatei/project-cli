@@ -214,3 +214,76 @@ def test_migrate_skips_already_migrated_deliverable(projects) -> None:
 
     m = load_deliverable_manifest(deliv / "design" / "deliverable.toml")
     assert m.deliverable.description == "kept"
+
+
+def test_migrate_all_full_round_trip(projects, source_repo) -> None:
+    """Migrate a legacy project + 2 deliverables, then validate runs clean."""
+    from keel import git_ops
+
+    proj = projects / "legacy"
+    (proj / "design" / "decisions").mkdir(parents=True)
+    (proj / "design" / "CLAUDE.md").write_text(
+        f"""# legacy
+
+A migrated project.
+
+## Code
+Code: ../code/
+Source repo: {source_repo}
+
+## Deliverables
+- **alpha**: ../deliverables/alpha/design/ -- alpha thing
+- **beta**: ../deliverables/beta/design/ -- beta thing
+
+## Workflow
+"""
+    )
+    (proj / "design" / "scope.md").write_text("# legacy\nscope.\n")
+    (proj / "design" / "design.md").write_text("# legacy\ndesign.\n")
+    (proj / "design" / ".phase").write_text("scoping\n")
+    git_ops.create_worktree(source_repo, proj / "code", branch="me/legacy-base")
+
+    for d_name in ("alpha", "beta"):
+        d = proj / "deliverables" / d_name
+        (d / "design" / "decisions").mkdir(parents=True)
+        (d / "design" / "CLAUDE.md").write_text(
+            f"""# {d_name}
+
+The {d_name} thing.
+
+Parent design: ../../../design/
+
+## Code
+Code: shared with parent (../../../code/)
+Source repo: see parent
+
+## Workflow
+"""
+        )
+        (d / "design" / "design.md").write_text(f"# {d_name}\n")
+
+    # Migrate everything
+    result = runner.invoke(app, ["migrate", "--all", "--apply"])
+    assert result.exit_code == 0, result.stderr
+
+    # Manifests exist
+    from keel.manifest import load_deliverable_manifest, load_project_manifest
+
+    pm = load_project_manifest(proj / "design" / "project.toml")
+    assert pm.project.name == "legacy"
+    assert pm.repos[0].branch_prefix == "me/legacy-base"
+    am = load_deliverable_manifest(proj / "deliverables" / "alpha" / "design" / "deliverable.toml")
+    assert am.deliverable.shared_worktree is True
+    bm = load_deliverable_manifest(proj / "deliverables" / "beta" / "design" / "deliverable.toml")
+    assert bm.deliverable.shared_worktree is True
+
+    # Both deliverables now have .phase
+    assert (proj / "deliverables" / "alpha" / "design" / ".phase").read_text().splitlines()[0] == "scoping"
+    assert (proj / "deliverables" / "beta" / "design" / ".phase").read_text().splitlines()[0] == "scoping"
+
+    # validate runs clean (no FAILs; the parent CLAUDE.md still mentions both deliverables)
+    import json
+
+    val = runner.invoke(app, ["validate", "legacy", "--json"])
+    payload = json.loads(val.stdout)
+    assert payload["summary"]["fail"] == 0
