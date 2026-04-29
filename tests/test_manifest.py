@@ -174,3 +174,54 @@ def test_repo_spec_accepts_normal_name() -> None:
     assert s.worktree == "code"
     s2 = RepoSpec(remote="git@e.com:o/r.git", worktree="code-foo")
     assert s2.worktree == "code-foo"
+
+
+def test_project_manifest_extensions_default_empty() -> None:
+    m = ProjectManifest(project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)))
+    assert m.extensions == {}
+
+
+def test_project_manifest_extensions_round_trip(tmp_path) -> None:
+    """Plugin-namespaced config under extensions survives load/save."""
+    path = tmp_path / "project.toml"
+    original = ProjectManifest(
+        project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
+        extensions={
+            "ticketing": {
+                "jira": {
+                    "instance_url": "https://example.atlassian.net",
+                    "project_key": "FOO",
+                    "epic_id": "FOO-1234",
+                }
+            }
+        },
+    )
+    save_project_manifest(path, original)
+    loaded = load_project_manifest(path)
+    assert loaded.extensions["ticketing"]["jira"]["epic_id"] == "FOO-1234"
+    assert loaded.extensions == original.extensions
+
+
+def test_project_manifest_unknown_top_level_still_rejected(tmp_path) -> None:
+    """extra='forbid' still rejects unknown top-level keys (only `extensions` is open)."""
+    path = tmp_path / "bad.toml"
+    path.write_text(
+        '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-29\n'
+        '[bogus]\nfoo = "bar"\n'
+    )
+    with pytest.raises(ValidationError):
+        load_project_manifest(path)
+
+
+def test_deliverable_manifest_extensions_round_trip(tmp_path) -> None:
+    path = tmp_path / "deliverable.toml"
+    original = DeliverableManifest(
+        deliverable=DeliverableMeta(
+            name="bar", parent_project="foo", description="d",
+            created=date(2026, 4, 29), shared_worktree=False,
+        ),
+        extensions={"ticketing": {"jira": {"story_id": "FOO-1235"}}},
+    )
+    save_deliverable_manifest(path, original)
+    loaded = load_deliverable_manifest(path)
+    assert loaded.extensions == original.extensions

@@ -10,6 +10,7 @@ from __future__ import annotations
 import tomllib
 from datetime import date as _date
 from pathlib import Path
+from typing import Any
 
 import tomlkit
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -63,6 +64,10 @@ class ProjectManifest(BaseModel):
 
     project: ProjectMeta
     repos: list[RepoSpec] = Field(default_factory=list)
+    extensions: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Plugin-namespaced config. Plugins read keys under their own namespace, e.g. extensions['ticketing']['jira'].",
+    )
 
 
 class DeliverableMeta(BaseModel):
@@ -82,6 +87,7 @@ class DeliverableManifest(BaseModel):
 
     deliverable: DeliverableMeta
     repos: list[RepoSpec] = Field(default_factory=list)
+    extensions: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("repos")
     @classmethod
@@ -113,6 +119,8 @@ def save_project_manifest(path: Path, manifest: ProjectManifest) -> None:
         for r in manifest.repos:
             repos_array.append(tomlkit.item(_dict_no_none(r.model_dump())))
         doc["repos"] = repos_array
+    if manifest.extensions:
+        doc["extensions"] = tomlkit.item(manifest.extensions)
     path.write_text(tomlkit.dumps(doc))
 
 
@@ -132,4 +140,6 @@ def save_deliverable_manifest(path: Path, manifest: DeliverableManifest) -> None
         for r in manifest.repos:
             repos_array.append(tomlkit.item(_dict_no_none(r.model_dump())))
         doc["repos"] = repos_array
+    if manifest.extensions:
+        doc["extensions"] = tomlkit.item(manifest.extensions)
     path.write_text(tomlkit.dumps(doc))
