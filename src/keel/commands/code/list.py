@@ -1,0 +1,55 @@
+"""`keel code list`."""
+from __future__ import annotations
+import typer
+from rich.table import Table
+
+from keel import workspace
+from keel.manifest import load_project_manifest, load_deliverable_manifest
+from keel.output import Output
+
+
+def cmd_list(
+    ctx: typer.Context,
+    project: str | None = typer.Option(None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."),
+    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Show repos for this deliverable instead of the project."),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
+) -> None:
+    """List source repos declared in the manifest."""
+    out = Output.from_context(ctx, json_mode=json_mode)
+    scope = workspace.resolve_cli_scope(project, deliverable)
+    project = scope.project
+    deliverable = scope.deliverable
+
+    if deliverable:
+        manifest_path = workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
+        m = load_deliverable_manifest(manifest_path)
+    else:
+        manifest_path = workspace.project_dir(project) / "design" / "project.toml"
+        m = load_project_manifest(manifest_path)
+
+    repos_data = [
+        {
+            "remote": r.remote,
+            "local_hint": r.local_hint,
+            "worktree": r.worktree,
+            "branch_prefix": r.branch_prefix,
+        }
+        for r in m.repos
+    ]
+
+    if json_mode:
+        out.result({"repos": repos_data})
+        return
+
+    if not m.repos:
+        out.result(None, human_text="(no repos)")
+        return
+
+    table = Table()
+    table.add_column("Remote")
+    table.add_column("Worktree")
+    table.add_column("Branch prefix")
+    table.add_column("Local hint")
+    for r in m.repos:
+        table.add_row(r.remote, r.worktree, r.branch_prefix or "-", r.local_hint or "-")
+    out.print_rich(table)

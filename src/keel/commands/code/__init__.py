@@ -8,3 +8,6 @@ app = typer.Typer(
     help="Manage source-repo linkage and git worktrees.",
     no_args_is_help=True,
 )
+
+from keel.commands.code.list import cmd_list  # noqa: E402
+app.command(name="list")(cmd_list)
