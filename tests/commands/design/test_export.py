@@ -43,3 +43,41 @@ def test_export_writes_to_output_file(projects, make_deliverable, tmp_path) -> N
     assert result.exit_code == 0
     assert out_path.is_file()
     assert "bar" in out_path.read_text()
+
+
+def test_export_project_composes_deliverables(projects, make_project) -> None:
+    """Project-level export includes a section per deliverable."""
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"])
+    runner.invoke(app, ["deliverable", "add", "beta", "-d", "beta thing", "-y", "--project", "foo"])
+    result = runner.invoke(app, ["design", "export", "foo"])
+    assert result.exit_code == 0
+    assert "## Deliverable: alpha" in result.stdout
+    assert "## Deliverable: beta" in result.stdout
+
+
+def test_export_no_deliverables_flag(projects, make_project) -> None:
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "alpha", "-d", "d", "-y", "--project", "foo"])
+    result = runner.invoke(app, ["design", "export", "foo", "--no-deliverables"])
+    assert "## Deliverable: alpha" not in result.stdout
+
+
+def test_export_decision_numbering_flat_across_project(projects, make_project) -> None:
+    """Project decisions get D.1+, then deliverable decisions follow."""
+    proj_path = projects / "foo"
+    make_project("foo")
+    runner.invoke(app, ["deliverable", "add", "alpha", "-d", "d", "-y", "--project", "foo"])
+    # Add decisions
+    (proj_path / "design" / "decisions" / "2026-04-29-p1.md").write_text(
+        "---\ndate: 2026-04-29\ntitle: P1\nstatus: proposed\n---\n# P1\n## Question\nQ\n## Conclusion\nC\n"
+    )
+    deliv_decisions = proj_path / "deliverables" / "alpha" / "design" / "decisions"
+    deliv_decisions.mkdir(parents=True, exist_ok=True)
+    (deliv_decisions / "2026-04-29-a1.md").write_text(
+        "---\ndate: 2026-04-29\ntitle: A1\nstatus: proposed\n---\n# A1\n## Question\nQ\n## Conclusion\nC\n"
+    )
+    result = runner.invoke(app, ["design", "export", "foo"])
+    text = result.stdout
+    assert "Appendix D.1: P1" in text
+    assert "Appendix D.2:" in text  # deliverable's a1 follows
