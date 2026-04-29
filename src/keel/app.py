@@ -78,3 +78,7 @@ app.add_typer(design_app, name="design")
 from keel.commands.archive import cmd_archive  # noqa: E402
 
 app.command(name="archive")(cmd_archive)
+
+from keel.commands.rename import cmd_rename  # noqa: E402
+
+app.command(name="rename")(cmd_rename)
