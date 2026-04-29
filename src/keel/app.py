@@ -74,3 +74,7 @@ app.command(name="validate")(cmd_validate)
 from keel.commands.design import app as design_app  # noqa: E402
 
 app.add_typer(design_app, name="design")
+
+from keel.commands.archive import cmd_archive  # noqa: E402
+
+app.command(name="archive")(cmd_archive)
