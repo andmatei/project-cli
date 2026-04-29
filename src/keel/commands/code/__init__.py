@@ -24,3 +24,7 @@ app.command(name="init")(cmd_init)
 from keel.commands.code.add import cmd_add  # noqa: E402
 
 app.command(name="add")(cmd_add)
+
+from keel.commands.code.rm import cmd_rm  # noqa: E402
+
+app.command(name="rm")(cmd_rm)
