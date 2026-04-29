@@ -102,6 +102,75 @@ def _enrich_with_worktree_state(unit_dir: Path, repos: list) -> list:
     return enriched
 
 
+_TITLE_RE = re.compile(r"^# (.+?)\s*$", re.MULTILINE)
+
+
+def _extract_description(text: str) -> str | None:
+    """Heuristic: the first non-empty line after '# Title' is the description."""
+    title_match = _TITLE_RE.search(text)
+    if not title_match:
+        return None
+    after = text[title_match.end():].lstrip("\n")
+    for line in after.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            return line
+    return None
+
+
+def _migrate_deliverables(proj_dir: Path, project_name: str, apply: bool, out) -> int:  # noqa: ANN001
+    """Migrate each deliverable under proj_dir/deliverables/.
+
+    Returns count of deliverables migrated (or that would be in dry-run).
+    """
+    from datetime import date
+
+    from keel.manifest import DeliverableManifest, DeliverableMeta, save_deliverable_manifest
+
+    deliv_dir = proj_dir / "deliverables"
+    if not deliv_dir.is_dir():
+        return 0
+
+    count = 0
+    for deliv in sorted(deliv_dir.iterdir()):
+        if not deliv.is_dir():
+            continue
+        manifest_path = deliv / "design" / "deliverable.toml"
+        if manifest_path.is_file():
+            continue  # already migrated, leave alone
+        claude_md = deliv / "design" / "CLAUDE.md"
+        if not claude_md.is_file():
+            continue
+
+        text = claude_md.read_text()
+        repos, shared = _parse_code_section(text, deliv.name)
+        repos = _enrich_with_worktree_state(deliv, repos)
+        desc = _extract_description(text) or "[migrated]"
+
+        manifest = DeliverableManifest(
+            deliverable=DeliverableMeta(
+                name=deliv.name,
+                parent_project=project_name,
+                description=desc,
+                created=date.today(),
+                shared_worktree=shared,
+            ),
+            repos=repos,
+        )
+
+        if apply:
+            save_deliverable_manifest(manifest_path, manifest)
+            # Initialize .phase if missing
+            phase_file = deliv / "design" / ".phase"
+            if not phase_file.is_file():
+                phase_file.write_text("scoping\n")
+            out.info(f"  deliverable {deliv.name}: wrote {manifest_path}")
+        else:
+            out.info(f"  [dry-run] deliverable {deliv.name}: would write deliverable.toml")
+        count += 1
+    return count
+
+
 def cmd_migrate(
     ctx: typer.Context,
     name: str | None = typer.Argument(None, help="Project name to migrate. Auto-detected from CWD if omitted."),
@@ -134,15 +203,51 @@ def cmd_migrate(
             raise typer.Exit(code=1)
         targets = [name]
 
+    from datetime import date
+
+    from keel.manifest import ProjectManifest, ProjectMeta, save_project_manifest
+
     results: list[dict] = []
     for target in targets:
         proj_dir = workspace.project_dir(target)
-        if (proj_dir / "design" / "project.toml").is_file():
+        manifest_path = proj_dir / "design" / "project.toml"
+        if manifest_path.is_file():
             out.info(f"{target}: already migrated, skipping")
             results.append({"name": target, "status": "skipped"})
             continue
-        # Dry-run-only path for T1.1; T1.2-T1.6 implement the actual migration.
-        out.info(f"[dry-run] would migrate {target}")
-        results.append({"name": target, "status": "dry-run"})
+
+        claude_md = proj_dir / "design" / "CLAUDE.md"
+        if not claude_md.is_file():
+            out.warn(f"{target}: no CLAUDE.md, skipping")
+            results.append({"name": target, "status": "skipped"})
+            continue
+
+        text = claude_md.read_text()
+        repos, _shared = _parse_code_section(text, target)
+        repos = _enrich_with_worktree_state(proj_dir, repos)
+
+        desc = _extract_description(text) or "[migrated; description not extracted]"
+
+        manifest = ProjectManifest(
+            project=ProjectMeta(
+                name=target,
+                description=desc,
+                created=date.today(),
+            ),
+            repos=repos,
+        )
+
+        if apply:
+            save_project_manifest(manifest_path, manifest)
+            out.info(f"{target}: wrote {manifest_path}")
+            results.append({"name": target, "status": "migrated", "repos": len(repos)})
+        else:
+            out.info(f"[dry-run] {target}: would write project.toml with {len(repos)} repo(s)")
+            results.append({"name": target, "status": "dry-run", "repos": len(repos)})
+
+        # Migrate deliverables under this project
+        d_count = _migrate_deliverables(proj_dir, target, apply, out)
+        if results and isinstance(results[-1], dict):
+            results[-1]["deliverables"] = d_count
 
     out.result({"results": results}, human_text=f"Processed {len(results)} project(s).")

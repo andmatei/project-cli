@@ -98,3 +98,44 @@ def test_enrich_repos_with_branch_from_worktree(projects, source_repo) -> None:
     repos = [RepoSpec(remote=str(source_repo), worktree="code")]
     enriched = _enrich_with_worktree_state(proj, repos)
     assert enriched[0].branch_prefix == "alice/legacy-base"
+
+
+def test_migrate_apply_writes_project_manifest(projects, source_repo) -> None:
+    from keel import git_ops
+
+    proj = projects / "legacy"
+    (proj / "design" / "decisions").mkdir(parents=True)
+    (proj / "design" / "CLAUDE.md").write_text(
+        f"# legacy\n\nold project.\n\n## Code\nCode: ../code/\nSource repo: {source_repo}\n\n## Workflow\n"
+    )
+    (proj / "design" / "scope.md").write_text("# legacy\n")
+    (proj / "design" / "design.md").write_text("# legacy\n")
+    (proj / "design" / ".phase").write_text("scoping\n")
+    git_ops.create_worktree(source_repo, proj / "code", branch="alice/legacy-base")
+
+    result = runner.invoke(app, ["migrate", "legacy", "--apply"])
+    assert result.exit_code == 0, result.stderr
+    from keel.manifest import load_project_manifest
+
+    m = load_project_manifest(proj / "design" / "project.toml")
+    assert m.project.name == "legacy"
+    assert len(m.repos) == 1
+    assert m.repos[0].worktree == "code"
+    assert m.repos[0].remote == str(source_repo)
+    assert m.repos[0].branch_prefix == "alice/legacy-base"
+
+
+def test_migrate_apply_design_only_project(projects) -> None:
+    """Project with no '## Code' section migrates to a manifest with no repos."""
+    proj = projects / "designer"
+    (proj / "design" / "decisions").mkdir(parents=True)
+    (proj / "design" / "CLAUDE.md").write_text("# designer\n\nDesign-only.\n\n## Workflow\n")
+    (proj / "design" / "scope.md").write_text("# designer\n")
+    (proj / "design" / "design.md").write_text("# designer\n")
+    (proj / "design" / ".phase").write_text("scoping\n")
+    result = runner.invoke(app, ["migrate", "designer", "--apply"])
+    assert result.exit_code == 0
+    from keel.manifest import load_project_manifest
+
+    m = load_project_manifest(proj / "design" / "project.toml")
+    assert m.repos == []
