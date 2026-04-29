@@ -70,3 +70,7 @@ app.add_typer(code_app, name="code")
 from keel.commands.validate import cmd_validate  # noqa: E402
 
 app.command(name="validate")(cmd_validate)
+
+from keel.commands.design import app as design_app  # noqa: E402
+
+app.add_typer(design_app, name="design")
