@@ -139,3 +139,78 @@ def test_migrate_apply_design_only_project(projects) -> None:
 
     m = load_project_manifest(proj / "design" / "project.toml")
     assert m.repos == []
+
+
+def test_migrate_writes_deliverable_manifests(projects) -> None:
+    """Each deliverable on disk gets a deliverable.toml after migration."""
+    proj = projects / "legacy"
+    (proj / "design" / "decisions").mkdir(parents=True)
+    (proj / "design" / "CLAUDE.md").write_text("# legacy\n\nold.\n\n## Workflow\n")
+    (proj / "design" / "scope.md").write_text("# x\n")
+    (proj / "design" / "design.md").write_text("# x\n")
+    (proj / "design" / ".phase").write_text("scoping\n")
+
+    # Add a deliverable with a shared worktree
+    deliv = proj / "deliverables" / "alpha"
+    (deliv / "design" / "decisions").mkdir(parents=True)
+    (deliv / "design" / "CLAUDE.md").write_text(
+        "# alpha\n\nthe alpha thing.\n\nParent design: ../../../design/\n\n"
+        "## Code\nCode: shared with parent (../../../code/)\nSource repo: see parent\n\n## Workflow\n"
+    )
+    (deliv / "design" / "design.md").write_text("# alpha\n")
+    # Note: no .phase yet — migrate should create it
+
+    result = runner.invoke(app, ["migrate", "legacy", "--apply"])
+    assert result.exit_code == 0, result.stderr
+    from keel.manifest import load_deliverable_manifest
+
+    m = load_deliverable_manifest(deliv / "design" / "deliverable.toml")
+    assert m.deliverable.name == "alpha"
+    assert m.deliverable.parent_project == "legacy"
+    assert m.deliverable.shared_worktree is True
+    assert m.repos == []
+    # .phase was created
+    assert (deliv / "design" / ".phase").read_text().splitlines()[0] == "scoping"
+
+
+def test_migrate_skips_already_migrated_deliverable(projects) -> None:
+    """A deliverable that already has deliverable.toml is left alone."""
+    from datetime import date as _date
+
+    from keel.manifest import (
+        DeliverableManifest,
+        DeliverableMeta,
+        save_deliverable_manifest,
+    )
+
+    proj = projects / "legacy"
+    (proj / "design" / "decisions").mkdir(parents=True)
+    (proj / "design" / "CLAUDE.md").write_text("# legacy\n\nold.\n\n## Workflow\n")
+    (proj / "design" / "scope.md").write_text("# x\n")
+    (proj / "design" / "design.md").write_text("# x\n")
+    (proj / "design" / ".phase").write_text("scoping\n")
+
+    deliv = proj / "deliverables" / "alpha"
+    (deliv / "design" / "decisions").mkdir(parents=True)
+    save_deliverable_manifest(
+        deliv / "design" / "deliverable.toml",
+        DeliverableManifest(
+            deliverable=DeliverableMeta(
+                name="alpha",
+                parent_project="legacy",
+                description="kept",
+                created=_date(2025, 1, 1),
+                shared_worktree=False,
+            ),
+            repos=[],
+        ),
+    )
+    (deliv / "design" / "CLAUDE.md").write_text("# alpha\n\nDIFFERENT description.\n\n## Workflow\n")
+
+    runner.invoke(app, ["migrate", "legacy", "--apply"])
+
+    # The pre-existing manifest is preserved (not overwritten)
+    from keel.manifest import load_deliverable_manifest
+
+    m = load_deliverable_manifest(deliv / "design" / "deliverable.toml")
+    assert m.deliverable.description == "kept"
