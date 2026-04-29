@@ -1,12 +1,14 @@
 """`keel code status`."""
 from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
+
 import typer
 from rich.table import Table
 
 from keel import git_ops, workspace
-from keel.manifest import load_project_manifest, load_deliverable_manifest
+from keel.manifest import load_deliverable_manifest, load_project_manifest
 from keel.output import Output
 
 

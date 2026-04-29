@@ -10,7 +10,9 @@ app = typer.Typer(
 )
 
 from keel.commands.code.list import cmd_list  # noqa: E402
+
 app.command(name="list")(cmd_list)
 
 from keel.commands.code.status import cmd_status  # noqa: E402
+
 app.command(name="status")(cmd_status)

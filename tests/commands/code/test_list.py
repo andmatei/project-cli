@@ -1,12 +1,16 @@
 """Tests for `keel code list`."""
 import json
+from datetime import date
+
 from typer.testing import CliRunner
+
 from keel.app import app
 from keel.manifest import (
-    ProjectManifest, ProjectMeta, RepoSpec,
+    ProjectManifest,
+    ProjectMeta,
+    RepoSpec,
     save_project_manifest,
 )
-from datetime import date
 
 runner = CliRunner()
 
@@ -51,7 +55,9 @@ def test_list_json_shape(projects, make_project) -> None:
 def test_list_at_deliverable_scope(projects, make_deliverable) -> None:
     deliv = make_deliverable(project_name="foo", name="bar", description="d")
     from keel.manifest import (
-        DeliverableManifest, DeliverableMeta, RepoSpec,
+        DeliverableManifest,
+        DeliverableMeta,
+        RepoSpec,
         save_deliverable_manifest,
     )
     m = DeliverableManifest(

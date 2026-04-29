@@ -1,10 +1,11 @@
 """`keel code list`."""
 from __future__ import annotations
+
 import typer
 from rich.table import Table
 
 from keel import workspace
-from keel.manifest import load_project_manifest, load_deliverable_manifest
+from keel.manifest import load_deliverable_manifest, load_project_manifest
 from keel.output import Output
 
 

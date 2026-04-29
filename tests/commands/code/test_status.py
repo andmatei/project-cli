@@ -1,7 +1,9 @@
 # tests/commands/code/test_status.py
 """Tests for `keel code status`."""
 import json
+
 from typer.testing import CliRunner
+
 from keel.app import app
 
 runner = CliRunner()
@@ -15,10 +17,14 @@ def test_status_no_repos(projects, make_project) -> None:
 
 def test_status_repo_not_cloned(projects, make_project) -> None:
     """When local_hint points at a missing dir, status reports 'missing'."""
-    from keel.manifest import (
-        ProjectManifest, ProjectMeta, RepoSpec, save_project_manifest,
-    )
     from datetime import date
+
+    from keel.manifest import (
+        ProjectManifest,
+        ProjectMeta,
+        RepoSpec,
+        save_project_manifest,
+    )
     proj = make_project("foo")
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
@@ -38,11 +44,15 @@ def test_status_repo_not_cloned(projects, make_project) -> None:
 
 def test_status_worktree_clean(projects, make_project, source_repo) -> None:
     """A live worktree on the right branch is reported as clean."""
-    from keel.manifest import (
-        ProjectManifest, ProjectMeta, RepoSpec, save_project_manifest,
-    )
-    from keel import git_ops
     from datetime import date
+
+    from keel import git_ops
+    from keel.manifest import (
+        ProjectManifest,
+        ProjectMeta,
+        RepoSpec,
+        save_project_manifest,
+    )
 
     proj = make_project("foo")
     branch = "alice/foo-base"
@@ -69,11 +79,15 @@ def test_status_worktree_clean(projects, make_project, source_repo) -> None:
 
 
 def test_status_worktree_dirty(projects, make_project, source_repo) -> None:
-    from keel.manifest import (
-        ProjectManifest, ProjectMeta, RepoSpec, save_project_manifest,
-    )
-    from keel import git_ops
     from datetime import date
+
+    from keel import git_ops
+    from keel.manifest import (
+        ProjectManifest,
+        ProjectMeta,
+        RepoSpec,
+        save_project_manifest,
+    )
 
     proj = make_project("foo")
     git_ops.create_worktree(source_repo, proj / "code", branch="alice/foo-base")
