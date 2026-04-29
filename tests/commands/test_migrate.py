@@ -82,3 +82,19 @@ def test_parse_code_section_design_only() -> None:
     repos, shared = _parse_code_section(text, "myproj")
     assert shared is False
     assert repos == []
+
+
+def test_enrich_repos_with_branch_from_worktree(projects, source_repo) -> None:
+    """When a worktree exists, branch_prefix is filled from the current branch."""
+    from keel import git_ops
+    from keel.commands.migrate import _enrich_with_worktree_state
+    from keel.manifest import RepoSpec
+
+    # Stage a project dir with an existing worktree
+    proj = projects / "legacy"
+    proj.mkdir()
+    git_ops.create_worktree(source_repo, proj / "code", branch="alice/legacy-base")
+
+    repos = [RepoSpec(remote=str(source_repo), worktree="code")]
+    enriched = _enrich_with_worktree_state(proj, repos)
+    assert enriched[0].branch_prefix == "alice/legacy-base"

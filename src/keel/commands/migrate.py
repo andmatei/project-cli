@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 import typer
 
@@ -21,8 +22,6 @@ def _parse_code_section(claude_md_text: str, project_name: str) -> tuple[list, b
 
     Returns (list[RepoSpec], shared_worktree).
     """
-    from pathlib import Path
-
     from keel.manifest import RepoSpec
 
     section_match = _CODE_SECTION_RE.search(claude_md_text)
@@ -74,6 +73,33 @@ def _parse_code_section(claude_md_text: str, project_name: str) -> tuple[list, b
 
     # Design-only or unrecognized — return empty
     return [], False
+
+
+def _enrich_with_worktree_state(unit_dir: Path, repos: list) -> list:
+    """For each repo with a worktree on disk, fill branch_prefix from the current branch."""
+    from keel import git_ops
+    from keel.manifest import RepoSpec
+
+    enriched: list[RepoSpec] = []
+    for r in repos:
+        wt = unit_dir / r.worktree
+        prefix = r.branch_prefix
+        if prefix is None and wt.is_dir() and git_ops.is_git_repo(wt):
+            try:
+                cur = git_ops.current_branch(wt)
+                if cur:
+                    prefix = cur
+            except git_ops.GitError:
+                pass
+        enriched.append(
+            RepoSpec(
+                remote=r.remote,
+                local_hint=r.local_hint,
+                worktree=r.worktree,
+                branch_prefix=prefix,
+            )
+        )
+    return enriched
 
 
 def cmd_migrate(
