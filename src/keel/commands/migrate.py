@@ -1,10 +1,79 @@
 """`keel migrate` — convert legacy Bash CLI projects to manifest format."""
 from __future__ import annotations
 
+import re
+
 import typer
 
 from keel import workspace
 from keel.output import Output
+
+_CODE_SECTION_RE = re.compile(r"## Code\n(.*?)(?:\n## |\Z)", re.DOTALL)
+_SINGLE_CODE_RE = re.compile(r"^Code:\s+\.\./code/?\s*$", re.MULTILINE)
+_MULTI_CODE_RE = re.compile(r"^Code\s+\(([^)]+)\):\s+\.\./code-([^/\s]+)/?\s*$", re.MULTILINE)
+_SHARED_CODE_RE = re.compile(r"^Code:\s+shared with parent", re.MULTILINE)
+_SOURCE_REPO_RE = re.compile(r"^Source repo:\s+(.+?)\s*$", re.MULTILINE)
+_SOURCE_REPOS_RE = re.compile(r"^Source repos:\s+(.+?)\s*$", re.MULTILINE)
+
+
+def _parse_code_section(claude_md_text: str, project_name: str) -> tuple[list, bool]:
+    """Parse a legacy CLAUDE.md '## Code' section.
+
+    Returns (list[RepoSpec], shared_worktree).
+    """
+    from pathlib import Path
+
+    from keel.manifest import RepoSpec
+
+    section_match = _CODE_SECTION_RE.search(claude_md_text)
+    if not section_match:
+        return [], False
+    section = section_match.group(1)
+
+    if _SHARED_CODE_RE.search(section):
+        return [], True
+
+    repos: list[RepoSpec] = []
+
+    # Multi-repo: collect all "Code (<name>): ../code-<name>/" lines
+    multi_matches = list(_MULTI_CODE_RE.finditer(section))
+    if multi_matches:
+        # Source repos line: space-separated paths
+        source_repos_line = _SOURCE_REPOS_RE.search(section)
+        source_paths = source_repos_line.group(1).split() if source_repos_line else []
+        # Map each entry by basename to the corresponding code-<x> dir
+        for m in multi_matches:
+            code_name = m.group(1)  # e.g. "mms"
+            wt_name = f"code-{m.group(2)}"
+            # Find the matching source path by basename
+            remote = next((p for p in source_paths if Path(p).name == code_name), None) or ""
+            repos.append(
+                RepoSpec(
+                    remote=remote,
+                    local_hint=remote or None,
+                    worktree=wt_name,
+                    branch_prefix=None,
+                )
+            )
+        return repos, False
+
+    # Single-repo
+    if _SINGLE_CODE_RE.search(section):
+        source_match = _SOURCE_REPO_RE.search(section)
+        if source_match:
+            remote = source_match.group(1).strip()
+            repos.append(
+                RepoSpec(
+                    remote=remote,
+                    local_hint=remote,
+                    worktree="code",
+                    branch_prefix=None,
+                )
+            )
+        return repos, False
+
+    # Design-only or unrecognized — return empty
+    return [], False
 
 
 def cmd_migrate(

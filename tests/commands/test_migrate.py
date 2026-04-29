@@ -35,3 +35,50 @@ def test_migrate_skips_already_migrated(projects, make_project) -> None:
     result = runner.invoke(app, ["migrate", "foo"])
     assert result.exit_code == 0
     assert "already" in result.stderr.lower() or "skipping" in result.stderr.lower()
+
+
+def test_parse_code_section_single_repo() -> None:
+    from keel.commands.migrate import _parse_code_section
+
+    text = "## Code\nCode: ../code/\nSource repo: /tmp/some-repo\n"
+    repos, shared = _parse_code_section(text, "myproj")
+    assert shared is False
+    assert len(repos) == 1
+    assert repos[0].worktree == "code"
+    assert repos[0].remote == "/tmp/some-repo"
+    assert repos[0].local_hint == "/tmp/some-repo"
+
+
+def test_parse_code_section_multi_repo() -> None:
+    from keel.commands.migrate import _parse_code_section
+
+    text = """## Code
+Code (mms): ../code-mms/
+Code (ipa): ../code-ipa/
+Source repos: /Users/me/mms /Users/me/ipa
+"""
+    repos, shared = _parse_code_section(text, "myproj")
+    assert shared is False
+    assert len(repos) == 2
+    worktrees = {r.worktree for r in repos}
+    assert worktrees == {"code-mms", "code-ipa"}
+    remotes = {r.remote for r in repos}
+    assert remotes == {"/Users/me/mms", "/Users/me/ipa"}
+
+
+def test_parse_code_section_shared() -> None:
+    from keel.commands.migrate import _parse_code_section
+
+    text = "## Code\nCode: shared with parent (../../../code/)\nSource repo: see parent\n"
+    repos, shared = _parse_code_section(text, "myproj")
+    assert shared is True
+    assert repos == []
+
+
+def test_parse_code_section_design_only() -> None:
+    from keel.commands.migrate import _parse_code_section
+
+    text = "## Workflow\n..."
+    repos, shared = _parse_code_section(text, "myproj")
+    assert shared is False
+    assert repos == []
