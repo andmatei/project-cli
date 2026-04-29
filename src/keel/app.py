@@ -86,3 +86,7 @@ app.command(name="rename")(cmd_rename)
 from keel.commands.migrate import cmd_migrate  # noqa: E402
 
 app.command(name="migrate")(cmd_migrate)
+
+from keel.commands.completion import cmd_completion  # noqa: E402
+
+app.command(name="completion")(cmd_completion)
