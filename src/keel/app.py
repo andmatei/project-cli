@@ -124,6 +124,10 @@ from keel.commands.milestone import app as milestone_app  # noqa: E402
 
 app.add_typer(milestone_app, name="milestone")
 
+from keel.commands.task import app as task_app  # noqa: E402
+
+app.add_typer(task_app, name="task")
+
 from keel.commands.design import app as design_app  # noqa: E402
 
 app.add_typer(design_app, name="design")
