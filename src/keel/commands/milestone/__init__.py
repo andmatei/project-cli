@@ -17,3 +17,15 @@ from keel.commands.milestone.show import cmd_show  # noqa: E402
 app.command(name="add")(cmd_add)
 app.command(name="list")(cmd_list)
 app.command(name="show")(cmd_show)
+
+from keel.commands.milestone.start import cmd_start  # noqa: E402
+
+app.command(name="start")(cmd_start)
+
+from keel.commands.milestone.done import cmd_done  # noqa: E402
+
+app.command(name="done")(cmd_done)
+
+from keel.commands.milestone.cancel import cmd_cancel  # noqa: E402
+
+app.command(name="cancel")(cmd_cancel)
