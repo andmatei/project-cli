@@ -35,3 +35,11 @@ app.command(name="cancel")(cmd_cancel)
 from keel.commands.task.graph import cmd_graph  # noqa: E402
 
 app.command(name="graph")(cmd_graph)
+
+from keel.commands.task.rm import cmd_rm  # noqa: E402
+
+app.command(name="rm")(cmd_rm)
+
+from keel.commands.task.worktree import cmd_worktree  # noqa: E402
+
+app.command(name="worktree")(cmd_worktree)
