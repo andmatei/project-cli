@@ -77,4 +77,11 @@ def cmd_rm(
         new_m = ProjectManifest(project=m.project, repos=new_repos)
         save_project_manifest(manifest_path, new_m)
 
-    out.result({"removed_remote": repo, "removed_worktree": str(wt_path)}, human_text=f"Removed: {repo}")
+    out.result(
+        {
+            "removed": target.worktree,
+            "remote": repo,
+            "worktree_path": str(wt_path),
+        },
+        human_text=f"Removed: {repo}",
+    )

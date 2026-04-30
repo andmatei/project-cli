@@ -120,4 +120,7 @@ def cmd_rm(
                     )
                 )
 
-    out.result({"removed": str(deliv)}, human_text=f"Deliverable removed: {deliv}")
+    out.result(
+        {"removed": name, "path": str(deliv)},
+        human_text=f"Deliverable removed: {deliv}",
+    )
