@@ -7,6 +7,7 @@ import typer
 from keel.errors import ErrorCode
 from keel.manifest import (
     Task,
+    find_milestone,
     load_milestones_manifest,
     load_project_manifest,
     save_milestones_manifest,
@@ -86,7 +87,7 @@ def cmd_add(
         provider = get_provider_for_project(proj_manifest)
         if provider is not None:
             # Parent: the milestone's jira_id (set when milestone was pushed)
-            parent_milestone = next((m for m in manifest.milestones if m.id == milestone), None)
+            parent_milestone = find_milestone(manifest, milestone)
             parent_id = parent_milestone.jira_id if parent_milestone and parent_milestone.jira_id else ""
             try:
                 ticket = provider.create_task(parent_id, new_task.title, new_task.description)

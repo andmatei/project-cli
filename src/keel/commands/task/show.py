@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from keel.errors import ErrorCode
-from keel.manifest import load_milestones_manifest
+from keel.manifest import find_task, load_milestones_manifest
 from keel.output import Output
 from keel.workspace import resolve_cli_scope
 
@@ -23,7 +23,7 @@ def cmd_show(
     scope = resolve_cli_scope(project, deliverable, out=out)
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
 
-    task = next((t for t in manifest.tasks if t.id == id), None)
+    task = find_task(manifest, id)
     if task is None:
         out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
 

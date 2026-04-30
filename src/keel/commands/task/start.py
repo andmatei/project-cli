@@ -7,7 +7,7 @@ import os
 import typer
 
 from keel.errors import ErrorCode
-from keel.manifest import load_milestones_manifest, save_milestones_manifest
+from keel.manifest import find_task, load_milestones_manifest, save_milestones_manifest
 from keel.output import Output
 from keel.util import slugify
 from keel.workspace import resolve_cli_scope
@@ -34,7 +34,7 @@ def cmd_start(
     path = scope.milestones_manifest_path
     manifest = load_milestones_manifest(path)
 
-    task = next((t for t in manifest.tasks if t.id == id), None)
+    task = find_task(manifest, id)
     if task is None:
         out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
 

@@ -204,6 +204,16 @@ class MilestonesManifest(BaseModel):
     tasks: list[Task] = Field(default_factory=list)
 
 
+def find_milestone(manifest: MilestonesManifest, id: str) -> Milestone | None:
+    """Return the milestone with the given id, or None."""
+    return next((m for m in manifest.milestones if m.id == id), None)
+
+
+def find_task(manifest: MilestonesManifest, id: str) -> Task | None:
+    """Return the task with the given id, or None."""
+    return next((t for t in manifest.tasks if t.id == id), None)
+
+
 def load_milestones_manifest(path: Path) -> MilestonesManifest:
     """Read and validate `milestones.toml`. Returns an empty manifest if the file doesn't exist."""
     if not path.is_file():

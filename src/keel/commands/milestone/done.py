@@ -5,7 +5,12 @@ import typer
 
 from keel import workspace
 from keel.errors import ErrorCode
-from keel.manifest import load_milestones_manifest, load_project_manifest, save_milestones_manifest
+from keel.manifest import (
+    find_milestone,
+    load_milestones_manifest,
+    load_project_manifest,
+    save_milestones_manifest,
+)
 from keel.output import Output
 from keel.ticketing import get_provider_for_project
 from keel.workspace import resolve_cli_scope
@@ -32,7 +37,7 @@ def cmd_done(
     path = scope.milestones_manifest_path
     manifest = load_milestones_manifest(path)
 
-    milestone = next((m for m in manifest.milestones if m.id == id), None)
+    milestone = find_milestone(manifest, id)
     if milestone is None:
         out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
 

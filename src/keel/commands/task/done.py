@@ -6,7 +6,12 @@ import typer
 
 from keel import workspace
 from keel.errors import ErrorCode
-from keel.manifest import load_milestones_manifest, load_project_manifest, save_milestones_manifest
+from keel.manifest import (
+    find_task,
+    load_milestones_manifest,
+    load_project_manifest,
+    save_milestones_manifest,
+)
 from keel.output import Output
 from keel.ticketing import get_provider_for_project
 from keel.workspace import resolve_cli_scope
@@ -30,7 +35,7 @@ def cmd_done(
     path = scope.milestones_manifest_path
     manifest = load_milestones_manifest(path)
 
-    task = next((t for t in manifest.tasks if t.id == id), None)
+    task = find_task(manifest, id)
     if task is None:
         out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
 

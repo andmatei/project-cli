@@ -11,6 +11,7 @@ from keel.errors import ErrorCode
 from keel.manifest import (
     DeliverableManifest,
     ProjectManifest,
+    find_task,
     load_deliverable_manifest,
     load_milestones_manifest,
     load_project_manifest,
@@ -36,7 +37,7 @@ def cmd_worktree(
     scope = resolve_cli_scope(project, deliverable, out=out)
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
 
-    task = next((t for t in manifest.tasks if t.id == id), None)
+    task = find_task(manifest, id)
     if task is None:
         out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
 
