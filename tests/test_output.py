@@ -86,25 +86,17 @@ def test_from_context_picks_up_quiet() -> None:
     """Output.from_context honors quiet=True from ctx.obj."""
 
     class _Ctx:
-        obj = {"quiet": True, "verbose": False}
+        obj = {"quiet": True}
 
     o = Output.from_context(_Ctx())
     assert o.quiet is True
-
-
-def test_from_context_picks_up_verbose() -> None:
-    class _Ctx:
-        obj = {"quiet": False, "verbose": True}
-
-    o = Output.from_context(_Ctx())
-    assert o.verbose is True
 
 
 def test_from_context_with_json_mode_overrides_quiet() -> None:
     """--json forces quiet (existing constructor behavior)."""
 
     class _Ctx:
-        obj = {"quiet": False, "verbose": False}
+        obj = {"quiet": False}
 
     o = Output.from_context(_Ctx(), json_mode=True)
     assert o.json_mode is True
@@ -119,4 +111,3 @@ def test_from_context_handles_no_ctx_obj() -> None:
 
     o = Output.from_context(_Ctx())
     assert o.quiet is False
-    assert o.verbose is False

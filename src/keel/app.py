@@ -39,12 +39,9 @@ def main(
         help="Show version and exit.",
     ),
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Suppress info logs."),
-    verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose logs."),
 ) -> None:
     """keel: scope-driven development scaffolder for ~/projects/."""
-    if quiet and verbose:
-        raise typer.BadParameter("--quiet and --verbose are mutually exclusive.")
-    ctx.obj = {"quiet": quiet, "verbose": verbose}
+    ctx.obj = {"quiet": quiet}
 
 
 def _load_plugin_commands() -> None:

@@ -17,10 +17,6 @@ from keel.prompts import confirm_destructive
 from keel.workspace import resolve_cli_scope
 
 
-def _phase_path(project: str, deliverable: str | None) -> Path:
-    return workspace.phase_file(project, deliverable)
-
-
 def _read_phase(path: Path) -> tuple[str, list[str]]:
     """Returns (current_phase, history_lines). History lines are everything after line 1."""
     current = workspace.read_phase(path.parent)
@@ -63,7 +59,7 @@ def cmd_phase(
     project = scope.project
     deliverable = scope.deliverable
 
-    path = _phase_path(project, deliverable)
+    path = workspace.phase_file(project, deliverable)
     current, history = _read_phase(path)
 
     if phase is None and not next_phase:

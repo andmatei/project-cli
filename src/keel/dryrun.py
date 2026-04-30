@@ -43,15 +43,6 @@ class OpLog:
     def remove_worktree(self, path: Path) -> None:
         self.ops.append(Op(kind="git-worktree-remove", path=path))
 
-    def rename_branch(self, repo: Path, *, old: str, new: str) -> None:
-        self.ops.append(
-            Op(
-                kind="git-branch-rename",
-                path=repo,
-                detail=f"{old} → {new}",
-            )
-        )
-
     def format_summary(self) -> str:
         lines: list[str] = []
         groups: dict[str, list[Op]] = {}

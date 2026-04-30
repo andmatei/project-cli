@@ -16,11 +16,10 @@ from rich.console import Console
 
 
 class Output:
-    def __init__(self, quiet: bool = False, verbose: bool = False, json_mode: bool = False) -> None:
+    def __init__(self, quiet: bool = False, json_mode: bool = False) -> None:
         if json_mode:
             quiet = True
         self.quiet = quiet
-        self.verbose = verbose
         self.json_mode = json_mode
         # soft_wrap=True so long paths/words aren't broken across lines —
         # callers (and tests) match on substrings like "project.toml" and
@@ -45,10 +44,6 @@ class Output:
         else:
             self._stderr.print(f"[red]error:[/red] {message}")
 
-    def debug(self, message: str) -> None:
-        if self.verbose:
-            self._stderr.print(f"[dim]{message}[/dim]")
-
     def fail(self, message: str, *, code: str | None = None, exit_code: int = 1) -> NoReturn:
         """Emit an error and exit. Equivalent to: out.error(...); raise typer.Exit(exit_code)."""
         import typer  # lazy import — keep output.py typer-free at module load
@@ -63,11 +58,10 @@ class Output:
 
     @classmethod
     def from_context(cls, ctx, *, json_mode: bool = False) -> Output:
-        """Build an Output instance using global --quiet/--verbose flags from a Typer context."""
+        """Build an Output instance using global --quiet flag from a Typer context."""
         obj = (ctx.obj or {}) if hasattr(ctx, "obj") else {}
         return cls(
             quiet=obj.get("quiet", False),
-            verbose=obj.get("verbose", False),
             json_mode=json_mode,
         )
 
