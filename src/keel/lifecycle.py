@@ -21,3 +21,31 @@ def next_phase(current: str) -> str | None:
     if idx + 1 >= len(PHASES):
         return None
     return PHASES[idx + 1]
+
+
+# Milestone and task state sets — currently identical, but kept as separate
+# constants so they can diverge later if needed (e.g. tasks gaining a `blocked`
+# state, milestones losing one).
+MILESTONE_STATES: list[str] = ["planned", "active", "done", "cancelled"]
+TASK_STATES: list[str] = MILESTONE_STATES  # same set; alias for clarity at call sites
+
+DEFAULT_MILESTONE_STATE: str = MILESTONE_STATES[0]
+DEFAULT_TASK_STATE: str = TASK_STATES[0]
+
+_TERMINAL_STATES = frozenset({"done", "cancelled"})
+
+
+def is_valid_milestone_state(name: str) -> bool:
+    return name in MILESTONE_STATES
+
+
+def is_valid_task_state(name: str) -> bool:
+    return name in TASK_STATES
+
+
+def is_terminal_milestone_state(name: str) -> bool:
+    return name in _TERMINAL_STATES
+
+
+def is_terminal_task_state(name: str) -> bool:
+    return name in _TERMINAL_STATES

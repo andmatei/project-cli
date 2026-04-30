@@ -8,6 +8,16 @@ Anything outside `keel.api` and `keel.testing` is internal and may change.
 from __future__ import annotations
 
 from keel.dryrun import Op, OpLog
+from keel.lifecycle import (
+    DEFAULT_MILESTONE_STATE,
+    DEFAULT_TASK_STATE,
+    MILESTONE_STATES,
+    TASK_STATES,
+    is_terminal_milestone_state,
+    is_terminal_task_state,
+    is_valid_milestone_state,
+    is_valid_task_state,
+)
 from keel.manifest import (
     DeliverableManifest,
     DeliverableMeta,
@@ -38,6 +48,11 @@ from keel.workspace import (
 )
 
 __all__ = [
+    # Lifecycle
+    "DEFAULT_MILESTONE_STATE", "DEFAULT_TASK_STATE",
+    "MILESTONE_STATES", "TASK_STATES",
+    "is_terminal_milestone_state", "is_terminal_task_state",
+    "is_valid_milestone_state", "is_valid_task_state",
     # Manifest
     "DeliverableManifest", "DeliverableMeta", "ProjectManifest", "ProjectMeta", "RepoSpec",
     "load_deliverable_manifest", "load_project_manifest",
