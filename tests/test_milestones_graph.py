@@ -98,3 +98,55 @@ def test_topological_sort() -> None:
     assert order.index("t1") < order.index("t3")
     assert order.index("t2") < order.index("t4")
     assert order.index("t3") < order.index("t4")
+
+
+def test_validate_dag_self_loop() -> None:
+    """A task that depends on itself is a cycle."""
+    m = _manifest(
+        [Milestone(id="m1", title="x")],
+        [Task(id="t1", milestone="m1", title="a", depends_on=["t1"])],
+    )
+    with pytest.raises(GraphError) as exc:
+        validate_dag(m)
+    assert "cycle" in str(exc.value).lower()
+
+
+def test_validate_dag_three_cycle() -> None:
+    """A 3-node cycle is detected."""
+    m = _manifest(
+        [Milestone(id="m1", title="x")],
+        [
+            Task(id="t1", milestone="m1", title="a", depends_on=["t3"]),
+            Task(id="t2", milestone="m1", title="b", depends_on=["t1"]),
+            Task(id="t3", milestone="m1", title="c", depends_on=["t2"]),
+        ],
+    )
+    with pytest.raises(GraphError):
+        validate_dag(m)
+
+
+def test_validate_dag_empty() -> None:
+    """An empty manifest is trivially acyclic."""
+    m = MilestonesManifest()
+    validate_dag(m)  # no exception
+
+
+def test_topological_sort_empty() -> None:
+    m = MilestonesManifest()
+    assert topological_sort(m) == []
+
+
+def test_topological_sort_disconnected_components() -> None:
+    """Topological sort handles two unconnected components correctly."""
+    m = _manifest(
+        [Milestone(id="m1", title="x")],
+        [
+            Task(id="a1", milestone="m1", title="a"),
+            Task(id="a2", milestone="m1", title="a", depends_on=["a1"]),
+            Task(id="b1", milestone="m1", title="b"),
+            Task(id="b2", milestone="m1", title="b", depends_on=["b1"]),
+        ],
+    )
+    order = [t.id for t in topological_sort(m)]
+    assert order.index("a1") < order.index("a2")
+    assert order.index("b1") < order.index("b2")
