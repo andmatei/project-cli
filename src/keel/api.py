@@ -45,6 +45,7 @@ from keel.workspace import (
     design_dir,
     detect_scope,
     manifest_path,
+    milestones_manifest_path,
     phase_file,
     project_dir,
     project_exists,
@@ -74,7 +75,7 @@ __all__ = [
     # Workspace
     "Scope",
     "decisions_dir", "design_dir", "deliverable_dir", "deliverable_exists",
-    "detect_scope", "manifest_path", "phase_file",
+    "detect_scope", "manifest_path", "milestones_manifest_path", "phase_file",
     "project_dir", "project_exists", "projects_dir",
     "read_phase",
 ]
