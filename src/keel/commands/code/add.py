@@ -104,7 +104,6 @@ def cmd_add(
         out.info("Manifest was updated; remove the new [[repos]] entry manually if you want to retry.")
         out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
-    out.info(f"Added repo {repo_path} → worktree {unit_dir / wt_name}")
     out.result(
         {"remote": str(repo_path), "worktree": str(unit_dir / wt_name), "branch_prefix": branch_prefix},
         human_text=f"Repo added: {repo_path}",

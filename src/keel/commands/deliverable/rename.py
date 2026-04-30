@@ -144,7 +144,6 @@ def cmd_rename(
             except git_ops.GitError as e:
                 out.warn(f"branch rename failed: {e}")
 
-    out.info(f"Renamed {old} → {new}")
     out.result(
         {"old": str(old_path), "new": str(new_path)},
         human_text=f"Deliverable renamed: {old} → {new}",

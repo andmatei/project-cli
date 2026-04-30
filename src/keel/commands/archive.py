@@ -80,7 +80,6 @@ def cmd_archive(
     shutil.move(str(proj_dir), str(dest))
     (dest / ".archived").write_text(f"archived: {today}\nfrom: {proj_dir}\n")
 
-    out.info(f"Archived: {dest}")
     out.result(
         {"archived_to": str(dest), "removed_worktrees": removed_worktrees},
         human_text=f"Archived {project} to {dest}.",

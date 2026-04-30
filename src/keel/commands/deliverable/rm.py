@@ -120,5 +120,4 @@ def cmd_rm(
                     )
                 )
 
-    out.info(f"Removed deliverable: {deliv}")
     out.result({"removed": str(deliv)}, human_text=f"Deliverable removed: {deliv}")

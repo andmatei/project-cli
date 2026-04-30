@@ -100,7 +100,6 @@ def cmd_rename(
     )
     save_project_manifest(workspace.manifest_path(new_slug), new_manifest)
 
-    out.info(f"Renamed {old} → {new_slug}")
     out.result(
         {"old": old, "new": new_slug, "branch_renames": branch_renames},
         human_text=f"Renamed {old} → {new_slug} (branches: {len(branch_renames)}).",

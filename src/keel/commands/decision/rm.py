@@ -52,5 +52,4 @@ def cmd_rm(
     confirm_destructive(f"Remove decision {path.name}?", yes=yes)
 
     path.unlink()
-    out.info(f"Removed: {path}")
     out.result({"removed": str(path)}, human_text=f"Decision removed: {path}")
