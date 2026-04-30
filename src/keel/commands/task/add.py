@@ -81,17 +81,17 @@ def cmd_add(
 
     provider = with_provider(scope, no_push=no_push)
     if provider is not None:
-        # Parent: the milestone's jira_id (set when milestone was pushed)
+        # Parent: the milestone's ticket_id (set when milestone was pushed)
         with edit_milestones(scope) as manifest:
             parent_milestone = find_milestone(manifest, milestone)
-            parent_id = parent_milestone.jira_id if parent_milestone and parent_milestone.jira_id else ""
+            parent_id = parent_milestone.ticket_id if parent_milestone and parent_milestone.ticket_id else ""
 
         def _push():
             ticket = provider.create_task(parent_id, new_task.title, new_task.description)
             with edit_milestones(scope) as manifest:
                 saved = find_task(manifest, id)
                 if saved is not None:
-                    saved.jira_id = ticket.id
+                    saved.ticket_id = ticket.id
 
         safe_push(out, "create_task", _push)
 

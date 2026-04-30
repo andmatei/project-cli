@@ -51,8 +51,8 @@ def cmd_show(
         lines.append(f"Fan-out: {', '.join(milestone.fan_out)}")
     if milestone.parent:
         lines.append(f"Parent: {milestone.parent}")
-    if milestone.jira_id:
-        lines.append(f"Ticket: {milestone.jira_id}")
+    if milestone.ticket_id:
+        lines.append(f"Ticket: {milestone.ticket_id}")
     lines.append(f"Tasks: {len(tasks)}")
     if by_status:
         breakdown = ", ".join(f"{k}={v}" for k, v in sorted(by_status.items()))

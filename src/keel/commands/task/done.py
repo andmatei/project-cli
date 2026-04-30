@@ -46,7 +46,7 @@ def cmd_done(
         task.status = "done"
 
     provider = with_provider(scope, no_push=no_push)
-    if provider is not None and task.jira_id:
-        safe_push(out, "transition", lambda: provider.transition(task.jira_id, "done"))
+    if provider is not None and task.ticket_id:
+        safe_push(out, "transition", lambda: provider.transition(task.ticket_id, "done"))
 
     out.result(task.model_dump(), human_text=f"Task done: {id}")

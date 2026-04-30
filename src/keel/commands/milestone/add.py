@@ -64,7 +64,7 @@ def cmd_add(
             with edit_milestones(scope) as manifest:
                 saved = find_milestone(manifest, new_milestone.id)
                 if saved is not None:
-                    saved.jira_id = ticket.id
+                    saved.ticket_id = ticket.id
 
         safe_push(out, "create_milestone", _push)
 

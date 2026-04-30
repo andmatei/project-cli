@@ -261,8 +261,8 @@ def test_milestone_add_pushes_to_provider(make_project, monkeypatch) -> None:
         result = runner.invoke(app, ["milestone", "add", "m1", "--title", "X"], catch_exceptions=False)
     assert result.exit_code == 0
     saved = load_milestones_manifest(proj / "design" / "milestones.toml")
-    assert saved.milestones[0].jira_id is not None
-    assert saved.milestones[0].jira_id.startswith("MOCK-")
+    assert saved.milestones[0].ticket_id is not None
+    assert saved.milestones[0].ticket_id.startswith("MOCK-")
     assert any(c[0] == "create_milestone" for c in fake.calls)
 
 
@@ -292,11 +292,11 @@ def test_milestone_add_no_push_skips_provider(make_project, monkeypatch) -> None
         result = runner.invoke(app, ["milestone", "add", "m1", "--title", "X", "--no-push"])
     assert result.exit_code == 0
     saved = load_milestones_manifest(proj / "design" / "milestones.toml")
-    assert saved.milestones[0].jira_id is None
+    assert saved.milestones[0].ticket_id is None
     assert not any(c[0] == "create_milestone" for c in fake.calls)
 
 
-def test_task_add_pushes_with_parent_milestone_jira_id(make_project, monkeypatch) -> None:
+def test_task_add_pushes_with_parent_milestone_ticket_id(make_project, monkeypatch) -> None:
     from unittest.mock import patch
 
     from typer.testing import CliRunner
@@ -319,11 +319,11 @@ def test_task_add_pushes_with_parent_milestone_jira_id(make_project, monkeypatch
     fake = MockProvider()
     with patch("keel.ticketing.load_provider", return_value=fake):
         runner.invoke(app, ["milestone", "add", "m1", "--title", "M"], catch_exceptions=False)
-        # milestone now has jira_id = MOCK-1 (or similar)
+        # milestone now has ticket_id = MOCK-1 (or similar)
         result = runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "T"])
     assert result.exit_code == 0
     saved = load_milestones_manifest(proj / "design" / "milestones.toml")
-    assert saved.tasks[0].jira_id is not None
+    assert saved.tasks[0].ticket_id is not None
 
 
 def test_milestone_done_transitions_provider(make_project, monkeypatch) -> None:

@@ -70,7 +70,7 @@ def cmd_done(
         milestone.status = "done"
 
     provider = with_provider(scope, no_push=no_push)
-    if provider is not None and milestone.jira_id:
-        safe_push(out, "transition", lambda: provider.transition(milestone.jira_id, "done"))
+    if provider is not None and milestone.ticket_id:
+        safe_push(out, "transition", lambda: provider.transition(milestone.ticket_id, "done"))
 
     out.result(milestone.model_dump(), human_text=f"Milestone done: {id}")

@@ -237,7 +237,7 @@ def test_milestone_minimal() -> None:
     assert m.id == "m1"
     assert m.status == "planned"
     assert m.fan_out == []
-    assert m.jira_id is None
+    assert m.ticket_id is None
 
 
 def test_milestone_with_fan_out() -> None:

@@ -168,7 +168,7 @@ class Milestone(BaseModel):
     status: str = Field(default=DEFAULT_MILESTONE_STATE)
     fan_out: list[str] = Field(default_factory=list, description="Deliverable names this milestone fans out to.")
     parent: str | None = Field(default=None, description="If this is a sub-milestone, the parent milestone's id at the project level.")
-    jira_id: str | None = None
+    ticket_id: str | None = Field(default=None, description="Provider-issued ticket id (e.g., Jira issue key).")
 
     @field_validator("status")
     @classmethod
@@ -190,7 +190,7 @@ class Task(BaseModel):
     status: str = Field(default=DEFAULT_TASK_STATE)
     depends_on: list[str] = Field(default_factory=list, description="Other task ids that must be done before this can start.")
     branch: str | None = Field(default=None, description="Git branch for this task. Auto-set when started.")
-    jira_id: str | None = None
+    ticket_id: str | None = Field(default=None, description="Provider-issued ticket id (e.g., Jira issue key).")
 
     @field_validator("status")
     @classmethod
