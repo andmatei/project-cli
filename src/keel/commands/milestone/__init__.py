@@ -29,3 +29,7 @@ app.command(name="done")(cmd_done)
 from keel.commands.milestone.cancel import cmd_cancel  # noqa: E402
 
 app.command(name="cancel")(cmd_cancel)
+
+from keel.commands.milestone.rm import cmd_rm  # noqa: E402
+
+app.command(name="rm")(cmd_rm)

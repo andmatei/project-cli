@@ -72,7 +72,7 @@ def test_done_with_fan_out_blocks_when_subs_not_done(
 ) -> None:
     """Done on a fan-out milestone should fail if any sub-milestone isn't done."""
     proj = make_project("foo")
-    deliv_a = make_deliverable(project_name="foo", name="alpha", description="d")
+    make_deliverable(project_name="foo", name="alpha", description="d")
     monkeypatch.chdir(proj / "design")
     runner.invoke(app, ["milestone", "add", "m1", "--title", "Big", "--project", "foo"])
     # Set fan_out manually via TOML edit

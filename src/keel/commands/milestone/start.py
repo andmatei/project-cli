@@ -31,9 +31,7 @@ def cmd_start(
         out.error(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
         raise typer.Exit(code=1)
 
-    if milestone.status == "planned":
-        milestone.status = "active"
-    elif milestone.status == "done" and reopen:
+    if milestone.status == "planned" or (milestone.status == "done" and reopen):
         milestone.status = "active"
     else:
         out.error(
