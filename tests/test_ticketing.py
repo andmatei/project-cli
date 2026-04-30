@@ -350,3 +350,41 @@ def test_milestone_done_transitions_provider(make_project, monkeypatch) -> None:
     assert result.exit_code == 0
     transitions = [c for c in fake.calls if c[0] == "transition"]
     assert any(args[2] == "done" for args in transitions)
+
+
+def test_milestone_add_provider_failure_does_not_fail_command(projects, make_project, monkeypatch) -> None:
+    """If provider raises, the milestone is saved locally and the command exits 0 with a warning."""
+    from unittest.mock import patch
+
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.manifest import (
+        load_milestones_manifest,
+        load_project_manifest,
+        save_project_manifest,
+    )
+    from keel.ticketing.mock import MockProvider
+
+    runner = CliRunner()
+    proj = make_project("foo")
+    m = load_project_manifest(proj / "design" / "project.toml")
+    m.extensions["ticketing"] = {"provider": "mock"}
+    save_project_manifest(proj / "design" / "project.toml", m)
+    monkeypatch.chdir(proj / "design")
+
+    class BrokenProvider(MockProvider):
+        def create_milestone(self, *args, **kwargs):
+            raise RuntimeError("simulated provider failure")
+
+    fake = BrokenProvider()
+    with patch("keel.ticketing.load_provider", return_value=fake):
+        result = runner.invoke(app, ["milestone", "add", "m1", "--title", "X"])
+    # Even though provider failed, command should succeed and save locally.
+    assert result.exit_code == 0
+    saved = load_milestones_manifest(proj / "design" / "milestones.toml")
+    assert len(saved.milestones) == 1
+    assert saved.milestones[0].ticket_id is None
+    # Warning surfaced somewhere (stderr or stdout — out.info usually goes to stderr)
+    combined = result.stderr.lower() + result.stdout.lower()
+    assert "warning" in combined
