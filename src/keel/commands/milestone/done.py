@@ -6,6 +6,7 @@ import typer
 from keel import workspace
 from keel.api import (
     ErrorCode,
+    OpLog,
     Output,
     edit_milestones,
     find_milestone,
@@ -28,6 +29,7 @@ def cmd_done(
         False, "--no-push",
         help="Skip pushing to the configured ticketing provider for this invocation.",
     ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
     """Mark a milestone as done (active -> done)."""
@@ -35,38 +37,47 @@ def cmd_done(
 
     scope = resolve_cli_scope(project, deliverable, out=out)
 
-    with edit_milestones(scope) as manifest:
-        milestone = find_milestone(manifest, id)
-        if milestone is None:
-            out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
+    # Pre-validate before write
+    manifest = load_milestones_manifest(scope.milestones_manifest_path)
+    milestone = find_milestone(manifest, id)
+    if milestone is None:
+        out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
 
-        if milestone.status != "active":
+    if milestone.status != "active":
+        out.error(
+            f"cannot mark milestone done from status '{milestone.status}' (must be 'active')",
+            code=ErrorCode.INVALID_STATE,
+        )
+        raise typer.Exit(code=1)
+
+    # Fan-out validation: every fan-out deliverable's matching sub-milestone must be done.
+    if milestone.fan_out and not force:
+        unfinished: list[str] = []
+        for sub_name in milestone.fan_out:
+            sub_path = workspace.milestones_manifest_path(scope.project, sub_name)
+            sub_manifest = load_milestones_manifest(sub_path)
+            sub = next((m for m in sub_manifest.milestones if m.parent == milestone.id), None)
+            if sub is None:
+                unfinished.append(f"{sub_name} (no sub-milestone with parent={milestone.id})")
+            elif sub.status != "done":
+                unfinished.append(f"{sub_name}/{sub.id} (status: {sub.status})")
+        if unfinished:
             out.error(
-                f"cannot mark milestone done from status '{milestone.status}' (must be 'active')",
+                "cannot mark fan-out milestone done; sub-milestones not complete: "
+                + ", ".join(unfinished)
+                + " (use --force to override)",
                 code=ErrorCode.INVALID_STATE,
             )
             raise typer.Exit(code=1)
 
-        # Fan-out validation: every fan-out deliverable's matching sub-milestone must be done.
-        if milestone.fan_out and not force:
-            unfinished: list[str] = []
-            for sub_name in milestone.fan_out:
-                sub_path = workspace.milestones_manifest_path(scope.project, sub_name)
-                sub_manifest = load_milestones_manifest(sub_path)
-                sub = next((m for m in sub_manifest.milestones if m.parent == milestone.id), None)
-                if sub is None:
-                    unfinished.append(f"{sub_name} (no sub-milestone with parent={milestone.id})")
-                elif sub.status != "done":
-                    unfinished.append(f"{sub_name}/{sub.id} (status: {sub.status})")
-            if unfinished:
-                out.error(
-                    "cannot mark fan-out milestone done; sub-milestones not complete: "
-                    + ", ".join(unfinished)
-                    + " (use --force to override)",
-                    code=ErrorCode.INVALID_STATE,
-                )
-                raise typer.Exit(code=1)
+    if dry_run:
+        log = OpLog()
+        log.modify_file(scope.milestones_manifest_path)
+        out.info(log.format_summary())
+        return
 
+    with edit_milestones(scope) as manifest:
+        milestone = find_milestone(manifest, id)
         milestone.status = "done"
 
     provider = with_provider(scope, no_push=no_push)

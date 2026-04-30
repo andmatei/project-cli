@@ -7,11 +7,13 @@ import typer
 from keel.api import (
     ErrorCode,
     GraphError,
+    OpLog,
     Output,
     Task,
     edit_milestones,
     find_milestone,
     find_task,
+    load_milestones_manifest,
     safe_push,
     validate_dag,
     with_provider,
@@ -35,6 +37,7 @@ def cmd_add(
         False, "--no-push",
         help="Skip pushing to the configured ticketing provider.",
     ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
     json_mode: bool = typer.Option(False, "--json", help="Emit JSON to stdout."),
 ) -> None:
     """Add a new task under an existing milestone."""
@@ -42,42 +45,51 @@ def cmd_add(
 
     scope = resolve_cli_scope(project, deliverable, out=out)
 
+    # Pre-load manifest to validate before write
+    manifest = load_milestones_manifest(scope.milestones_manifest_path)
+    if not any(m.id == milestone for m in manifest.milestones):
+        out.fail(
+            f"unknown milestone '{milestone}' (use 'keel milestone list' to see existing)",
+            code=ErrorCode.NOT_FOUND,
+        )
+
+    if any(t.id == id for t in manifest.tasks):
+        out.fail(
+            f"task with id '{id}' already exists",
+            code=ErrorCode.EXISTS,
+        )
+
+    deps_list = [d.strip() for d in depends_on.split(",") if d.strip()]
+    existing_task_ids = {t.id for t in manifest.tasks}
+    for dep in deps_list:
+        if dep not in existing_task_ids:
+            out.fail(
+                f"unknown task '{dep}' in --depends-on",
+                code=ErrorCode.NOT_FOUND,
+            )
+
     new_task = Task(
         id=id,
         milestone=milestone,
         title=title,
         description=description,
+        depends_on=deps_list,
     )
+    # Validate the would-be DAG
+    candidate_manifest = type(manifest)(milestones=manifest.milestones, tasks=manifest.tasks + [new_task])
+    try:
+        validate_dag(candidate_manifest)
+    except GraphError as e:
+        out.fail(f"invalid task graph: {e}", code=ErrorCode.INVALID_STATE)
+
+    if dry_run:
+        log = OpLog()
+        log.modify_file(scope.milestones_manifest_path)
+        out.info(log.format_summary())
+        return
 
     with edit_milestones(scope) as manifest:
-        if not any(m.id == milestone for m in manifest.milestones):
-            out.fail(
-                f"unknown milestone '{milestone}' (use 'keel milestone list' to see existing)",
-                code=ErrorCode.NOT_FOUND,
-            )
-
-        if any(t.id == id for t in manifest.tasks):
-            out.fail(
-                f"task with id '{id}' already exists",
-                code=ErrorCode.EXISTS,
-            )
-
-        deps_list = [d.strip() for d in depends_on.split(",") if d.strip()]
-        existing_task_ids = {t.id for t in manifest.tasks}
-        for dep in deps_list:
-            if dep not in existing_task_ids:
-                out.fail(
-                    f"unknown task '{dep}' in --depends-on",
-                    code=ErrorCode.NOT_FOUND,
-                )
-
-        new_task.depends_on = deps_list
         manifest.tasks.append(new_task)
-
-        try:
-            validate_dag(manifest)
-        except GraphError as e:
-            out.fail(f"invalid task graph: {e}", code=ErrorCode.INVALID_STATE)
 
     provider = with_provider(scope, no_push=no_push)
     if provider is not None:

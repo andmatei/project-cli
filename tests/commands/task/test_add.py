@@ -142,3 +142,22 @@ def test_add_json(projects, make_project, monkeypatch) -> None:
     assert data["id"] == "t1"
     assert data["milestone"] == "m1"
     assert data["status"] == "planned"
+
+
+def test_add_dry_run_writes_nothing(projects, make_project, monkeypatch) -> None:
+    """Dry-run validates but does not write to manifest."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    _setup_milestone(proj)
+
+    # Capture pre-state
+    mp = proj / "design" / "milestones.toml"
+    pre_text = mp.read_text() if mp.exists() else None
+
+    result = runner.invoke(
+        app, ["task", "add", "t1", "--milestone", "m1", "--title", "Set up", "--dry-run"]
+    )
+    assert result.exit_code == 0
+    # Confirm state unchanged
+    post_text = mp.read_text() if mp.exists() else None
+    assert pre_text == post_text

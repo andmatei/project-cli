@@ -115,3 +115,23 @@ def test_cancel_from_state(projects, make_project, monkeypatch, setup_actions, e
     assert result.exit_code == 0
     m_after = load_milestones_manifest(proj / "design" / "milestones.toml")
     assert m_after.milestones[0].status == "cancelled"
+
+
+def test_done_dry_run_writes_nothing(projects, make_project, monkeypatch) -> None:
+    """Dry-run validates but does not mark milestone as done."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation"])
+    runner.invoke(app, ["milestone", "start", "m1"])
+
+    # Capture pre-state
+    mp = proj / "design" / "milestones.toml"
+    pre_text = mp.read_text()
+
+    result = runner.invoke(app, ["milestone", "done", "m1", "--dry-run"], catch_exceptions=False)
+    assert result.exit_code == 0
+    # Confirm status unchanged
+    post_text = mp.read_text()
+    assert pre_text == post_text
+    m = load_milestones_manifest(mp)
+    assert m.milestones[0].status == "active"

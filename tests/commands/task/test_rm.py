@@ -49,3 +49,21 @@ def test_rm_unknown_id(projects, make_project, monkeypatch) -> None:
     monkeypatch.chdir(proj / "design")
     result = runner.invoke(app, ["task", "rm", "nothing", "-y"])
     assert result.exit_code == 1
+
+
+def test_rm_dry_run_writes_nothing(projects, make_project, monkeypatch) -> None:
+    """Dry-run validates but does not delete the task."""
+    proj = make_project("foo")
+    _seed(proj, monkeypatch)
+
+    # Capture pre-state
+    mp = proj / "design" / "milestones.toml"
+    pre_text = mp.read_text()
+
+    result = runner.invoke(app, ["task", "rm", "t2", "--dry-run"], catch_exceptions=False)
+    assert result.exit_code == 0
+    # Confirm task still exists
+    post_text = mp.read_text()
+    assert pre_text == post_text
+    m = load_milestones_manifest(mp)
+    assert any(t.id == "t2" for t in m.tasks)
