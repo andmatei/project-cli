@@ -7,7 +7,7 @@ import os
 import typer
 
 from keel.errors import ErrorCode
-from keel.manifest import find_task, load_milestones_manifest, save_milestones_manifest
+from keel.manifest import edit_milestones, find_task
 from keel.output import Output
 from keel.util import slugify
 from keel.workspace import resolve_cli_scope
@@ -31,22 +31,21 @@ def cmd_start(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     scope = resolve_cli_scope(project, deliverable, out=out)
-    path = scope.milestones_manifest_path
-    manifest = load_milestones_manifest(path)
 
-    task = find_task(manifest, id)
-    if task is None:
-        out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
+    with edit_milestones(scope) as manifest:
+        task = find_task(manifest, id)
+        if task is None:
+            out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
 
-    if task.status != "planned":
-        out.error(
-            f"cannot start task in status '{task.status}' (must be 'planned')",
-            code=ErrorCode.INVALID_STATE,
-        )
-        raise typer.Exit(code=1)
+        if task.status != "planned":
+            out.error(
+                f"cannot start task in status '{task.status}' (must be 'planned')",
+                code=ErrorCode.INVALID_STATE,
+            )
+            raise typer.Exit(code=1)
 
-    user = os.environ.get("USER", "user")
-    task.branch = branch or _default_branch(user, scope.project, task.milestone, task.id)
-    task.status = "active"
-    save_milestones_manifest(path, manifest)
+        user = os.environ.get("USER", "user")
+        task.branch = branch or _default_branch(user, scope.project, task.milestone, task.id)
+        task.status = "active"
+
     out.result(task.model_dump(), human_text=f"Task started: {id} (branch: {task.branch})")

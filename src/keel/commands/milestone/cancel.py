@@ -4,7 +4,7 @@ from __future__ import annotations
 import typer
 
 from keel.errors import ErrorCode
-from keel.manifest import find_milestone, load_milestones_manifest, save_milestones_manifest
+from keel.manifest import edit_milestones, find_milestone
 from keel.output import Output
 from keel.prompts import confirm_destructive
 from keel.workspace import resolve_cli_scope
@@ -22,15 +22,14 @@ def cmd_cancel(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     scope = resolve_cli_scope(project, deliverable, out=out)
-    path = scope.milestones_manifest_path
-    manifest = load_milestones_manifest(path)
 
-    milestone = find_milestone(manifest, id)
-    if milestone is None:
-        out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
+    with edit_milestones(scope) as manifest:
+        milestone = find_milestone(manifest, id)
+        if milestone is None:
+            out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
 
-    confirm_destructive(f"Cancel milestone {id} (currently {milestone.status})?", yes=yes)
+        confirm_destructive(f"Cancel milestone {id} (currently {milestone.status})?", yes=yes)
 
-    milestone.status = "cancelled"
-    save_milestones_manifest(path, manifest)
+        milestone.status = "cancelled"
+
     out.result(milestone.model_dump(), human_text=f"Milestone cancelled: {id}")

@@ -7,10 +7,10 @@ import typer
 from keel.errors import ErrorCode
 from keel.manifest import (
     Task,
+    edit_milestones,
     find_milestone,
-    load_milestones_manifest,
+    find_task,
     load_project_manifest,
-    save_milestones_manifest,
 )
 from keel.milestones import GraphError, validate_dag
 from keel.output import Output
@@ -40,46 +40,43 @@ def cmd_add(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     scope = resolve_cli_scope(project, deliverable, out=out)
-    path = scope.milestones_manifest_path
-    manifest = load_milestones_manifest(path)
-
-    if not any(m.id == milestone for m in manifest.milestones):
-        out.fail(
-            f"unknown milestone '{milestone}' (use 'keel milestone list' to see existing)",
-            code=ErrorCode.NOT_FOUND,
-        )
-
-    if any(t.id == id for t in manifest.tasks):
-        out.fail(
-            f"task with id '{id}' already exists",
-            code=ErrorCode.EXISTS,
-        )
-
-    deps_list = [d.strip() for d in depends_on.split(",") if d.strip()]
-    existing_task_ids = {t.id for t in manifest.tasks}
-    for dep in deps_list:
-        if dep not in existing_task_ids:
-            out.fail(
-                f"unknown task '{dep}' in --depends-on",
-                code=ErrorCode.NOT_FOUND,
-            )
 
     new_task = Task(
         id=id,
         milestone=milestone,
         title=title,
         description=description,
-        depends_on=deps_list,
     )
-    manifest.tasks.append(new_task)
 
-    try:
-        validate_dag(manifest)
-    except GraphError as e:
-        out.fail(f"invalid task graph: {e}", code=ErrorCode.INVALID_STATE)
+    with edit_milestones(scope) as manifest:
+        if not any(m.id == milestone for m in manifest.milestones):
+            out.fail(
+                f"unknown milestone '{milestone}' (use 'keel milestone list' to see existing)",
+                code=ErrorCode.NOT_FOUND,
+            )
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    save_milestones_manifest(path, manifest)
+        if any(t.id == id for t in manifest.tasks):
+            out.fail(
+                f"task with id '{id}' already exists",
+                code=ErrorCode.EXISTS,
+            )
+
+        deps_list = [d.strip() for d in depends_on.split(",") if d.strip()]
+        existing_task_ids = {t.id for t in manifest.tasks}
+        for dep in deps_list:
+            if dep not in existing_task_ids:
+                out.fail(
+                    f"unknown task '{dep}' in --depends-on",
+                    code=ErrorCode.NOT_FOUND,
+                )
+
+        new_task.depends_on = deps_list
+        manifest.tasks.append(new_task)
+
+        try:
+            validate_dag(manifest)
+        except GraphError as e:
+            out.fail(f"invalid task graph: {e}", code=ErrorCode.INVALID_STATE)
 
     if not no_push:
         from keel.workspace import manifest_path as proj_mp
@@ -87,12 +84,16 @@ def cmd_add(
         provider = get_provider_for_project(proj_manifest)
         if provider is not None:
             # Parent: the milestone's jira_id (set when milestone was pushed)
-            parent_milestone = find_milestone(manifest, milestone)
-            parent_id = parent_milestone.jira_id if parent_milestone and parent_milestone.jira_id else ""
+            with edit_milestones(scope) as manifest:
+                parent_milestone = find_milestone(manifest, milestone)
+                parent_id = parent_milestone.jira_id if parent_milestone and parent_milestone.jira_id else ""
             try:
                 ticket = provider.create_task(parent_id, new_task.title, new_task.description)
                 new_task.jira_id = ticket.id
-                save_milestones_manifest(path, manifest)
+                with edit_milestones(scope) as manifest:
+                    saved = find_task(manifest, id)
+                    if saved is not None:
+                        saved.jira_id = ticket.id
             except Exception as e:  # noqa: BLE001
                 out.info(f"[warning] ticket creation failed: {e}")
 

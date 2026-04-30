@@ -8,9 +8,11 @@ Manifests live at:
 from __future__ import annotations
 
 import tomllib
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import date as _date
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import tomlkit
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -21,6 +23,9 @@ from keel.lifecycle import (
     MILESTONE_STATES,
     TASK_STATES,
 )
+
+if TYPE_CHECKING:
+    from keel.workspace import Scope
 
 
 class RepoSpec(BaseModel):
@@ -212,6 +217,21 @@ def find_milestone(manifest: MilestonesManifest, id: str) -> Milestone | None:
 def find_task(manifest: MilestonesManifest, id: str) -> Task | None:
     """Return the task with the given id, or None."""
     return next((t for t in manifest.tasks if t.id == id), None)
+
+
+@contextmanager
+def edit_milestones(scope: Scope) -> Iterator[MilestonesManifest]:
+    """Load → yield → save the milestones manifest at the scope's path.
+
+    Usage:
+        with edit_milestones(scope) as manifest:
+            # mutate manifest in place
+    """
+    path = scope.milestones_manifest_path
+    manifest = load_milestones_manifest(path)
+    yield manifest
+    path.parent.mkdir(parents=True, exist_ok=True)
+    save_milestones_manifest(path, manifest)
 
 
 def load_milestones_manifest(path: Path) -> MilestonesManifest:

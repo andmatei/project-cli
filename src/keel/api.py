@@ -27,6 +27,7 @@ from keel.manifest import (
     ProjectMeta,
     RepoSpec,
     Task,
+    edit_milestones,
     find_milestone,
     find_task,
     load_deliverable_manifest,
@@ -74,7 +75,7 @@ __all__ = [
     # Manifest
     "DeliverableManifest", "DeliverableMeta", "Milestone", "MilestonesManifest",
     "ProjectManifest", "ProjectMeta", "RepoSpec", "Task",
-    "find_milestone", "find_task",
+    "edit_milestones", "find_milestone", "find_task",
     "load_deliverable_manifest", "load_milestones_manifest", "load_project_manifest",
     "save_deliverable_manifest", "save_milestones_manifest", "save_project_manifest",
     # Milestones graph helpers

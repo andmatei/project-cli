@@ -7,10 +7,9 @@ import typer
 from keel import workspace
 from keel.errors import ErrorCode
 from keel.manifest import (
+    edit_milestones,
     find_task,
-    load_milestones_manifest,
     load_project_manifest,
-    save_milestones_manifest,
 )
 from keel.output import Output
 from keel.ticketing import get_provider_for_project
@@ -32,22 +31,20 @@ def cmd_done(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     scope = resolve_cli_scope(project, deliverable, out=out)
-    path = scope.milestones_manifest_path
-    manifest = load_milestones_manifest(path)
 
-    task = find_task(manifest, id)
-    if task is None:
-        out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
+    with edit_milestones(scope) as manifest:
+        task = find_task(manifest, id)
+        if task is None:
+            out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
 
-    if task.status != "active":
-        out.error(
-            f"cannot mark task done from status '{task.status}' (must be 'active')",
-            code=ErrorCode.INVALID_STATE,
-        )
-        raise typer.Exit(code=1)
+        if task.status != "active":
+            out.error(
+                f"cannot mark task done from status '{task.status}' (must be 'active')",
+                code=ErrorCode.INVALID_STATE,
+            )
+            raise typer.Exit(code=1)
 
-    task.status = "done"
-    save_milestones_manifest(path, manifest)
+        task.status = "done"
 
     if not no_push:
         proj_manifest = load_project_manifest(workspace.manifest_path(scope.project))

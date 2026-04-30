@@ -8,9 +8,8 @@ from keel.dryrun import OpLog
 from keel.errors import ErrorCode
 from keel.manifest import (
     Milestone,
-    load_milestones_manifest,
+    edit_milestones,
     load_project_manifest,
-    save_milestones_manifest,
 )
 from keel.output import Output
 from keel.ticketing import get_provider_for_project
@@ -35,24 +34,21 @@ def cmd_add(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     scope = resolve_cli_scope(project, deliverable, out=out)
-    path = scope.milestones_manifest_path
-
-    manifest = load_milestones_manifest(path)
-    if any(m.id == id for m in manifest.milestones):
-        out.fail(f"milestone with id '{id}' already exists in {path}", code=ErrorCode.EXISTS)
 
     new_milestone = Milestone(id=id, title=title, description=description)
 
     if dry_run:
         log = OpLog()
+        path = scope.milestones_manifest_path
         log.create_file(path, size=0) if not path.exists() else None
         log.modify_file(path)
         out.info(log.format_summary())
         return
 
-    manifest.milestones.append(new_milestone)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    save_milestones_manifest(path, manifest)
+    with edit_milestones(scope) as manifest:
+        if any(m.id == id for m in manifest.milestones):
+            out.fail(f"milestone with id '{id}' already exists in {scope.milestones_manifest_path}", code=ErrorCode.EXISTS)
+        manifest.milestones.append(new_milestone)
 
     # If ticketing is configured and --no-push wasn't passed, push to the provider.
     if not no_push:
@@ -66,7 +62,10 @@ def cmd_add(
                 ticket = provider.create_milestone(parent_id, new_milestone.title, new_milestone.description)
                 new_milestone.jira_id = ticket.id
                 # Re-save to persist the ticket id
-                save_milestones_manifest(path, manifest)
+                with edit_milestones(scope) as manifest:
+                    saved = next((m for m in manifest.milestones if m.id == new_milestone.id), None)
+                    if saved is not None:
+                        saved.jira_id = ticket.id
             except Exception as e:  # noqa: BLE001
                 out.info(f"[warning] ticket creation failed: {e} (milestone saved locally)")
 
