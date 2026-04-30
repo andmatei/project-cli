@@ -62,3 +62,29 @@ def test_task_worktree_no_branch_recorded_fails(projects, make_project, source_r
     result = runner.invoke(app, ["task", "worktree", "t1"])
     assert result.exit_code == 1
     assert "branch" in result.stderr.lower() or "not started" in result.stderr.lower()
+
+
+def test_task_worktree_multi_repo_requires_explicit_repo(projects, make_project, source_repo, monkeypatch, tmp_path) -> None:
+    """When the project has multiple repos, --repo is required."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    # Add two source repos so the project has multiple [[repos]] entries.
+    second_repo = tmp_path / "src2"
+    second_repo.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=second_repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=second_repo, check=True)
+    subprocess.run(["git", "config", "user.name", "T"], cwd=second_repo, check=True)
+    (second_repo / "README").write_text("x")
+    subprocess.run(["git", "add", "."], cwd=second_repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=second_repo, check=True, capture_output=True)
+
+    runner.invoke(app, ["code", "add", "--repo", str(source_repo)])
+    runner.invoke(app, ["code", "add", "--repo", str(second_repo)])
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
+    runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "x"])
+    runner.invoke(app, ["task", "start", "t1", "--branch", "feat/t1"])
+
+    result = runner.invoke(app, ["task", "worktree", "t1"])
+    assert result.exit_code == 2  # CONFLICTING_FLAGS exit code
+    combined = result.stderr.lower() + result.stdout.lower()
+    assert "multiple repos" in combined or "--repo" in combined

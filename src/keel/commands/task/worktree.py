@@ -74,6 +74,7 @@ def cmd_worktree(
         out.fail(
             f"project has multiple repos ({names}); use --repo NAME to choose one",
             code=ErrorCode.CONFLICTING_FLAGS,
+            exit_code=2,
         )
     else:
         target = repos[0]
