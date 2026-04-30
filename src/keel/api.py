@@ -34,6 +34,13 @@ from keel.manifest import (
     save_milestones_manifest,
     save_project_manifest,
 )
+from keel.milestones import (
+    GraphError,
+    blocked_tasks,
+    ready_tasks,
+    topological_sort,
+    validate_dag,
+)
 from keel.output import Output
 from keel.prompts import confirm_destructive, is_interactive, require_or_fail
 from keel.util import slugify
@@ -64,6 +71,8 @@ __all__ = [
     "ProjectManifest", "ProjectMeta", "RepoSpec", "Task",
     "load_deliverable_manifest", "load_milestones_manifest", "load_project_manifest",
     "save_deliverable_manifest", "save_milestones_manifest", "save_project_manifest",
+    # Milestones graph helpers
+    "GraphError", "blocked_tasks", "ready_tasks", "topological_sort", "validate_dag",
     # Dryrun
     "Op", "OpLog",
     # Output
