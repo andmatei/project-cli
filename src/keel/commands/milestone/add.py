@@ -9,10 +9,10 @@ from keel.errors import ErrorCode
 from keel.manifest import (
     Milestone,
     edit_milestones,
-    load_project_manifest,
+    find_milestone,
 )
 from keel.output import Output
-from keel.ticketing import get_provider_for_project
+from keel.ticketing import safe_push, with_provider
 from keel.workspace import resolve_cli_scope
 
 
@@ -51,23 +51,21 @@ def cmd_add(
         manifest.milestones.append(new_milestone)
 
     # If ticketing is configured and --no-push wasn't passed, push to the provider.
-    if not no_push:
+    provider = with_provider(scope, no_push=no_push)
+    if provider is not None:
+        from keel.manifest import load_project_manifest
         from keel.workspace import manifest_path as proj_mp
         proj_manifest = load_project_manifest(proj_mp(scope.project))
-        provider = get_provider_for_project(proj_manifest)
-        if provider is not None:
-            # parent_id: project-level Epic id from [extensions.ticketing] config
-            parent_id = proj_manifest.extensions.get("ticketing", {}).get("parent_id", "")
-            try:
-                ticket = provider.create_milestone(parent_id, new_milestone.title, new_milestone.description)
-                new_milestone.jira_id = ticket.id
-                # Re-save to persist the ticket id
-                with edit_milestones(scope) as manifest:
-                    saved = next((m for m in manifest.milestones if m.id == new_milestone.id), None)
-                    if saved is not None:
-                        saved.jira_id = ticket.id
-            except Exception as e:  # noqa: BLE001
-                out.info(f"[warning] ticket creation failed: {e} (milestone saved locally)")
+        parent_id = proj_manifest.extensions.get("ticketing", {}).get("parent_id", "")
+
+        def _push():
+            ticket = provider.create_milestone(parent_id, new_milestone.title, new_milestone.description)
+            with edit_milestones(scope) as manifest:
+                saved = find_milestone(manifest, new_milestone.id)
+                if saved is not None:
+                    saved.jira_id = ticket.id
+
+        safe_push(out, "create_milestone", _push)
 
     payload = new_milestone.model_dump()
     out.result(

@@ -9,10 +9,9 @@ from keel.manifest import (
     edit_milestones,
     find_milestone,
     load_milestones_manifest,
-    load_project_manifest,
 )
 from keel.output import Output
-from keel.ticketing import get_provider_for_project
+from keel.ticketing import safe_push, with_provider
 from keel.workspace import resolve_cli_scope
 
 
@@ -69,13 +68,8 @@ def cmd_done(
 
         milestone.status = "done"
 
-    if not no_push:
-        proj_manifest = load_project_manifest(workspace.manifest_path(scope.project))
-        provider = get_provider_for_project(proj_manifest)
-        if provider is not None and milestone.jira_id:
-            try:
-                provider.transition(milestone.jira_id, "done")
-            except Exception as e:  # noqa: BLE001
-                out.info(f"[warning] ticket transition failed: {e}")
+    provider = with_provider(scope, no_push=no_push)
+    if provider is not None and milestone.jira_id:
+        safe_push(out, "transition", lambda: provider.transition(milestone.jira_id, "done"))
 
     out.result(milestone.model_dump(), human_text=f"Milestone done: {id}")

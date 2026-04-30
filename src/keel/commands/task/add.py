@@ -10,11 +10,10 @@ from keel.manifest import (
     edit_milestones,
     find_milestone,
     find_task,
-    load_project_manifest,
 )
 from keel.milestones import GraphError, validate_dag
 from keel.output import Output
-from keel.ticketing import get_provider_for_project
+from keel.ticketing import safe_push, with_provider
 from keel.workspace import resolve_cli_scope
 
 
@@ -78,23 +77,20 @@ def cmd_add(
         except GraphError as e:
             out.fail(f"invalid task graph: {e}", code=ErrorCode.INVALID_STATE)
 
-    if not no_push:
-        from keel.workspace import manifest_path as proj_mp
-        proj_manifest = load_project_manifest(proj_mp(scope.project))
-        provider = get_provider_for_project(proj_manifest)
-        if provider is not None:
-            # Parent: the milestone's jira_id (set when milestone was pushed)
+    provider = with_provider(scope, no_push=no_push)
+    if provider is not None:
+        # Parent: the milestone's jira_id (set when milestone was pushed)
+        with edit_milestones(scope) as manifest:
+            parent_milestone = find_milestone(manifest, milestone)
+            parent_id = parent_milestone.jira_id if parent_milestone and parent_milestone.jira_id else ""
+
+        def _push():
+            ticket = provider.create_task(parent_id, new_task.title, new_task.description)
             with edit_milestones(scope) as manifest:
-                parent_milestone = find_milestone(manifest, milestone)
-                parent_id = parent_milestone.jira_id if parent_milestone and parent_milestone.jira_id else ""
-            try:
-                ticket = provider.create_task(parent_id, new_task.title, new_task.description)
-                new_task.jira_id = ticket.id
-                with edit_milestones(scope) as manifest:
-                    saved = find_task(manifest, id)
-                    if saved is not None:
-                        saved.jira_id = ticket.id
-            except Exception as e:  # noqa: BLE001
-                out.info(f"[warning] ticket creation failed: {e}")
+                saved = find_task(manifest, id)
+                if saved is not None:
+                    saved.jira_id = ticket.id
+
+        safe_push(out, "create_task", _push)
 
     out.result(new_task.model_dump(), human_text=f"Task created: {id}")
