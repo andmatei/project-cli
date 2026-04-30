@@ -43,6 +43,8 @@ from keel.milestones import (
 )
 from keel.output import Output
 from keel.prompts import confirm_destructive, is_interactive, require_or_fail
+from keel.ticketing.base import Ticket, TicketProvider
+from keel.ticketing.registry import list_providers, load_provider
 from keel.util import slugify
 from keel.workspace import (
     Scope,
@@ -87,4 +89,6 @@ __all__ = [
     "detect_scope", "manifest_path", "milestones_manifest_path", "phase_file",
     "project_dir", "project_exists", "projects_dir",
     "read_phase",
+    # Ticketing
+    "Ticket", "TicketProvider", "list_providers", "load_provider",
 ]
