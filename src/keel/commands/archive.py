@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
+from keel.errors import ErrorCode
 from keel.output import Output
 from keel.prompts import confirm_destructive
 
@@ -22,7 +23,7 @@ def cmd_archive(
 ) -> None:
     """Soft-delete a project: remove worktrees, move to ~/projects/.archive/."""
     out = Output.from_context(ctx, json_mode=json_mode)
-    scope = workspace.resolve_cli_scope(name, None, allow_deliverable=False)
+    scope = workspace.resolve_cli_scope(name, None, allow_deliverable=False, out=out)
     project = scope.project
 
     proj_dir = workspace.project_dir(project)
@@ -62,7 +63,7 @@ def cmd_archive(
             git_ops.remove_worktree(wt, force=force)
             removed_worktrees += 1
         except git_ops.GitError as e:
-            out.error(f"can't remove worktree {wt}: {e} (use --force)", code="git_failed")
+            out.error(f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED)
             raise typer.Exit(code=1) from None
 
     # Also handle deliverable worktrees
@@ -76,7 +77,7 @@ def cmd_archive(
                     git_ops.remove_worktree(wt, force=force)
                     removed_worktrees += 1
                 except git_ops.GitError as e:
-                    out.error(f"can't remove worktree {wt}: {e} (use --force)", code="git_failed")
+                    out.error(f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED)
                     raise typer.Exit(code=1) from None
 
     # Move the project tree

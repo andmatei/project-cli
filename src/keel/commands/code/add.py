@@ -6,6 +6,8 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
+from keel.dryrun import OpLog
+from keel.errors import ErrorCode
 from keel.manifest import (
     DeliverableManifest,
     ProjectManifest,
@@ -31,13 +33,13 @@ def cmd_add(
 ) -> None:
     """Add a source repo to the manifest and create its worktree."""
     out = Output.from_context(ctx, json_mode=json_mode)
-    scope = workspace.resolve_cli_scope(project, deliverable)
+    scope = workspace.resolve_cli_scope(project, deliverable, out=out)
     project = scope.project
     deliverable = scope.deliverable
 
     repo_path = Path(repo).expanduser().resolve()
     if not git_ops.is_git_repo(repo_path):
-        out.error(f"not a git repo: {repo_path}", code="not_a_repo")
+        out.error(f"not a git repo: {repo_path}", code=ErrorCode.NOT_A_REPO)
         raise typer.Exit(code=1)
 
     # Decide worktree dir name — derived from repo basename, prefixed with "code-".
@@ -64,12 +66,12 @@ def cmd_add(
     # Detect duplicates
     for existing in m.repos:
         if existing.remote == str(repo_path):
-            out.error(f"duplicate remote: {repo_path} already declared", code="duplicate_remote")
+            out.error(f"duplicate remote: {repo_path} already declared", code=ErrorCode.DUPLICATE_REMOTE)
             raise typer.Exit(code=1)
         if existing.worktree == wt_name:
             out.error(
                 f"worktree name '{wt_name}' already in use. Pass --worktree NAME to disambiguate.",
-                code="duplicate_worktree",
+                code=ErrorCode.DUPLICATE_WORKTREE,
             )
             raise typer.Exit(code=1)
 
@@ -81,7 +83,6 @@ def cmd_add(
     )
 
     if dry_run:
-        from keel.dryrun import OpLog
         log = OpLog()
         log.modify_file(manifest_path, diff=f"+ [[repos]] remote={repo_path} worktree={wt_name}")
         unit_dir = manifest_path.parent.parent
@@ -103,7 +104,7 @@ def cmd_add(
     try:
         git_ops.create_worktree(repo_path, unit_dir / wt_name, branch=branch_prefix)
     except git_ops.GitError as e:
-        out.error(f"worktree creation failed: {e}", code="git_failed")
+        out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
         out.info("Manifest was updated; remove the new [[repos]] entry manually if you want to retry.")
         raise typer.Exit(code=1) from None
 

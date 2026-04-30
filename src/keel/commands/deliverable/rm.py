@@ -6,10 +6,13 @@ import shutil
 
 import typer
 
-from keel import workspace
+from keel import git_ops, workspace
+from keel.dryrun import OpLog
+from keel.errors import HINT_LIST_DELIVERABLES, ErrorCode
 from keel.markdown_edit import remove_bullet_under_heading
 from keel.output import Output
 from keel.prompts import confirm_destructive
+from keel.workspace import resolve_cli_scope
 
 
 def cmd_rm(
@@ -40,23 +43,18 @@ def cmd_rm(
     """Remove a deliverable, including its design dir, worktree, and parent references."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    from keel.workspace import resolve_cli_scope
-
-    scope = resolve_cli_scope(project, None, allow_deliverable=False)
+    scope = resolve_cli_scope(project, None, allow_deliverable=False, out=out)
     project = scope.project
     if not workspace.deliverable_exists(project, name):
-        from keel.errors import HINT_LIST_DELIVERABLES
         out.error(
             f"deliverable not found: {project}/{name}\n  {HINT_LIST_DELIVERABLES}",
-            code="not_found",
+            code=ErrorCode.NOT_FOUND,
         )
         raise typer.Exit(code=1)
 
     deliv = workspace.deliverable_dir(project, name)
 
     if dry_run:
-        from keel.dryrun import OpLog
-
         log = OpLog()
         if not keep_design:
             log.delete_file(deliv)
@@ -79,12 +77,10 @@ def cmd_rm(
     # Remove worktree if present (and not --keep-code)
     code_dir = deliv / "code"
     if code_dir.is_dir() and not keep_code:
-        from keel import git_ops
-
         try:
             git_ops.remove_worktree(code_dir, force=force)
         except git_ops.GitError as e:
-            out.error(f"failed to remove worktree at {code_dir}: {e}", code="git_failed")
+            out.error(f"failed to remove worktree at {code_dir}: {e}", code=ErrorCode.GIT_FAILED)
             raise typer.Exit(code=1) from None
 
     # Remove design dir (unless --keep-design)

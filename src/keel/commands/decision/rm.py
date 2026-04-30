@@ -6,8 +6,11 @@ import typer
 
 from keel import workspace
 from keel.commands.decision.show import _find_decision
+from keel.dryrun import OpLog
+from keel.errors import HINT_LIST_DECISIONS, ErrorCode
 from keel.output import Output
 from keel.prompts import confirm_destructive
+from keel.workspace import resolve_cli_scope
 
 
 def cmd_rm(
@@ -33,9 +36,7 @@ def cmd_rm(
     """Remove a decision file (the typical 'changed my mind' pattern is `decision new --supersedes` instead)."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    from keel.workspace import resolve_cli_scope
-
-    scope = resolve_cli_scope(project, deliverable)
+    scope = resolve_cli_scope(project, deliverable, out=out)
     project = scope.project
     deliverable = scope.deliverable
 
@@ -43,13 +44,10 @@ def cmd_rm(
 
     path = _find_decision(target_dir, slug)
     if path is None:
-        from keel.errors import HINT_LIST_DECISIONS
-        out.error(f"decision not found: {slug}\n  {HINT_LIST_DECISIONS}", code="not_found")
+        out.error(f"decision not found: {slug}\n  {HINT_LIST_DECISIONS}", code=ErrorCode.NOT_FOUND)
         raise typer.Exit(code=1)
 
     if dry_run:
-        from keel.dryrun import OpLog
-
         log = OpLog()
         log.delete_file(path)
         out.info(log.format_summary())

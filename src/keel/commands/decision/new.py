@@ -12,8 +12,11 @@ from pathlib import Path
 import typer
 
 from keel import templates, workspace
+from keel.dryrun import OpLog
+from keel.errors import HINT_LIST_DECISIONS, ErrorCode
 from keel.output import Output
 from keel.util import slugify
+from keel.workspace import resolve_cli_scope
 
 
 def cmd_new(
@@ -50,9 +53,7 @@ def cmd_new(
     """Create a new decision record at the current scope (project or deliverable)."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    from keel.workspace import resolve_cli_scope
-
-    scope = resolve_cli_scope(project, deliverable)
+    scope = resolve_cli_scope(project, deliverable, out=out)
     project = scope.project
     deliverable = scope.deliverable
 
@@ -63,13 +64,13 @@ def cmd_new(
     today = date.today().isoformat()
     slug_value = slug or slugify(title)
     if not slug_value:
-        out.error("invalid title (slug is empty)", code="invalid_title")
+        out.error("invalid title (slug is empty)", code=ErrorCode.INVALID_TITLE)
         raise typer.Exit(code=2)
     filename = f"{today}-{slug_value}.md"
     path = target_dir / filename
 
     if path.exists() and not force:
-        out.error(f"decision file already exists: {path}", code="exists")
+        out.error(f"decision file already exists: {path}", code=ErrorCode.EXISTS)
         raise typer.Exit(code=1)
 
     # Validate --supersedes early, before creating the new file
@@ -82,17 +83,14 @@ def cmd_new(
         )
         candidate_paths = [c for c in candidate_paths if c.is_file()]
         if not candidate_paths:
-            from keel.errors import HINT_LIST_DECISIONS
             out.error(
                 f"--supersedes: no decision matching '{supersedes}' found in {target_dir}\n  {HINT_LIST_DECISIONS}",
-                code="not_found",
+                code=ErrorCode.NOT_FOUND,
             )
             raise typer.Exit(code=1)
         supersedes_path = candidate_paths[0]
 
     if dry_run:
-        from keel.dryrun import OpLog
-
         log = OpLog()
         log.create_file(path, size=0)
         out.info(log.format_summary())

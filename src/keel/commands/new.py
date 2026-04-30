@@ -8,9 +8,11 @@ from pathlib import Path
 import typer
 
 from keel import templates, workspace
+from keel.errors import ErrorCode
 from keel.manifest import (
     ProjectManifest,
     ProjectMeta,
+    RepoSpec,
     save_project_manifest,
 )
 from keel.output import Output
@@ -50,12 +52,12 @@ def cmd_new(
     out = Output.from_context(ctx, json_mode=json_mode)
     slug = slugify(name)
     if not slug:
-        out.error("invalid project name", code="invalid_name")
+        out.error("invalid project name", code=ErrorCode.INVALID_NAME)
         raise typer.Exit(code=2)
 
     proj = workspace.project_dir(slug)
     if proj.exists():
-        out.error(f"project already exists: {proj}", code="exists")
+        out.error(f"project already exists: {proj}", code=ErrorCode.EXISTS)
         raise typer.Exit(code=1)
 
     description = require_or_fail(description, arg_name="--description", label="Description")
@@ -66,7 +68,7 @@ def cmd_new(
         for r in repos:
             rp = Path(r).expanduser().resolve()
             if not git_ops.is_git_repo(rp):
-                out.error(f"not a git repo: {rp}", code="not_a_repo")
+                out.error(f"not a git repo: {rp}", code=ErrorCode.NOT_A_REPO)
                 raise typer.Exit(code=1)
             repo_paths.append(rp)
 
@@ -97,8 +99,6 @@ def cmd_new(
     workspace.decisions_dir(slug).mkdir(parents=True)
 
     # Build manifest with repos (worktree path defaults to "code" when single, "code-<repo>" otherwise)
-    from keel.manifest import RepoSpec
-
     repo_specs: list[RepoSpec] = []
     for rp in repo_paths:
         worktree_name = "code" if len(repo_paths) == 1 else f"code-{rp.name}"
@@ -160,7 +160,7 @@ def cmd_new(
             git_ops.create_worktree(rp, wt_dest, branch=spec.branch_prefix)
             created_worktrees.append(str(wt_dest))
         except git_ops.GitError as e:
-            out.error(f"worktree creation failed: {e}", code="git_failed")
+            out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
             out.info(
                 f"Design files are at {proj / 'design'}; clean up with `rm -rf {proj}` or retry."
             )

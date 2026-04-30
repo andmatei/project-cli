@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import typer
 
+from keel.errors import ErrorCode
 from keel.output import Output
 
 _SUPPORTED = {"bash", "zsh", "fish"}
@@ -26,7 +27,7 @@ def cmd_completion(
     if shell not in _SUPPORTED:
         out.error(
             f"unsupported shell: {shell!r}. Supported: {', '.join(sorted(_SUPPORTED))}",
-            code="bad_shell",
+            code=ErrorCode.BAD_SHELL,
         )
         raise typer.Exit(code=2)
 

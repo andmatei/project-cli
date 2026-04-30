@@ -8,9 +8,11 @@ from pathlib import Path
 import typer
 
 from keel import workspace
+from keel.errors import ErrorCode
 from keel.lifecycle import PHASES
 from keel.lifecycle import next_phase as _next_phase
 from keel.output import Output
+from keel.workspace import resolve_cli_scope
 
 
 def _phase_path(project: str, deliverable: str | None) -> Path:
@@ -55,9 +57,7 @@ def cmd_phase(
     """Show or transition the phase."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    from keel.workspace import resolve_cli_scope
-
-    scope = resolve_cli_scope(project, deliverable)
+    scope = resolve_cli_scope(project, deliverable, out=out)
     project = scope.project
     deliverable = scope.deliverable
 
@@ -90,18 +90,18 @@ def cmd_phase(
     target = phase
     if next_phase:
         if current not in PHASES:
-            out.error(f"invalid current phase: {current}", code="invalid_phase")
+            out.error(f"invalid current phase: {current}", code=ErrorCode.INVALID_PHASE)
             raise typer.Exit(code=1)
         nxt = _next_phase(current)
         if nxt is None:
-            out.error(f"no phase after {current}", code="end_of_lifecycle")
+            out.error(f"no phase after {current}", code=ErrorCode.END_OF_LIFECYCLE)
             raise typer.Exit(code=1)
         target = nxt
 
     if target not in PHASES:
         out.error(
             f"invalid phase: {target}. Valid phases: {', '.join(PHASES)}",
-            code="invalid_phase",
+            code=ErrorCode.INVALID_PHASE,
         )
         raise typer.Exit(code=2)
 

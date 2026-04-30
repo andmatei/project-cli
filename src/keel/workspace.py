@@ -5,6 +5,10 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from keel.output import Output
 
 
 def projects_dir() -> Path:
@@ -94,6 +98,7 @@ def resolve_cli_scope(
     *,
     allow_deliverable: bool = True,
     require_deliverable: bool = False,
+    out: Output | None = None,
 ) -> Scope:
     """Resolve the (project, deliverable) scope for a CLI command.
 
@@ -105,10 +110,22 @@ def resolve_cli_scope(
     5. If `require_deliverable=True` and no deliverable resolved, exit 1.
 
     Always exits 1 (via typer.Exit) when scope can't be resolved.
+
+    Args:
+        out: Optional Output instance to route error messages through (JSON-mode aware).
+             Defaults to a fresh plain Output() when not provided.
     """
     import typer
 
-    from keel.errors import HINT_LIST_DELIVERABLES, HINT_LIST_PROJECTS, HINT_PASS_PROJECT
+    from keel.errors import (
+        HINT_LIST_DELIVERABLES,
+        HINT_LIST_PROJECTS,
+        HINT_PASS_PROJECT,
+        ErrorCode,
+    )
+    from keel.output import Output as _Output
+
+    _out = out if out is not None else _Output()
 
     if project is None:
         scope = detect_scope()
@@ -116,25 +133,25 @@ def resolve_cli_scope(
         if allow_deliverable and deliverable is None:
             deliverable = scope.deliverable
     if project is None:
-        typer.echo(
-            f"error: no project specified and none detected from CWD\n  {HINT_PASS_PROJECT}",
-            err=True,
+        _out.error(
+            f"no project specified and none detected from CWD\n  {HINT_PASS_PROJECT}",
+            code=ErrorCode.NO_PROJECT,
         )
         raise typer.Exit(code=1)
     if not project_exists(project):
-        typer.echo(
-            f"error: project not found: {project}\n  {HINT_LIST_PROJECTS}",
-            err=True,
+        _out.error(
+            f"project not found: {project}\n  {HINT_LIST_PROJECTS}",
+            code=ErrorCode.NOT_FOUND,
         )
         raise typer.Exit(code=1)
     if deliverable is not None and not deliverable_exists(project, deliverable):
-        typer.echo(
-            f"error: deliverable not found: {project}/{deliverable}\n  {HINT_LIST_DELIVERABLES}",
-            err=True,
+        _out.error(
+            f"deliverable not found: {project}/{deliverable}\n  {HINT_LIST_DELIVERABLES}",
+            code=ErrorCode.NOT_FOUND,
         )
         raise typer.Exit(code=1)
     if require_deliverable and deliverable is None:
-        typer.echo("error: deliverable required for this command", err=True)
+        _out.error("deliverable required for this command", code=ErrorCode.NOT_FOUND)
         raise typer.Exit(code=1)
     return Scope(project=project, deliverable=deliverable)
 
@@ -177,35 +194,47 @@ def phase_file(project: str, deliverable: str | None = None) -> Path:
     return design_dir(project, deliverable) / ".phase"
 
 
-def resolve_scope_or_fail(cwd: Path | None = None) -> Scope:
+def resolve_scope_or_fail(cwd: Path | None = None, out: Output | None = None) -> Scope:
     """Like detect_scope, but verifies the scope's manifests exist on disk.
 
     Raises typer.Exit(1) with a clear message if:
     - No project is detected from CWD, OR
     - The detected project's manifest doesn't exist, OR
     - The detected deliverable's manifest doesn't exist.
+
+    Args:
+        out: Optional Output instance to route error messages through (JSON-mode aware).
+             Defaults to a fresh plain Output() when not provided.
     """
     import typer  # local import to keep workspace.py lightweight when imported in non-CLI contexts
 
-    from keel.errors import HINT_LIST_DELIVERABLES, HINT_LIST_PROJECTS, HINT_PASS_PROJECT
+    from keel.errors import (
+        HINT_LIST_DELIVERABLES,
+        HINT_LIST_PROJECTS,
+        HINT_PASS_PROJECT,
+        ErrorCode,
+    )
+    from keel.output import Output as _Output
+
+    _out = out if out is not None else _Output()
 
     scope = detect_scope(cwd)
     if scope.project is None:
-        typer.echo(
-            f"error: no project detected from current directory\n  {HINT_PASS_PROJECT}",
-            err=True,
+        _out.error(
+            f"no project detected from current directory\n  {HINT_PASS_PROJECT}",
+            code=ErrorCode.NO_PROJECT,
         )
         raise typer.Exit(code=1)
     if not project_exists(scope.project):
-        typer.echo(
-            f"error: project not found: {scope.project}\n  {HINT_LIST_PROJECTS}",
-            err=True,
+        _out.error(
+            f"project not found: {scope.project}\n  {HINT_LIST_PROJECTS}",
+            code=ErrorCode.NOT_FOUND,
         )
         raise typer.Exit(code=1)
     if scope.deliverable is not None and not deliverable_exists(scope.project, scope.deliverable):
-        typer.echo(
-            f"error: deliverable not found: {scope.project}/{scope.deliverable}\n  {HINT_LIST_DELIVERABLES}",
-            err=True,
+        _out.error(
+            f"deliverable not found: {scope.project}/{scope.deliverable}\n  {HINT_LIST_DELIVERABLES}",
+            code=ErrorCode.NOT_FOUND,
         )
         raise typer.Exit(code=1)
     return scope

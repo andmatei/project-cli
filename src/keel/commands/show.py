@@ -9,6 +9,7 @@ from rich.table import Table
 from keel import workspace
 from keel.manifest import load_project_manifest
 from keel.output import Output
+from keel.workspace import resolve_cli_scope
 
 
 def cmd_show(
@@ -20,9 +21,8 @@ def cmd_show(
 ) -> None:
     """Show a project's structure and current state."""
     out = Output.from_context(ctx, json_mode=json_mode)
-    from keel.workspace import resolve_cli_scope
 
-    scope = resolve_cli_scope(name, None, allow_deliverable=False)
+    scope = resolve_cli_scope(name, None, allow_deliverable=False, out=out)
     name = scope.project
 
     proj = workspace.project_dir(name)

@@ -7,15 +7,20 @@ from pathlib import Path
 
 import typer
 
-from keel import templates, workspace
+from keel import git_ops, templates, workspace
+from keel.errors import ErrorCode
 from keel.manifest import (
     DeliverableManifest,
     DeliverableMeta,
+    RepoSpec,
+    load_deliverable_manifest,
     save_deliverable_manifest,
 )
+from keel.markdown_edit import insert_under_heading
 from keel.output import Output
 from keel.prompts import require_or_fail
 from keel.util import slugify
+from keel.workspace import resolve_cli_scope
 
 
 def cmd_add(
@@ -47,35 +52,30 @@ def cmd_add(
     """Create a new deliverable inside a project."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    from keel.workspace import resolve_cli_scope
-
-    scope = resolve_cli_scope(project, None, allow_deliverable=False)
+    scope = resolve_cli_scope(project, None, allow_deliverable=False, out=out)
     project = scope.project
 
     slug = slugify(name)
     if not slug:
-        out.error("invalid deliverable name", code="invalid_name")
+        out.error("invalid deliverable name", code=ErrorCode.INVALID_NAME)
         raise typer.Exit(code=2)
 
     deliv = workspace.deliverable_dir(project, slug)
     if deliv.exists():
-        out.error(f"deliverable already exists: {deliv}", code="exists")
+        out.error(f"deliverable already exists: {deliv}", code=ErrorCode.EXISTS)
         raise typer.Exit(code=1)
 
     description = require_or_fail(description, arg_name="--description", label="Description")
 
-    from keel import git_ops
-    from keel.manifest import RepoSpec
-
     # Validate --repo if provided
     repo_path = None
     if repo and shared:
-        out.error("--repo and --shared are mutually exclusive", code="conflicting_flags")
+        out.error("--repo and --shared are mutually exclusive", code=ErrorCode.CONFLICTING_FLAGS)
         raise typer.Exit(code=2)
     if repo:
         repo_path = Path(repo).expanduser().resolve()
         if not git_ops.is_git_repo(repo_path):
-            out.error(f"not a git repo: {repo_path}", code="not_a_repo")
+            out.error(f"not a git repo: {repo_path}", code=ErrorCode.NOT_A_REPO)
             raise typer.Exit(code=1)
 
     deliv_design = workspace.design_dir(project, slug)
@@ -132,8 +132,6 @@ def cmd_add(
             sib_manifest = sibling / "design" / "deliverable.toml"
             if not sib_manifest.is_file():
                 continue
-            from keel.manifest import load_deliverable_manifest
-
             sm = load_deliverable_manifest(sib_manifest)
             existing_siblings.append(
                 {"name": sm.deliverable.name, "description": sm.deliverable.description}
@@ -171,13 +169,11 @@ def cmd_add(
             git_ops.create_worktree(repo_path, wt_dest, branch=repo_specs[0].branch_prefix)
             created_worktree = str(wt_dest)
         except git_ops.GitError as e:
-            out.error(f"worktree creation failed: {e}", code="git_failed")
+            out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
             out.info(f"Design files are at {deliv / 'design'}; clean up manually if needed.")
             raise typer.Exit(code=1) from None
 
     # AST-edit the parent's CLAUDE.md to list this deliverable
-    from keel.markdown_edit import insert_under_heading
-
     parent_claude_path = workspace.design_dir(project) / "CLAUDE.md"
     if parent_claude_path.is_file():
         line = f"- **{slug}**: ../deliverables/{slug}/design/ -- {description}\n"

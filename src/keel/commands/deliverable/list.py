@@ -10,6 +10,7 @@ from rich.table import Table
 from keel import workspace
 from keel.manifest import load_deliverable_manifest
 from keel.output import Output
+from keel.workspace import resolve_cli_scope
 
 
 @dataclass
@@ -51,9 +52,8 @@ def cmd_list(
 ) -> None:
     """List deliverables in a project."""
     out = Output.from_context(ctx, json_mode=json_mode)
-    from keel.workspace import resolve_cli_scope
 
-    scope = resolve_cli_scope(project, None, allow_deliverable=False)
+    scope = resolve_cli_scope(project, None, allow_deliverable=False, out=out)
     project = scope.project
 
     rows = _scan(project)

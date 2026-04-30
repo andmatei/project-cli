@@ -11,6 +11,7 @@ from rich.table import Table
 
 from keel import workspace
 from keel.output import Output
+from keel.workspace import resolve_cli_scope
 
 
 @dataclass
@@ -89,9 +90,7 @@ def cmd_list(
     """List decisions at the current scope."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    from keel.workspace import resolve_cli_scope
-
-    scope = resolve_cli_scope(project, deliverable)
+    scope = resolve_cli_scope(project, deliverable, out=out)
     project = scope.project
     deliverable = scope.deliverable
 

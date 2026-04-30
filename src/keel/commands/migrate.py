@@ -7,6 +7,7 @@ from pathlib import Path
 import typer
 
 from keel import workspace
+from keel.errors import HINT_LIST_PROJECTS, HINT_PASS_PROJECT, ErrorCode
 from keel.output import Output
 
 _CODE_SECTION_RE = re.compile(r"## Code\n(.*?)(?:\n## |\Z)", re.DOTALL)
@@ -196,15 +197,13 @@ def cmd_migrate(
             scope = workspace.detect_scope()
             name = scope.project
         if name is None:
-            from keel.errors import HINT_PASS_PROJECT
             out.error(
                 f"no project specified and none detected from CWD\n  {HINT_PASS_PROJECT}",
-                code="no_project",
+                code=ErrorCode.NO_PROJECT,
             )
             raise typer.Exit(code=1)
         if not (workspace.project_dir(name) / "design" / "CLAUDE.md").is_file():
-            from keel.errors import HINT_LIST_PROJECTS
-            out.error(f"not a project: {name}\n  {HINT_LIST_PROJECTS}", code="not_found")
+            out.error(f"not a project: {name}\n  {HINT_LIST_PROJECTS}", code=ErrorCode.NOT_FOUND)
             raise typer.Exit(code=1)
         targets = [name]
 

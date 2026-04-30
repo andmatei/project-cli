@@ -9,7 +9,9 @@ import typer
 from rich.markdown import Markdown
 
 from keel import workspace
+from keel.errors import HINT_LIST_DECISIONS, ErrorCode
 from keel.output import Output
+from keel.workspace import resolve_cli_scope
 
 _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?", re.DOTALL)
 
@@ -58,9 +60,7 @@ def cmd_show(
     """Show a decision record."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    from keel.workspace import resolve_cli_scope
-
-    scope = resolve_cli_scope(project, deliverable)
+    scope = resolve_cli_scope(project, deliverable, out=out)
     project = scope.project
     deliverable = scope.deliverable
 
@@ -68,8 +68,7 @@ def cmd_show(
 
     path = _find_decision(target_dir, slug)
     if path is None:
-        from keel.errors import HINT_LIST_DECISIONS
-        out.error(f"decision not found: {slug}\n  {HINT_LIST_DECISIONS}", code="not_found")
+        out.error(f"decision not found: {slug}\n  {HINT_LIST_DECISIONS}", code=ErrorCode.NOT_FOUND)
         raise typer.Exit(code=1)
 
     text = path.read_text()

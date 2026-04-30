@@ -8,6 +8,7 @@ import typer
 
 from keel import git_ops, workspace
 from keel.dryrun import OpLog
+from keel.errors import ErrorCode
 from keel.manifest import load_deliverable_manifest, load_project_manifest
 from keel.output import Output
 
@@ -23,7 +24,7 @@ def cmd_init(
 ) -> None:
     """Materialize worktrees declared in the manifest. Idempotent."""
     out = Output.from_context(ctx, json_mode=json_mode)
-    scope = workspace.resolve_cli_scope(project, deliverable)
+    scope = workspace.resolve_cli_scope(project, deliverable, out=out)
     project = scope.project
     deliverable = scope.deliverable
 
@@ -66,14 +67,14 @@ def cmd_init(
                         check=True, capture_output=True,
                     )
                 except subprocess.CalledProcessError as e:
-                    out.error(f"clone failed for {r.remote}: {e.stderr.decode()}", code="clone_failed")
+                    out.error(f"clone failed for {r.remote}: {e.stderr.decode()}", code=ErrorCode.CLONE_FAILED)
                     raise typer.Exit(code=1) from None
                 source = target
             else:
                 out.error(
                     f"source repo missing: {r.local_hint or r.remote}. "
                     f"Pass --clone-missing to clone it, or set local_hint to a valid path.",
-                    code="source_missing",
+                    code=ErrorCode.SOURCE_MISSING,
                 )
                 raise typer.Exit(code=1)
 
@@ -81,7 +82,7 @@ def cmd_init(
             git_ops.create_worktree(source, wt, branch=r.branch_prefix or "main")
             created.append(str(wt))
         except git_ops.GitError as e:
-            out.error(f"worktree creation failed: {e}", code="git_failed")
+            out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
             raise typer.Exit(code=1) from None
 
     out.info(f"Initialized {len(created)} worktree(s).")

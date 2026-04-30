@@ -4,6 +4,8 @@ from __future__ import annotations
 import typer
 
 from keel import git_ops, workspace
+from keel.dryrun import OpLog
+from keel.errors import ErrorCode
 from keel.manifest import (
     DeliverableManifest,
     ProjectManifest,
@@ -28,7 +30,7 @@ def cmd_rm(
 ) -> None:
     """Remove a repo from the manifest and remove its worktree."""
     out = Output.from_context(ctx, json_mode=json_mode)
-    scope = workspace.resolve_cli_scope(project, deliverable)
+    scope = workspace.resolve_cli_scope(project, deliverable, out=out)
     project = scope.project
     deliverable = scope.deliverable
 
@@ -41,14 +43,13 @@ def cmd_rm(
 
     target = next((r for r in m.repos if r.remote == repo), None)
     if target is None:
-        out.error(f"no repo with remote: {repo}", code="not_found")
+        out.error(f"no repo with remote: {repo}", code=ErrorCode.NOT_FOUND)
         raise typer.Exit(code=1)
 
     unit_dir = manifest_path.parent.parent
     wt_path = unit_dir / target.worktree
 
     if dry_run:
-        from keel.dryrun import OpLog
         log = OpLog()
         log.modify_file(manifest_path, diff=f"- [[repos]] remote={repo}")
         if wt_path.is_dir():
@@ -66,7 +67,7 @@ def cmd_rm(
         try:
             git_ops.remove_worktree(wt_path, force=force)
         except git_ops.GitError as e:
-            out.error(f"worktree removal failed (use --force if dirty): {e}", code="git_failed")
+            out.error(f"worktree removal failed (use --force if dirty): {e}", code=ErrorCode.GIT_FAILED)
             raise typer.Exit(code=1) from None
 
     # Update manifest

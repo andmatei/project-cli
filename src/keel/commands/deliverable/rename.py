@@ -6,7 +6,9 @@ import shutil
 
 import typer
 
-from keel import workspace
+from keel import git_ops, workspace
+from keel.dryrun import OpLog
+from keel.errors import HINT_LIST_DELIVERABLES, ErrorCode
 from keel.manifest import (
     DeliverableManifest,
     DeliverableMeta,
@@ -15,6 +17,7 @@ from keel.manifest import (
 )
 from keel.markdown_edit import insert_under_heading, remove_bullet_under_heading
 from keel.output import Output
+from keel.workspace import resolve_cli_scope
 
 
 def cmd_rename(
@@ -40,27 +43,22 @@ def cmd_rename(
     """Rename a deliverable."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    from keel.workspace import resolve_cli_scope
-
-    scope = resolve_cli_scope(project, None, allow_deliverable=False)
+    scope = resolve_cli_scope(project, None, allow_deliverable=False, out=out)
     project = scope.project
     if not workspace.deliverable_exists(project, old):
-        from keel.errors import HINT_LIST_DELIVERABLES
         out.error(
             f"deliverable not found: {project}/{old}\n  {HINT_LIST_DELIVERABLES}",
-            code="not_found",
+            code=ErrorCode.NOT_FOUND,
         )
         raise typer.Exit(code=1)
     if workspace.deliverable_exists(project, new):
-        out.error(f"target already exists: {project}/{new}", code="exists")
+        out.error(f"target already exists: {project}/{new}", code=ErrorCode.EXISTS)
         raise typer.Exit(code=1)
 
     old_path = workspace.deliverable_dir(project, old)
     new_path = workspace.deliverable_dir(project, new)
 
     if dry_run:
-        from keel.dryrun import OpLog
-
         log = OpLog()
         log.modify_file(old_path, diff=f"rename → {new_path}")
         out.info(log.format_summary())
@@ -69,8 +67,6 @@ def cmd_rename(
     # 1a. If a worktree exists, move it properly via git first
     old_code = old_path / "code"
     if old_code.is_dir():
-        from keel import git_ops
-
         new_path.mkdir(parents=True, exist_ok=True)
         git_ops.move_worktree(old_code, new_path / "code")
 
@@ -141,8 +137,6 @@ def cmd_rename(
     # 5. (Optional) branch rename
     code_dir = new_path / "code"
     if code_dir.is_dir() and rename_branch and m.repos:
-        from keel import git_ops
-
         old_branch = m.repos[0].branch_prefix
         if old_branch and old_branch.endswith(f"-{old}"):
             new_branch = old_branch[: -len(f"-{old}")] + f"-{new}"

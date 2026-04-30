@@ -6,6 +6,7 @@ import shutil
 import typer
 
 from keel import git_ops, workspace
+from keel.errors import HINT_LIST_PROJECTS, ErrorCode
 from keel.manifest import (
     ProjectManifest,
     ProjectMeta,
@@ -31,15 +32,14 @@ def cmd_rename(
     out = Output.from_context(ctx, json_mode=json_mode)
     new_slug = slugify(new)
     if not new_slug:
-        out.error("invalid new project name", code="invalid_name")
+        out.error("invalid new project name", code=ErrorCode.INVALID_NAME)
         raise typer.Exit(code=2)
 
     if not workspace.project_exists(old):
-        from keel.errors import HINT_LIST_PROJECTS
-        out.error(f"project not found: {old}\n  {HINT_LIST_PROJECTS}", code="not_found")
+        out.error(f"project not found: {old}\n  {HINT_LIST_PROJECTS}", code=ErrorCode.NOT_FOUND)
         raise typer.Exit(code=1)
     if workspace.project_exists(new_slug):
-        out.error(f"target project already exists: {new_slug}", code="exists")
+        out.error(f"target project already exists: {new_slug}", code=ErrorCode.EXISTS)
         raise typer.Exit(code=1)
 
     old_path = workspace.project_dir(old)
