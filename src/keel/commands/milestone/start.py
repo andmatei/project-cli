@@ -37,7 +37,7 @@ def cmd_start(
         out.error(
             f"cannot start milestone in status '{milestone.status}' "
             f"(use --reopen to re-open a done milestone)",
-            code=ErrorCode.EXISTS,
+            code=ErrorCode.INVALID_STATE,
         )
         raise typer.Exit(code=1)
 

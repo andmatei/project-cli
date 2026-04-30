@@ -35,7 +35,7 @@ def cmd_done(
     if milestone.status != "active":
         out.error(
             f"cannot mark milestone done from status '{milestone.status}' (must be 'active')",
-            code=ErrorCode.EXISTS,
+            code=ErrorCode.INVALID_STATE,
         )
         raise typer.Exit(code=1)
 
@@ -55,7 +55,7 @@ def cmd_done(
                 "cannot mark fan-out milestone done; sub-milestones not complete: "
                 + ", ".join(unfinished)
                 + " (use --force to override)",
-                code=ErrorCode.EXISTS,
+                code=ErrorCode.INVALID_STATE,
             )
             raise typer.Exit(code=1)
 

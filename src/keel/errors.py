@@ -33,3 +33,4 @@ class ErrorCode(StrEnum):
     BAD_SHELL = "bad_shell"
     END_OF_LIFECYCLE = "end_of_lifecycle"
     NOT_IMPLEMENTED = "not_implemented"
+    INVALID_STATE = "invalid_state"

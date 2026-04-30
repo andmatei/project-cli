@@ -37,7 +37,7 @@ def cmd_rm(
         out.error(
             f"cannot remove milestone in status '{milestone.status}' "
             f"(only 'cancelled' allowed; use --force to override)",
-            code=ErrorCode.EXISTS,
+            code=ErrorCode.INVALID_STATE,
         )
         raise typer.Exit(code=1)
 
@@ -46,7 +46,7 @@ def cmd_rm(
         out.error(
             f"cannot remove milestone '{id}'; tasks reference it: {', '.join(referencing)} "
             "(use --force to remove anyway)",
-            code=ErrorCode.EXISTS,
+            code=ErrorCode.INVALID_STATE,
         )
         raise typer.Exit(code=1)
 
