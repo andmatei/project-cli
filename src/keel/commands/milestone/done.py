@@ -20,8 +20,14 @@ from keel.workspace import resolve_cli_scope
 def cmd_done(
     ctx: typer.Context,
     id: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable",
+        help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Project name. Auto-detected from CWD if omitted.",
+    ),
     force: bool = typer.Option(
         False, "--force", help="Skip fan-out completion check."
     ),
@@ -30,7 +36,7 @@ def cmd_done(
         help="Skip pushing to the configured ticketing provider for this invocation.",
     ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
-    json_mode: bool = typer.Option(False, "--json"),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Mark a milestone as done (active -> done)."""
     out = Output.from_context(ctx, json_mode=json_mode)

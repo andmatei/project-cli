@@ -18,14 +18,20 @@ from keel.workspace import resolve_cli_scope
 def cmd_rm(
     ctx: typer.Context,
     id: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
-    yes: bool = typer.Option(False, "-y", "--yes"),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable",
+        help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Project name. Auto-detected from CWD if omitted.",
+    ),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip the confirm prompt."),
     force: bool = typer.Option(
         False, "--force", help="Remove even if other tasks depend on this one."
     ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
-    json_mode: bool = typer.Option(False, "--json"),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Remove a task. Refuses if other tasks depend on it (use --force to override)."""
     out = Output.from_context(ctx, json_mode=json_mode)

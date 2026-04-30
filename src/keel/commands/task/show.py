@@ -11,9 +11,15 @@ from keel.workspace import resolve_cli_scope
 def cmd_show(
     ctx: typer.Context,
     id: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
-    json_mode: bool = typer.Option(False, "--json"),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable",
+        help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Project name. Auto-detected from CWD if omitted.",
+    ),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Show a task's metadata and dependency tree."""
     out = Output.from_context(ctx, json_mode=json_mode)

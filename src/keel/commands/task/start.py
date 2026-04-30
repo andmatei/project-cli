@@ -17,12 +17,18 @@ def _default_branch(user: str, project: str, milestone_id: str, task_id: str) ->
 def cmd_start(
     ctx: typer.Context,
     id: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable",
+        help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Project name. Auto-detected from CWD if omitted.",
+    ),
     branch: str | None = typer.Option(
         None, "--branch", help="Override the auto-computed branch name."
     ),
-    json_mode: bool = typer.Option(False, "--json"),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Start work on a task (planned -> active). Records the branch name."""
     out = Output.from_context(ctx, json_mode=json_mode)

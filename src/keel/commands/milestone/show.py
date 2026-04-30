@@ -15,7 +15,7 @@ def cmd_show(
     id: str = typer.Argument(...),
     deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Scope: deliverable."),
     project: str | None = typer.Option(None, "--project", "-p", help="Project name."),
-    json_mode: bool = typer.Option(False, "--json"),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Show a milestone's metadata, status, fan-out, and task breakdown."""
     out = Output.from_context(ctx, json_mode=json_mode)

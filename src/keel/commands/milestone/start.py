@@ -10,12 +10,18 @@ from keel.workspace import resolve_cli_scope
 def cmd_start(
     ctx: typer.Context,
     id: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable",
+        help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Project name. Auto-detected from CWD if omitted.",
+    ),
     reopen: bool = typer.Option(
         False, "--reopen", help="Allow re-opening a milestone that's already done."
     ),
-    json_mode: bool = typer.Option(False, "--json"),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Start work on a milestone (planned -> active)."""
     out = Output.from_context(ctx, json_mode=json_mode)

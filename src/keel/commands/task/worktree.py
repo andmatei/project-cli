@@ -23,13 +23,19 @@ from keel.workspace import resolve_cli_scope
 def cmd_worktree(
     ctx: typer.Context,
     id: str = typer.Argument(...),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable",
+        help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Project name. Auto-detected from CWD if omitted.",
+    ),
     repo: str | None = typer.Option(
         None, "--repo", "-r",
         help="Worktree-dir name (from project manifest's [[repos]]). Required when project has multiple repos.",
     ),
-    json_mode: bool = typer.Option(False, "--json"),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a git worktree for a task at its recorded branch."""
     out = Output.from_context(ctx, json_mode=json_mode)

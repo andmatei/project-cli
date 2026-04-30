@@ -74,8 +74,14 @@ def _render_dot(manifest: MilestonesManifest) -> str:
 
 def cmd_graph(
     ctx: typer.Context,
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable"),
-    project: str | None = typer.Option(None, "--project", "-p"),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable",
+        help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p",
+        help="Project name. Auto-detected from CWD if omitted.",
+    ),
     milestone: str | None = typer.Option(
         None, "--milestone", "-m", help="Limit to tasks in one milestone."
     ),
