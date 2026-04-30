@@ -58,6 +58,10 @@ class Scope:
     def decisions_dir(self) -> Path:
         return self.design_dir / "decisions"
 
+    @property
+    def milestones_manifest_path(self) -> Path:
+        return self.design_dir / "milestones.toml"
+
 
 def detect_scope(cwd: Path | None = None) -> Scope:
     """Determine the (project, deliverable) scope from CWD.
@@ -192,6 +196,11 @@ def manifest_path(project: str, deliverable: str | None = None) -> Path:
 def phase_file(project: str, deliverable: str | None = None) -> Path:
     """Path to the .phase file for the given scope."""
     return design_dir(project, deliverable) / ".phase"
+
+
+def milestones_manifest_path(project: str, deliverable: str | None = None) -> Path:
+    """Path to the milestones.toml file for the given scope."""
+    return design_dir(project, deliverable) / "milestones.toml"
 
 
 def resolve_scope_or_fail(cwd: Path | None = None, out: Output | None = None) -> Scope:

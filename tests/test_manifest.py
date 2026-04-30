@@ -10,12 +10,17 @@ from pydantic import ValidationError
 from keel.manifest import (
     DeliverableManifest,
     DeliverableMeta,
+    Milestone,
+    MilestonesManifest,
     ProjectManifest,
     ProjectMeta,
     RepoSpec,
+    Task,
     load_deliverable_manifest,
+    load_milestones_manifest,
     load_project_manifest,
     save_deliverable_manifest,
+    save_milestones_manifest,
     save_project_manifest,
 )
 
@@ -225,3 +230,69 @@ def test_deliverable_manifest_extensions_round_trip(tmp_path) -> None:
     save_deliverable_manifest(path, original)
     loaded = load_deliverable_manifest(path)
     assert loaded.extensions == original.extensions
+
+
+def test_milestone_minimal() -> None:
+    m = Milestone(id="m1", title="Foundation")
+    assert m.id == "m1"
+    assert m.status == "planned"
+    assert m.fan_out == []
+    assert m.jira_id is None
+
+
+def test_milestone_with_fan_out() -> None:
+    m = Milestone(id="m1", title="Ship X", fan_out=["foo", "bar"])
+    assert m.fan_out == ["foo", "bar"]
+
+
+def test_milestone_rejects_invalid_status() -> None:
+    with pytest.raises(ValidationError):
+        Milestone(id="m1", title="t", status="bogus")
+
+
+def test_milestone_rejects_empty_id() -> None:
+    with pytest.raises(ValidationError):
+        Milestone(id="", title="t")
+
+
+def test_task_minimal() -> None:
+    t = Task(id="t1", milestone="m1", title="Set up")
+    assert t.status == "planned"
+    assert t.depends_on == []
+    assert t.branch is None
+
+
+def test_task_with_dependencies() -> None:
+    t = Task(id="t2", milestone="m1", title="x", depends_on=["t1"])
+    assert t.depends_on == ["t1"]
+
+
+def test_milestones_manifest_minimal() -> None:
+    m = MilestonesManifest()
+    assert m.milestones == []
+    assert m.tasks == []
+
+
+def test_milestones_manifest_round_trip(tmp_path) -> None:
+    path = tmp_path / "milestones.toml"
+    original = MilestonesManifest(
+        milestones=[
+            Milestone(id="m1", title="Foundation", status="active"),
+            Milestone(id="m2", title="Deliverable", fan_out=["foo"]),
+        ],
+        tasks=[
+            Task(id="t1", milestone="m1", title="Set up", status="done", branch="me/keel-m1-t1"),
+            Task(id="t2", milestone="m1", title="Add models", depends_on=["t1"], branch="me/keel-m1-t2"),
+        ],
+    )
+    save_milestones_manifest(path, original)
+    loaded = load_milestones_manifest(path)
+    assert loaded == original
+
+
+def test_milestones_manifest_load_missing_file_returns_empty(tmp_path) -> None:
+    """If milestones.toml doesn't exist, load returns an empty manifest (not an error)."""
+    path = tmp_path / "milestones.toml"
+    m = load_milestones_manifest(path)
+    assert m.milestones == []
+    assert m.tasks == []

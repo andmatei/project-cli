@@ -287,3 +287,24 @@ def test_resolve_scope_or_fail_returns_deliverable(monkeypatch, tmp_path) -> Non
     scope = resolve_scope_or_fail()
     assert scope.project == "foo"
     assert scope.deliverable == "bar"
+
+
+def test_milestones_manifest_path_project(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import milestones_manifest_path
+    assert milestones_manifest_path("foo").name == "milestones.toml"
+
+
+def test_milestones_manifest_path_deliverable(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import milestones_manifest_path
+    assert milestones_manifest_path("foo", "bar").name == "milestones.toml"
+
+
+def test_scope_milestones_manifest_path(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
+    from keel.workspace import Scope
+    s_proj = Scope(project="foo", deliverable=None)
+    s_deliv = Scope(project="foo", deliverable="bar")
+    assert s_proj.milestones_manifest_path.name == "milestones.toml"
+    assert s_deliv.milestones_manifest_path.name == "milestones.toml"

@@ -21,12 +21,17 @@ from keel.lifecycle import (
 from keel.manifest import (
     DeliverableManifest,
     DeliverableMeta,
+    Milestone,
+    MilestonesManifest,
     ProjectManifest,
     ProjectMeta,
     RepoSpec,
+    Task,
     load_deliverable_manifest,
+    load_milestones_manifest,
     load_project_manifest,
     save_deliverable_manifest,
+    save_milestones_manifest,
     save_project_manifest,
 )
 from keel.output import Output
@@ -54,9 +59,10 @@ __all__ = [
     "is_terminal_milestone_state", "is_terminal_task_state",
     "is_valid_milestone_state", "is_valid_task_state",
     # Manifest
-    "DeliverableManifest", "DeliverableMeta", "ProjectManifest", "ProjectMeta", "RepoSpec",
-    "load_deliverable_manifest", "load_project_manifest",
-    "save_deliverable_manifest", "save_project_manifest",
+    "DeliverableManifest", "DeliverableMeta", "Milestone", "MilestonesManifest",
+    "ProjectManifest", "ProjectMeta", "RepoSpec", "Task",
+    "load_deliverable_manifest", "load_milestones_manifest", "load_project_manifest",
+    "save_deliverable_manifest", "save_milestones_manifest", "save_project_manifest",
     # Dryrun
     "Op", "OpLog",
     # Output

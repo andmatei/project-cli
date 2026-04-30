@@ -15,6 +15,13 @@ from typing import Any
 import tomlkit
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from keel.lifecycle import (
+    DEFAULT_MILESTONE_STATE,
+    DEFAULT_TASK_STATE,
+    MILESTONE_STATES,
+    TASK_STATES,
+)
+
 
 class RepoSpec(BaseModel):
     """One linked source repo + its worktree under the project unit."""
@@ -142,4 +149,80 @@ def save_deliverable_manifest(path: Path, manifest: DeliverableManifest) -> None
         doc["repos"] = repos_array
     if manifest.extensions:
         doc["extensions"] = tomlkit.item(manifest.extensions)
+    path.write_text(tomlkit.dumps(doc))
+
+
+class Milestone(BaseModel):
+    """A grouping of related implementation work, scoped to the `implementing` phase."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    id: str = Field(min_length=1, description="Stable identifier within the unit (e.g. 'm1', 'foundation').")
+    title: str = Field(min_length=1)
+    description: str = ""
+    status: str = Field(default=DEFAULT_MILESTONE_STATE)
+    fan_out: list[str] = Field(default_factory=list, description="Deliverable names this milestone fans out to.")
+    parent: str | None = Field(default=None, description="If this is a sub-milestone, the parent milestone's id at the project level.")
+    jira_id: str | None = None
+
+    @field_validator("status")
+    @classmethod
+    def _status_in_set(cls, v: str) -> str:
+        if v not in MILESTONE_STATES:
+            raise ValueError(f"status must be one of {MILESTONE_STATES}")
+        return v
+
+
+class Task(BaseModel):
+    """An atomic unit of work under a milestone."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    id: str = Field(min_length=1)
+    milestone: str = Field(min_length=1, description="The owning milestone's id.")
+    title: str = Field(min_length=1)
+    description: str = ""
+    status: str = Field(default=DEFAULT_TASK_STATE)
+    depends_on: list[str] = Field(default_factory=list, description="Other task ids that must be done before this can start.")
+    branch: str | None = Field(default=None, description="Git branch for this task. Auto-set when started.")
+    jira_id: str | None = None
+
+    @field_validator("status")
+    @classmethod
+    def _status_in_set(cls, v: str) -> str:
+        if v not in TASK_STATES:
+            raise ValueError(f"status must be one of {TASK_STATES}")
+        return v
+
+
+class MilestonesManifest(BaseModel):
+    """Schema for `<unit>/design/milestones.toml`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    milestones: list[Milestone] = Field(default_factory=list)
+    tasks: list[Task] = Field(default_factory=list)
+
+
+def load_milestones_manifest(path: Path) -> MilestonesManifest:
+    """Read and validate `milestones.toml`. Returns an empty manifest if the file doesn't exist."""
+    if not path.is_file():
+        return MilestonesManifest()
+    with path.open("rb") as f:
+        raw = tomllib.load(f)
+    return MilestonesManifest.model_validate(raw)
+
+
+def save_milestones_manifest(path: Path, manifest: MilestonesManifest) -> None:
+    doc = tomlkit.document()
+    if manifest.milestones:
+        ms_array = tomlkit.aot()
+        for m in manifest.milestones:
+            ms_array.append(tomlkit.item(_dict_no_none(m.model_dump())))
+        doc["milestones"] = ms_array
+    if manifest.tasks:
+        ts_array = tomlkit.aot()
+        for t in manifest.tasks:
+            ts_array.append(tomlkit.item(_dict_no_none(t.model_dump())))
+        doc["tasks"] = ts_array
     path.write_text(tomlkit.dumps(doc))
