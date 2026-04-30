@@ -162,13 +162,22 @@ class Milestone(BaseModel):
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    id: str = Field(min_length=1, description="Stable identifier within the unit (e.g. 'm1', 'foundation').")
+    id: str = Field(
+        min_length=1, description="Stable identifier within the unit (e.g. 'm1', 'foundation')."
+    )
     title: str = Field(min_length=1)
     description: str = ""
     status: str = Field(default=DEFAULT_MILESTONE_STATE)
-    fan_out: list[str] = Field(default_factory=list, description="Deliverable names this milestone fans out to.")
-    parent: str | None = Field(default=None, description="If this is a sub-milestone, the parent milestone's id at the project level.")
-    ticket_id: str | None = Field(default=None, description="Provider-issued ticket id (e.g., Jira issue key).")
+    fan_out: list[str] = Field(
+        default_factory=list, description="Deliverable names this milestone fans out to."
+    )
+    parent: str | None = Field(
+        default=None,
+        description="If this is a sub-milestone, the parent milestone's id at the project level.",
+    )
+    ticket_id: str | None = Field(
+        default=None, description="Provider-issued ticket id (e.g., Jira issue key)."
+    )
 
     @field_validator("status")
     @classmethod
@@ -188,9 +197,15 @@ class Task(BaseModel):
     title: str = Field(min_length=1)
     description: str = ""
     status: str = Field(default=DEFAULT_TASK_STATE)
-    depends_on: list[str] = Field(default_factory=list, description="Other task ids that must be done before this can start.")
-    branch: str | None = Field(default=None, description="Git branch for this task. Auto-set when started.")
-    ticket_id: str | None = Field(default=None, description="Provider-issued ticket id (e.g., Jira issue key).")
+    depends_on: list[str] = Field(
+        default_factory=list, description="Other task ids that must be done before this can start."
+    )
+    branch: str | None = Field(
+        default=None, description="Git branch for this task. Auto-set when started."
+    )
+    ticket_id: str | None = Field(
+        default=None, description="Provider-issued ticket id (e.g., Jira issue key)."
+    )
 
     @field_validator("status")
     @classmethod

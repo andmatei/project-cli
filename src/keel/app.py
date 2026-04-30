@@ -1,4 +1,5 @@
 """Top-level Typer app and global flags."""
+
 from __future__ import annotations
 
 from importlib.metadata import entry_points
@@ -35,7 +36,10 @@ def _version_callback(value: bool) -> None:
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
-        False, "--version", callback=_version_callback, is_eager=True,
+        False,
+        "--version",
+        callback=_version_callback,
+        is_eager=True,
         help="Show version and exit.",
     ),
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Suppress info logs."),

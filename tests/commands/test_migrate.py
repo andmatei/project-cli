@@ -1,4 +1,5 @@
 """Tests for `keel migrate` (legacy Bash CLI projects → manifests)."""
+
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -18,7 +19,11 @@ def _write_legacy_project(projects, name: str, body: str) -> None:
 
 def test_migrate_dry_run_default(projects) -> None:
     """Without --apply, migrate must not write anything."""
-    _write_legacy_project(projects, "legacy", "# legacy\n\nold project.\n\n## Code\nCode: ../code/\nSource repo: /tmp/some-repo\n\n## Workflow\n")
+    _write_legacy_project(
+        projects,
+        "legacy",
+        "# legacy\n\nold project.\n\n## Code\nCode: ../code/\nSource repo: /tmp/some-repo\n\n## Workflow\n",
+    )
     result = runner.invoke(app, ["migrate", "legacy"])
     assert result.exit_code == 0
     assert not (projects / "legacy" / "design" / "project.toml").exists()
@@ -205,7 +210,9 @@ def test_migrate_skips_already_migrated_deliverable(projects) -> None:
             repos=[],
         ),
     )
-    (deliv / "design" / "CLAUDE.md").write_text("# alpha\n\nDIFFERENT description.\n\n## Workflow\n")
+    (deliv / "design" / "CLAUDE.md").write_text(
+        "# alpha\n\nDIFFERENT description.\n\n## Workflow\n"
+    )
 
     runner.invoke(app, ["migrate", "legacy", "--apply"])
 
@@ -278,8 +285,12 @@ Source repo: see parent
     assert bm.deliverable.shared_worktree is True
 
     # Both deliverables now have .phase
-    assert (proj / "deliverables" / "alpha" / "design" / ".phase").read_text().splitlines()[0] == "scoping"
-    assert (proj / "deliverables" / "beta" / "design" / ".phase").read_text().splitlines()[0] == "scoping"
+    assert (proj / "deliverables" / "alpha" / "design" / ".phase").read_text().splitlines()[
+        0
+    ] == "scoping"
+    assert (proj / "deliverables" / "beta" / "design" / ".phase").read_text().splitlines()[
+        0
+    ] == "scoping"
 
     # validate runs clean (no FAILs; the parent CLAUDE.md still mentions both deliverables)
     import json

@@ -1,5 +1,6 @@
 # tests/commands/code/test_status.py
 """Tests for `keel code status`."""
+
 import json
 
 from typer.testing import CliRunner
@@ -25,15 +26,18 @@ def test_status_repo_not_cloned(projects, make_project) -> None:
         RepoSpec,
         save_project_manifest,
     )
+
     proj = make_project("foo")
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(
-            remote="git@e.com:o/r.git",
-            local_hint=str(projects / "_missing"),
-            worktree="code",
-            branch_prefix="a/foo",
-        )],
+        repos=[
+            RepoSpec(
+                remote="git@e.com:o/r.git",
+                local_hint=str(projects / "_missing"),
+                worktree="code",
+                branch_prefix="a/foo",
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
     result = runner.invoke(app, ["code", "status", "--project", "foo", "--json"])
@@ -60,12 +64,14 @@ def test_status_worktree_clean(projects, make_project, source_repo) -> None:
 
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(
-            remote=str(source_repo),
-            local_hint=str(source_repo),
-            worktree="code",
-            branch_prefix=branch,
-        )],
+        repos=[
+            RepoSpec(
+                remote=str(source_repo),
+                local_hint=str(source_repo),
+                worktree="code",
+                branch_prefix=branch,
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
 
@@ -95,12 +101,14 @@ def test_status_worktree_dirty(projects, make_project, source_repo) -> None:
 
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(
-            remote=str(source_repo),
-            local_hint=str(source_repo),
-            worktree="code",
-            branch_prefix="alice/foo-base",
-        )],
+        repos=[
+            RepoSpec(
+                remote=str(source_repo),
+                local_hint=str(source_repo),
+                worktree="code",
+                branch_prefix="alice/foo-base",
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
 

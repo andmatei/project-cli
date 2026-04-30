@@ -1,4 +1,5 @@
 """Tests for `keel design export`."""
+
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -39,7 +40,9 @@ def test_export_deliverable_excludes_superseded(projects, make_deliverable) -> N
 def test_export_writes_to_output_file(projects, make_deliverable, tmp_path) -> None:
     make_deliverable(project_name="foo", name="bar", description="d")
     out_path = tmp_path / "out.md"
-    result = runner.invoke(app, ["design", "export", "--project", "foo", "-D", "bar", "-o", str(out_path)])
+    result = runner.invoke(
+        app, ["design", "export", "--project", "foo", "-D", "bar", "-o", str(out_path)]
+    )
     assert result.exit_code == 0
     assert out_path.is_file()
     assert "bar" in out_path.read_text()
@@ -48,7 +51,9 @@ def test_export_writes_to_output_file(projects, make_deliverable, tmp_path) -> N
 def test_export_project_composes_deliverables(projects, make_project) -> None:
     """Project-level export includes a section per deliverable."""
     make_project("foo")
-    runner.invoke(app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"])
+    runner.invoke(
+        app, ["deliverable", "add", "alpha", "-d", "alpha thing", "-y", "--project", "foo"]
+    )
     runner.invoke(app, ["deliverable", "add", "beta", "-d", "beta thing", "-y", "--project", "foo"])
     result = runner.invoke(app, ["design", "export", "foo"])
     assert result.exit_code == 0

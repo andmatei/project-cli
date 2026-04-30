@@ -1,4 +1,5 @@
 """`keel design ...` command group."""
+
 from __future__ import annotations
 
 import typer

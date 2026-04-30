@@ -5,6 +5,7 @@ Plugin authors should import only from `keel.api` (or `keel.testing` for fixture
 
 Anything outside `keel.api` and `keel.testing` is internal and may change.
 """
+
 from __future__ import annotations
 
 from keel.dryrun import Op, OpLog
@@ -81,32 +82,69 @@ __all__ = [
     "HINT_LIST_PROJECTS",
     "HINT_PASS_PROJECT",
     # Lifecycle
-    "DEFAULT_MILESTONE_STATE", "DEFAULT_TASK_STATE",
-    "MILESTONE_STATES", "TASK_STATES",
-    "is_terminal_milestone_state", "is_terminal_task_state",
-    "is_valid_milestone_state", "is_valid_task_state",
+    "DEFAULT_MILESTONE_STATE",
+    "DEFAULT_TASK_STATE",
+    "MILESTONE_STATES",
+    "TASK_STATES",
+    "is_terminal_milestone_state",
+    "is_terminal_task_state",
+    "is_valid_milestone_state",
+    "is_valid_task_state",
     # Manifest
-    "DeliverableManifest", "DeliverableMeta", "Milestone", "MilestonesManifest",
-    "ProjectManifest", "ProjectMeta", "RepoSpec", "Task",
-    "edit_milestones", "find_milestone", "find_task",
-    "load_deliverable_manifest", "load_milestones_manifest", "load_project_manifest",
-    "save_deliverable_manifest", "save_milestones_manifest", "save_project_manifest",
+    "DeliverableManifest",
+    "DeliverableMeta",
+    "Milestone",
+    "MilestonesManifest",
+    "ProjectManifest",
+    "ProjectMeta",
+    "RepoSpec",
+    "Task",
+    "edit_milestones",
+    "find_milestone",
+    "find_task",
+    "load_deliverable_manifest",
+    "load_milestones_manifest",
+    "load_project_manifest",
+    "save_deliverable_manifest",
+    "save_milestones_manifest",
+    "save_project_manifest",
     # Milestones graph helpers
-    "GraphError", "blocked_tasks", "ready_tasks", "topological_sort", "validate_dag",
+    "GraphError",
+    "blocked_tasks",
+    "ready_tasks",
+    "topological_sort",
+    "validate_dag",
     # Dryrun
-    "Op", "OpLog",
+    "Op",
+    "OpLog",
     # Output
     "Output",
     # Prompts
-    "confirm_destructive", "is_interactive", "require_or_fail",
+    "confirm_destructive",
+    "is_interactive",
+    "require_or_fail",
     # Util
     "slugify",
     # Workspace
     "Scope",
-    "decisions_dir", "design_dir", "deliverable_dir", "deliverable_exists",
-    "detect_scope", "manifest_path", "milestones_manifest_path", "phase_file",
-    "project_dir", "project_exists", "projects_dir",
+    "decisions_dir",
+    "design_dir",
+    "deliverable_dir",
+    "deliverable_exists",
+    "detect_scope",
+    "manifest_path",
+    "milestones_manifest_path",
+    "phase_file",
+    "project_dir",
+    "project_exists",
+    "projects_dir",
     "read_phase",
     # Ticketing
-    "Ticket", "TicketProvider", "get_provider_for_project", "with_provider", "safe_push", "list_providers", "load_provider",
+    "Ticket",
+    "TicketProvider",
+    "get_provider_for_project",
+    "with_provider",
+    "safe_push",
+    "list_providers",
+    "load_provider",
 ]

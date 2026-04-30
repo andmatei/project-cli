@@ -1,4 +1,5 @@
 """Tests for keel.lifecycle."""
+
 import pytest
 
 from keel.lifecycle import (

@@ -9,6 +9,7 @@ keel.ticketing.registry.load_provider(name) finds and instantiates the matching
 provider. Returns None if no provider is registered with that name (do not raise
 — callers handle the "not installed" case).
 """
+
 from __future__ import annotations
 
 from importlib.metadata import entry_points

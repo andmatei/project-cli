@@ -1,4 +1,5 @@
 """`keel code init`."""
+
 from __future__ import annotations
 
 import subprocess
@@ -12,11 +13,19 @@ from keel.api import ErrorCode, OpLog, Output, load_deliverable_manifest, load_p
 
 def cmd_init(
     ctx: typer.Context,
-    project: str | None = typer.Option(None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Init worktrees declared at deliverable scope."),
-    clone_missing: bool = typer.Option(False, "--clone-missing", help="Clone any source repo whose local_hint is missing on disk."),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."
+    ),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable", help="Init worktrees declared at deliverable scope."
+    ),
+    clone_missing: bool = typer.Option(
+        False, "--clone-missing", help="Clone any source repo whose local_hint is missing on disk."
+    ),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Materialize worktrees declared in the manifest. Idempotent."""
@@ -61,10 +70,14 @@ def cmd_init(
                 try:
                     subprocess.run(
                         ["git", "clone", r.remote, str(target)],
-                        check=True, capture_output=True,
+                        check=True,
+                        capture_output=True,
                     )
                 except subprocess.CalledProcessError as e:
-                    out.fail(f"clone failed for {r.remote}: {e.stderr.decode()}", code=ErrorCode.CLONE_FAILED)
+                    out.fail(
+                        f"clone failed for {r.remote}: {e.stderr.decode()}",
+                        code=ErrorCode.CLONE_FAILED,
+                    )
                 source = target
             else:
                 out.fail(

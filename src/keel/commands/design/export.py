@@ -1,4 +1,5 @@
 """`keel design export`."""
+
 from __future__ import annotations
 
 import re
@@ -23,7 +24,7 @@ def _split_frontmatter(text: str) -> tuple[dict[str, str], str]:
         if ":" in line:
             k, v = line.split(":", 1)
             fm[k.strip()] = v.strip()
-    return fm, text[m.end():]
+    return fm, text[m.end() :]
 
 
 @dataclass
@@ -83,7 +84,9 @@ def _replace_decision_links(design_text: str, decisions: Iterable[_Decision]) ->
 
 def cmd_export(
     ctx: typer.Context,
-    name: str | None = typer.Argument(None, help="Project name. Auto-detected from CWD if omitted."),
+    name: str | None = typer.Argument(
+        None, help="Project name. Auto-detected from CWD if omitted."
+    ),
     deliverable: str | None = typer.Option(
         None, "-D", "--deliverable", help="Export this deliverable instead of the whole project."
     ),
@@ -105,9 +108,7 @@ def cmd_export(
     output: Path | None = typer.Option(
         None, "-o", "--output", help="Write to this file instead of stdout."
     ),
-    json_mode: bool = typer.Option(
-        False, "--json", help="Emit JSON envelope around the markdown."
-    ),
+    json_mode: bool = typer.Option(False, "--json", help="Emit JSON envelope around the markdown."),
 ) -> None:
     """Compose a project's or deliverable's design + decisions into a single markdown document."""
     out_obj = Output.from_context(ctx, json_mode=json_mode)

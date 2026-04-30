@@ -14,7 +14,9 @@ def _setup(proj_dir, monkeypatch):
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["milestone", "add", "m2", "--title", "M2"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "a"])
-    runner.invoke(app, ["task", "add", "t2", "--milestone", "m1", "--title", "b", "--depends-on", "t1"])
+    runner.invoke(
+        app, ["task", "add", "t2", "--milestone", "m1", "--title", "b", "--depends-on", "t1"]
+    )
     runner.invoke(app, ["task", "add", "t3", "--milestone", "m2", "--title", "c"])
 
 

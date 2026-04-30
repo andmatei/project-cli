@@ -1,4 +1,5 @@
 """Tests for project-level `keel rename`."""
+
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -18,6 +19,7 @@ def test_rename_updates_manifest_name(projects, make_project) -> None:
     make_project("foo")
     runner.invoke(app, ["rename", "foo", "bar", "-y"])
     from keel.manifest import load_project_manifest
+
     m = load_project_manifest(projects / "bar" / "design" / "project.toml")
     assert m.project.name == "bar"
 
@@ -29,7 +31,9 @@ def test_rename_target_exists(projects, make_project) -> None:
     assert result.exit_code == 1
 
 
-def test_rename_with_worktree_uses_git_worktree_move(projects, make_project, source_repo, monkeypatch) -> None:
+def test_rename_with_worktree_uses_git_worktree_move(
+    projects, make_project, source_repo, monkeypatch
+) -> None:
     from datetime import date
 
     from keel import git_ops
@@ -45,7 +49,14 @@ def test_rename_with_worktree_uses_git_worktree_move(projects, make_project, sou
     # Update manifest to declare the repo
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(remote=str(source_repo), local_hint=str(source_repo), worktree="code", branch_prefix="alice/foo")],
+        repos=[
+            RepoSpec(
+                remote=str(source_repo),
+                local_hint=str(source_repo),
+                worktree="code",
+                branch_prefix="alice/foo",
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
 

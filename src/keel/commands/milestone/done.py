@@ -1,4 +1,5 @@
 """`keel milestone done <id>`."""
+
 from __future__ import annotations
 
 import typer
@@ -21,21 +22,26 @@ def cmd_done(
     ctx: typer.Context,
     id: str = typer.Argument(...),
     deliverable: str | None = typer.Option(
-        None, "-D", "--deliverable",
+        None,
+        "-D",
+        "--deliverable",
         help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
     ),
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Project name. Auto-detected from CWD if omitted.",
     ),
-    force: bool = typer.Option(
-        False, "--force", help="Skip fan-out completion check."
-    ),
+    force: bool = typer.Option(False, "--force", help="Skip fan-out completion check."),
     no_push: bool = typer.Option(
-        False, "--no-push",
+        False,
+        "--no-push",
         help="Skip pushing to the configured ticketing provider for this invocation.",
     ),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Mark a milestone as done (active -> done)."""

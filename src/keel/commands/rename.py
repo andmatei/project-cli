@@ -1,4 +1,5 @@
 """`keel rename` (project-level)."""
+
 from __future__ import annotations
 
 import shutil
@@ -25,9 +26,15 @@ def cmd_rename(
     ctx: typer.Context,
     old: str = typer.Argument(..., help="Current project name."),
     new: str = typer.Argument(..., help="New project name (will be slugified)."),
-    rename_branches: bool = typer.Option(True, "--rename-branches/--no-rename-branches", help="Rename worktree branches to use the new project's branch_prefix."),
+    rename_branches: bool = typer.Option(
+        True,
+        "--rename-branches/--no-rename-branches",
+        help="Rename worktree branches to use the new project's branch_prefix.",
+    ),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip confirmation prompt."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Rename a project — directory, worktrees, branch prefixes, deliverable references."""
@@ -74,8 +81,10 @@ def cmd_rename(
                     git_ops.rename_branch(new_wt, old=old_branch, new=new_branch)
                     branch_renames.append((old_branch, new_branch))
                     r = RepoSpec(
-                        remote=r.remote, local_hint=r.local_hint,
-                        worktree=r.worktree, branch_prefix=new_branch_prefix,
+                        remote=r.remote,
+                        local_hint=r.local_hint,
+                        worktree=r.worktree,
+                        branch_prefix=new_branch_prefix,
                     )
         new_repos.append(r)
 

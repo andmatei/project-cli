@@ -28,16 +28,22 @@ def cmd_add(
     title: str = typer.Option(..., "--title", help="Human-readable task title."),
     description: str = typer.Option("", "--description", help="Optional description."),
     depends_on: str = typer.Option(
-        "", "--depends-on",
+        "",
+        "--depends-on",
         help="Comma-separated list of task ids this task depends on.",
     ),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Scope: a deliverable."),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable", help="Scope: a deliverable."
+    ),
     project: str | None = typer.Option(None, "--project", "-p", help="Project name."),
     no_push: bool = typer.Option(
-        False, "--no-push",
+        False,
+        "--no-push",
         help="Skip pushing to the configured ticketing provider.",
     ),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit JSON to stdout."),
 ) -> None:
     """Add a new task under an existing milestone."""
@@ -76,7 +82,9 @@ def cmd_add(
         depends_on=deps_list,
     )
     # Validate the would-be DAG
-    candidate_manifest = type(manifest)(milestones=manifest.milestones, tasks=manifest.tasks + [new_task])
+    candidate_manifest = type(manifest)(
+        milestones=manifest.milestones, tasks=manifest.tasks + [new_task]
+    )
     try:
         validate_dag(candidate_manifest)
     except GraphError as e:
@@ -96,7 +104,11 @@ def cmd_add(
         # Parent: the milestone's ticket_id (set when milestone was pushed)
         with edit_milestones(scope) as manifest:
             parent_milestone = find_milestone(manifest, milestone)
-            parent_id = parent_milestone.ticket_id if parent_milestone and parent_milestone.ticket_id else ""
+            parent_id = (
+                parent_milestone.ticket_id
+                if parent_milestone and parent_milestone.ticket_id
+                else ""
+            )
 
         def _push():
             ticket = provider.create_task(parent_id, new_task.title, new_task.description)

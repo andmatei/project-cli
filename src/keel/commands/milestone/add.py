@@ -22,10 +22,15 @@ def cmd_add(
     id: str = typer.Argument(..., help="Milestone identifier (e.g., 'm1', 'foundation')."),
     title: str = typer.Option(..., "--title", help="Human-readable milestone title."),
     description: str = typer.Option("", "--description", help="Optional description."),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Scope: a deliverable."),
-    project: str | None = typer.Option(None, "--project", "-p", help="Project name. Auto-detected from CWD."),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable", help="Scope: a deliverable."
+    ),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Project name. Auto-detected from CWD."
+    ),
     no_push: bool = typer.Option(
-        False, "--no-push",
+        False,
+        "--no-push",
         help="Skip pushing to the configured ticketing provider for this invocation.",
     ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit."),
@@ -48,7 +53,10 @@ def cmd_add(
 
     with edit_milestones(scope) as manifest:
         if any(m.id == id for m in manifest.milestones):
-            out.fail(f"milestone with id '{id}' already exists in {scope.milestones_manifest_path}", code=ErrorCode.EXISTS)
+            out.fail(
+                f"milestone with id '{id}' already exists in {scope.milestones_manifest_path}",
+                code=ErrorCode.EXISTS,
+            )
         manifest.milestones.append(new_milestone)
 
     # If ticketing is configured and --no-push wasn't passed, push to the provider.
@@ -56,11 +64,14 @@ def cmd_add(
     if provider is not None:
         from keel.manifest import load_project_manifest
         from keel.workspace import manifest_path as proj_mp
+
         proj_manifest = load_project_manifest(proj_mp(scope.project))
         parent_id = proj_manifest.extensions.get("ticketing", {}).get("parent_id", "")
 
         def _push():
-            ticket = provider.create_milestone(parent_id, new_milestone.title, new_milestone.description)
+            ticket = provider.create_milestone(
+                parent_id, new_milestone.title, new_milestone.description
+            )
             with edit_milestones(scope) as manifest:
                 saved = find_milestone(manifest, new_milestone.id)
                 if saved is not None:

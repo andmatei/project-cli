@@ -1,4 +1,5 @@
 """Tests for DAG helpers in keel.milestones."""
+
 import pytest
 
 from keel.manifest import Milestone, MilestonesManifest, Task

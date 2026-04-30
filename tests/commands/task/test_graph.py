@@ -24,8 +24,15 @@ def _seed(proj, monkeypatch):
     runner.invoke(
         app,
         [
-            "task", "add", "t4", "--milestone", "m1", "--title", "Fourth",
-            "--depends-on", "t2,t3",
+            "task",
+            "add",
+            "t4",
+            "--milestone",
+            "m1",
+            "--title",
+            "Fourth",
+            "--depends-on",
+            "t2,t3",
         ],
     )
 

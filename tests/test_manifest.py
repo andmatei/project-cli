@@ -211,8 +211,7 @@ def test_project_manifest_unknown_top_level_still_rejected(tmp_path) -> None:
     """extra='forbid' still rejects unknown top-level keys (only `extensions` is open)."""
     path = tmp_path / "bad.toml"
     path.write_text(
-        '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-29\n'
-        '[bogus]\nfoo = "bar"\n'
+        '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-29\n[bogus]\nfoo = "bar"\n'
     )
     with pytest.raises(ValidationError):
         load_project_manifest(path)
@@ -222,8 +221,11 @@ def test_deliverable_manifest_extensions_round_trip(tmp_path) -> None:
     path = tmp_path / "deliverable.toml"
     original = DeliverableManifest(
         deliverable=DeliverableMeta(
-            name="bar", parent_project="foo", description="d",
-            created=date(2026, 4, 29), shared_worktree=False,
+            name="bar",
+            parent_project="foo",
+            description="d",
+            created=date(2026, 4, 29),
+            shared_worktree=False,
         ),
         extensions={"ticketing": {"jira": {"story_id": "FOO-1235"}}},
     )
@@ -282,7 +284,13 @@ def test_milestones_manifest_round_trip(tmp_path) -> None:
         ],
         tasks=[
             Task(id="t1", milestone="m1", title="Set up", status="done", branch="me/keel-m1-t1"),
-            Task(id="t2", milestone="m1", title="Add models", depends_on=["t1"], branch="me/keel-m1-t2"),
+            Task(
+                id="t2",
+                milestone="m1",
+                title="Add models",
+                depends_on=["t1"],
+                branch="me/keel-m1-t2",
+            ),
         ],
     )
     save_milestones_manifest(path, original)

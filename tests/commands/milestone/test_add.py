@@ -51,9 +51,7 @@ def test_add_rejects_duplicate_id(projects, make_project, monkeypatch) -> None:
 def test_add_json(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
-    result = runner.invoke(
-        app, ["milestone", "add", "m1", "--title", "Foundation", "--json"]
-    )
+    result = runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
     assert data["id"] == "m1"
@@ -63,9 +61,7 @@ def test_add_json(projects, make_project, monkeypatch) -> None:
 def test_add_dry_run_writes_nothing(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
-    result = runner.invoke(
-        app, ["milestone", "add", "m1", "--title", "Foundation", "--dry-run"]
-    )
+    result = runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation", "--dry-run"])
     assert result.exit_code == 0
     manifest_path = proj / "design" / "milestones.toml"
     assert not manifest_path.exists()
@@ -75,7 +71,5 @@ def test_add_no_push_flag_accepted(projects, make_project, monkeypatch) -> None:
     """--no-push is accepted even when no ticketing config exists; no-op for now."""
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
-    result = runner.invoke(
-        app, ["milestone", "add", "m1", "--title", "Foundation", "--no-push"]
-    )
+    result = runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation", "--no-push"])
     assert result.exit_code == 0

@@ -12,11 +12,15 @@ def cmd_show(
     ctx: typer.Context,
     id: str = typer.Argument(...),
     deliverable: str | None = typer.Option(
-        None, "-D", "--deliverable",
+        None,
+        "-D",
+        "--deliverable",
         help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
     ),
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Project name. Auto-detected from CWD if omitted.",
     ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
@@ -33,8 +37,7 @@ def cmd_show(
 
     by_id = {t.id: t for t in manifest.tasks}
     deps_status = [
-        {"id": d, "status": by_id[d].status if d in by_id else "unknown"}
-        for d in task.depends_on
+        {"id": d, "status": by_id[d].status if d in by_id else "unknown"} for d in task.depends_on
     ]
 
     payload = {**task.model_dump(), "deps_status": deps_status}

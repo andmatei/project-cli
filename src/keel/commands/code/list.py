@@ -1,4 +1,5 @@
 """`keel code list`."""
+
 from __future__ import annotations
 
 import typer
@@ -10,8 +11,12 @@ from keel.api import Output, load_deliverable_manifest, load_project_manifest
 
 def cmd_list(
     ctx: typer.Context,
-    project: str | None = typer.Option(None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Show repos for this deliverable instead of the project."),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."
+    ),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable", help="Show repos for this deliverable instead of the project."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """List source repos declared in the manifest."""
@@ -21,7 +26,9 @@ def cmd_list(
     deliverable = scope.deliverable
 
     if deliverable:
-        manifest_path = workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
+        manifest_path = (
+            workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
+        )
         m = load_deliverable_manifest(manifest_path)
     else:
         manifest_path = workspace.project_dir(project) / "design" / "project.toml"

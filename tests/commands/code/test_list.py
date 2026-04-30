@@ -1,4 +1,5 @@
 """Tests for `keel code list`."""
+
 import json
 from datetime import date
 
@@ -25,12 +26,14 @@ def test_list_one_repo(projects, make_project) -> None:
     proj = make_project("foo")
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(
-            remote="git@example.com:org/r.git",
-            local_hint="~/r",
-            worktree="code",
-            branch_prefix="alice/foo",
-        )],
+        repos=[
+            RepoSpec(
+                remote="git@example.com:org/r.git",
+                local_hint="~/r",
+                worktree="code",
+                branch_prefix="alice/foo",
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
     result = runner.invoke(app, ["code", "list", "--project", "foo"])
@@ -60,10 +63,14 @@ def test_list_at_deliverable_scope(projects, make_deliverable) -> None:
         RepoSpec,
         save_deliverable_manifest,
     )
+
     m = DeliverableManifest(
         deliverable=DeliverableMeta(
-            name="bar", parent_project="foo", description="d",
-            created=date(2026, 4, 29), shared_worktree=False,
+            name="bar",
+            parent_project="foo",
+            description="d",
+            created=date(2026, 4, 29),
+            shared_worktree=False,
         ),
         repos=[RepoSpec(remote="git@e.com:o/d.git", worktree="code", branch_prefix="a/foo-bar")],
     )

@@ -1,4 +1,5 @@
 """Tests for `keel archive`."""
+
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -33,6 +34,7 @@ def test_archive_dry_run(projects, make_project) -> None:
 def test_archive_with_worktree_clean(projects, make_project, source_repo) -> None:
     """Archive correctly removes a clean worktree before moving the project."""
     from keel import git_ops
+
     proj = make_project("foo")
     git_ops.create_worktree(source_repo, proj / "code", branch="alice/foo")
     result = runner.invoke(app, ["archive", "foo", "-y"])

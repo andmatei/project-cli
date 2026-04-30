@@ -18,11 +18,15 @@ def cmd_start(
     ctx: typer.Context,
     id: str = typer.Argument(...),
     deliverable: str | None = typer.Option(
-        None, "-D", "--deliverable",
+        None,
+        "-D",
+        "--deliverable",
         help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
     ),
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Project name. Auto-detected from CWD if omitted.",
     ),
     branch: str | None = typer.Option(

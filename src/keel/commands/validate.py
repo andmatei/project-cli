@@ -1,4 +1,5 @@
 """`keel validate`."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -24,20 +25,28 @@ def _check_required_design_files(unit_dir: Path, label: str) -> list[_Finding]:
     for required in ("CLAUDE.md", "design.md", ".phase"):
         path = unit_dir / "design" / required
         if path.is_file():
-            findings.append(_Finding("required-files", "pass", f"{label} has {required}", str(path)))
+            findings.append(
+                _Finding("required-files", "pass", f"{label} has {required}", str(path))
+            )
         else:
-            findings.append(_Finding("required-files", "fail", f"{label} missing {required}", str(path)))
+            findings.append(
+                _Finding("required-files", "fail", f"{label} missing {required}", str(path))
+            )
     return findings
 
 
-def _check_manifest(manifest_path: Path, loader, label: str) -> tuple[list[_Finding], object | None]:
+def _check_manifest(
+    manifest_path: Path, loader, label: str
+) -> tuple[list[_Finding], object | None]:
     if not manifest_path.is_file():
         return [_Finding("manifest", "fail", f"{label} manifest missing", str(manifest_path))], None
     try:
         m = loader(manifest_path)
         return [_Finding("manifest", "pass", f"{label} manifest valid", str(manifest_path))], m
     except Exception as e:
-        return [_Finding("manifest", "fail", f"{label} manifest invalid: {e}", str(manifest_path))], None
+        return [
+            _Finding("manifest", "fail", f"{label} manifest invalid: {e}", str(manifest_path))
+        ], None
 
 
 def _check_worktrees(unit_dir: Path, repos, label: str) -> list[_Finding]:
@@ -45,26 +54,54 @@ def _check_worktrees(unit_dir: Path, repos, label: str) -> list[_Finding]:
     for r in repos:
         wt = unit_dir / r.worktree
         if not wt.is_dir():
-            findings.append(_Finding("worktree", "warn", f"{label} declares worktree {r.worktree} but dir missing", str(wt)))
+            findings.append(
+                _Finding(
+                    "worktree",
+                    "warn",
+                    f"{label} declares worktree {r.worktree} but dir missing",
+                    str(wt),
+                )
+            )
             continue
         if not git_ops.is_git_repo(wt):
-            findings.append(_Finding("worktree", "fail", f"{label} worktree {r.worktree} is not a git worktree", str(wt)))
+            findings.append(
+                _Finding(
+                    "worktree",
+                    "fail",
+                    f"{label} worktree {r.worktree} is not a git worktree",
+                    str(wt),
+                )
+            )
             continue
         if r.branch_prefix:
             try:
                 cur = git_ops.current_branch(wt)
                 if cur and not cur.startswith(r.branch_prefix):
-                    findings.append(_Finding(
-                        "worktree", "warn",
-                        f"{label} worktree {r.worktree} branch '{cur}' doesn't start with prefix '{r.branch_prefix}'",
-                        str(wt),
-                    ))
+                    findings.append(
+                        _Finding(
+                            "worktree",
+                            "warn",
+                            f"{label} worktree {r.worktree} branch '{cur}' doesn't start with prefix '{r.branch_prefix}'",
+                            str(wt),
+                        )
+                    )
                 else:
-                    findings.append(_Finding("worktree", "pass", f"{label} worktree {r.worktree} OK", str(wt)))
+                    findings.append(
+                        _Finding("worktree", "pass", f"{label} worktree {r.worktree} OK", str(wt))
+                    )
             except git_ops.GitError:
-                findings.append(_Finding("worktree", "warn", f"{label} couldn't read branch for {r.worktree}", str(wt)))
+                findings.append(
+                    _Finding(
+                        "worktree",
+                        "warn",
+                        f"{label} couldn't read branch for {r.worktree}",
+                        str(wt),
+                    )
+                )
         else:
-            findings.append(_Finding("worktree", "pass", f"{label} worktree {r.worktree} OK", str(wt)))
+            findings.append(
+                _Finding("worktree", "pass", f"{label} worktree {r.worktree} OK", str(wt))
+            )
     return findings
 
 
@@ -79,20 +116,35 @@ def _check_deliverable_references(project: str) -> list[_Finding]:
         if not d.is_dir() or not (d / "design" / "deliverable.toml").is_file():
             continue
         if f"**{d.name}**" not in parent_text:
-            findings.append(_Finding(
-                "refs", "warn",
-                f"deliverable '{d.name}' exists on disk but not mentioned in parent CLAUDE.md",
-                str(parent_claude),
-            ))
+            findings.append(
+                _Finding(
+                    "refs",
+                    "warn",
+                    f"deliverable '{d.name}' exists on disk but not mentioned in parent CLAUDE.md",
+                    str(parent_claude),
+                )
+            )
     return findings
 
 
 def cmd_validate(
     ctx: typer.Context,
-    name: str | None = typer.Argument(None, help="Project name. Auto-detected from CWD if omitted."),
-    strict: bool = typer.Option(False, "--strict", help="Treat warnings as failures (exit 1 if any warn)."),
-    check: str | None = typer.Option(None, "--check", help="Comma-separated list of check names to run (e.g. 'manifest,worktree')."),
-    content: bool = typer.Option(False, "--content", help="Run additional content checks (decision frontmatter, design.md sections)."),
+    name: str | None = typer.Argument(
+        None, help="Project name. Auto-detected from CWD if omitted."
+    ),
+    strict: bool = typer.Option(
+        False, "--strict", help="Treat warnings as failures (exit 1 if any warn)."
+    ),
+    check: str | None = typer.Option(
+        None,
+        "--check",
+        help="Comma-separated list of check names to run (e.g. 'manifest,worktree').",
+    ),
+    content: bool = typer.Option(
+        False,
+        "--content",
+        help="Run additional content checks (decision frontmatter, design.md sections).",
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Validate project structure and (optionally) content."""
@@ -136,13 +188,15 @@ def cmd_validate(
         tally[f.level] = tally.get(f.level, 0) + 1
 
     if json_mode:
-        out.result({
-            "findings": [
-                {"check": f.check, "level": f.level, "message": f.message, "path": f.path}
-                for f in findings
-            ],
-            "summary": tally,
-        })
+        out.result(
+            {
+                "findings": [
+                    {"check": f.check, "level": f.level, "message": f.message, "path": f.path}
+                    for f in findings
+                ],
+                "summary": tally,
+            }
+        )
     else:
         if not findings:
             out.result(None, human_text="(no findings)")

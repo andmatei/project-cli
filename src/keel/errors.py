@@ -1,4 +1,5 @@
 """Error codes and hint constants used across commands."""
+
 from __future__ import annotations
 
 from enum import StrEnum

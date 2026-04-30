@@ -163,6 +163,7 @@ def resolve_cli_scope(
 def read_phase(design_dir: Path) -> str:
     """Read the current phase from `<design_dir>/.phase`. Returns DEFAULT_PHASE if the file is missing or empty."""
     from keel.lifecycle import DEFAULT_PHASE
+
     phase_file_path = design_dir / ".phase"
     if not phase_file_path.is_file():
         return DEFAULT_PHASE
@@ -201,5 +202,3 @@ def phase_file(project: str, deliverable: str | None = None) -> Path:
 def milestones_manifest_path(project: str, deliverable: str | None = None) -> Path:
     """Path to the milestones.toml file for the given scope."""
     return design_dir(project, deliverable) / "milestones.toml"
-
-

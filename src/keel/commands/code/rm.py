@@ -1,4 +1,5 @@
 """`keel code rm`."""
+
 from __future__ import annotations
 
 import typer
@@ -20,12 +21,20 @@ from keel.api import (
 
 def cmd_rm(
     ctx: typer.Context,
-    project: str | None = typer.Option(None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Remove from deliverable scope."),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."
+    ),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable", help="Remove from deliverable scope."
+    ),
     repo: str = typer.Option(..., "--repo", "-r", help="Remote URL of the repo to remove."),
-    force: bool = typer.Option(False, "--force", help="Allow removal even if the worktree has uncommitted changes."),
+    force: bool = typer.Option(
+        False, "--force", help="Allow removal even if the worktree has uncommitted changes."
+    ),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip confirmation prompt."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Remove a repo from the manifest and remove its worktree."""
@@ -35,7 +44,9 @@ def cmd_rm(
     deliverable = scope.deliverable
 
     if deliverable:
-        manifest_path = workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
+        manifest_path = (
+            workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
+        )
         m: DeliverableManifest = load_deliverable_manifest(manifest_path)
     else:
         manifest_path = workspace.project_dir(project) / "design" / "project.toml"
@@ -66,7 +77,9 @@ def cmd_rm(
         try:
             git_ops.remove_worktree(wt_path, force=force)
         except git_ops.GitError as e:
-            out.fail(f"worktree removal failed (use --force if dirty): {e}", code=ErrorCode.GIT_FAILED)
+            out.fail(
+                f"worktree removal failed (use --force if dirty): {e}", code=ErrorCode.GIT_FAILED
+            )
 
     # Update manifest
     new_repos = [r for r in m.repos if r.remote != repo]

@@ -78,6 +78,7 @@ def test_done_with_fan_out_blocks_when_subs_not_done(
     runner.invoke(app, ["milestone", "add", "m1", "--title", "Big", "--project", "foo"])
     # Set fan_out manually via TOML edit
     import tomlkit
+
     mp = proj / "design" / "milestones.toml"
     doc = tomlkit.parse(mp.read_text())
     doc["milestones"][0]["fan_out"] = ["alpha"]
@@ -102,7 +103,9 @@ def test_done_with_fan_out_blocks_when_subs_not_done(
     ],
     ids=["from_planned", "from_active", "from_done"],
 )
-def test_cancel_from_state(projects, make_project, monkeypatch, setup_actions, expected_initial) -> None:
+def test_cancel_from_state(
+    projects, make_project, monkeypatch, setup_actions, expected_initial
+) -> None:
     """Cancel works from any non-terminal state and from `done`."""
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")

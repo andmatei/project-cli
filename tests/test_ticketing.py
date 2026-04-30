@@ -30,6 +30,7 @@ def test_ticket_is_frozen() -> None:
 
 def test_ticket_provider_is_protocol() -> None:
     """TicketProvider should be a runtime-checkable Protocol."""
+
     # Any object with the right attributes/methods passes isinstance.
     class FakeProvider:
         name = "fake"
@@ -258,7 +259,9 @@ def test_milestone_add_pushes_to_provider(make_project, monkeypatch) -> None:
 
     fake = MockProvider()
     with patch("keel.ticketing.load_provider", return_value=fake):
-        result = runner.invoke(app, ["milestone", "add", "m1", "--title", "X"], catch_exceptions=False)
+        result = runner.invoke(
+            app, ["milestone", "add", "m1", "--title", "X"], catch_exceptions=False
+        )
     assert result.exit_code == 0
     saved = load_milestones_manifest(proj / "design" / "milestones.toml")
     assert saved.milestones[0].ticket_id is not None
@@ -352,7 +355,9 @@ def test_milestone_done_transitions_provider(make_project, monkeypatch) -> None:
     assert any(args[2] == "done" for args in transitions)
 
 
-def test_milestone_add_provider_failure_does_not_fail_command(projects, make_project, monkeypatch) -> None:
+def test_milestone_add_provider_failure_does_not_fail_command(
+    projects, make_project, monkeypatch
+) -> None:
     """If provider raises, the milestone is saved locally and the command exits 0 with a warning."""
     from unittest.mock import patch
 

@@ -16,16 +16,27 @@ def source_repo(tmp_path) -> Path:
     """A bare-minimum git repo with a single initial commit on main."""
     repo = tmp_path / "src"
     repo.mkdir()
-    subprocess.run(["git", "init", "--initial-branch=main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "--initial-branch=main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True
+    )
     (repo / "README.md").write_text("# test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
     return repo
 
 
-def test_task_worktree_creates_branch_worktree(projects, make_project, source_repo, monkeypatch) -> None:
+def test_task_worktree_creates_branch_worktree(
+    projects, make_project, source_repo, monkeypatch
+) -> None:
     """`task worktree t1` creates a git worktree at the task's branch."""
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
@@ -51,7 +62,9 @@ def test_task_worktree_unknown_id_fails(projects, make_project, monkeypatch) -> 
     assert result.exit_code == 1
 
 
-def test_task_worktree_no_branch_recorded_fails(projects, make_project, source_repo, monkeypatch) -> None:
+def test_task_worktree_no_branch_recorded_fails(
+    projects, make_project, source_repo, monkeypatch
+) -> None:
     """If the task has no branch (never started), worktree fails clearly."""
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
@@ -64,7 +77,9 @@ def test_task_worktree_no_branch_recorded_fails(projects, make_project, source_r
     assert "branch" in result.stderr.lower() or "not started" in result.stderr.lower()
 
 
-def test_task_worktree_multi_repo_requires_explicit_repo(projects, make_project, source_repo, monkeypatch, tmp_path) -> None:
+def test_task_worktree_multi_repo_requires_explicit_repo(
+    projects, make_project, source_repo, monkeypatch, tmp_path
+) -> None:
     """When the project has multiple repos, --repo is required."""
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
@@ -76,7 +91,9 @@ def test_task_worktree_multi_repo_requires_explicit_repo(projects, make_project,
     subprocess.run(["git", "config", "user.name", "T"], cwd=second_repo, check=True)
     (second_repo / "README").write_text("x")
     subprocess.run(["git", "add", "."], cwd=second_repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "init"], cwd=second_repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"], cwd=second_repo, check=True, capture_output=True
+    )
 
     runner.invoke(app, ["code", "add", "--repo", str(source_repo)])
     runner.invoke(app, ["code", "add", "--repo", str(second_repo)])

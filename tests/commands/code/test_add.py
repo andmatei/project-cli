@@ -1,4 +1,5 @@
 """Tests for `keel code add`."""
+
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -15,6 +16,7 @@ def test_add_appends_to_manifest_and_creates_worktree(projects, make_project, so
     )
     assert result.exit_code == 0, result.stderr
     from keel.manifest import load_project_manifest
+
     m = load_project_manifest(projects / "foo" / "design" / "project.toml")
     assert len(m.repos) == 1
     assert m.repos[0].remote == str(source_repo)
@@ -25,7 +27,9 @@ def test_add_appends_to_manifest_and_creates_worktree(projects, make_project, so
 def test_add_rejects_duplicate_remote(projects, make_project, source_repo) -> None:
     make_project("foo")
     runner.invoke(app, ["code", "add", "--project", "foo", "--repo", str(source_repo), "-y"])
-    result = runner.invoke(app, ["code", "add", "--project", "foo", "--repo", str(source_repo), "-y"])
+    result = runner.invoke(
+        app, ["code", "add", "--project", "foo", "--repo", str(source_repo), "-y"]
+    )
     assert result.exit_code == 1
     assert "duplicate" in result.stderr.lower() or "already" in result.stderr.lower()
 
@@ -33,6 +37,7 @@ def test_add_rejects_duplicate_remote(projects, make_project, source_repo) -> No
 def test_add_rejects_duplicate_worktree_name(projects, make_project, tmp_path) -> None:
     """Two repos with same Path.name (basename) must be detected before they collide."""
     import subprocess
+
     make_project("foo")
 
     def _make_repo(p):
@@ -61,7 +66,17 @@ def test_add_with_explicit_worktree_name(projects, make_project, source_repo) ->
     make_project("foo")
     result = runner.invoke(
         app,
-        ["code", "add", "--project", "foo", "--repo", str(source_repo), "--worktree", "code-custom", "-y"],
+        [
+            "code",
+            "add",
+            "--project",
+            "foo",
+            "--repo",
+            str(source_repo),
+            "--worktree",
+            "code-custom",
+            "-y",
+        ],
     )
     assert result.exit_code == 0
     assert (projects / "foo" / "code-custom").is_dir()

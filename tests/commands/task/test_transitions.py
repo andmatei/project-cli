@@ -70,7 +70,9 @@ def test_done_rejects_wrong_state(projects, make_project, monkeypatch) -> None:
     ],
     ids=["from_planned", "from_active", "from_done"],
 )
-def test_cancel_from_state(projects, make_project, monkeypatch, setup_actions, expected_initial) -> None:
+def test_cancel_from_state(
+    projects, make_project, monkeypatch, setup_actions, expected_initial
+) -> None:
     """Cancel works from any non-terminal state and from `done`."""
     proj = make_project("foo")
     _seed(proj, monkeypatch)

@@ -1,4 +1,5 @@
 """`keel migrate` — convert legacy Bash CLI projects to manifest format."""
+
 from __future__ import annotations
 
 import re
@@ -119,7 +120,7 @@ def _extract_description(text: str) -> str | None:
     title_match = _TITLE_RE.search(text)
     if not title_match:
         return None
-    after = text[title_match.end():].lstrip("\n")
+    after = text[title_match.end() :].lstrip("\n")
     for line in after.splitlines():
         line = line.strip()
         if line and not line.startswith("#"):
@@ -178,9 +179,15 @@ def _migrate_deliverables(proj_dir: Path, project_name: str, apply: bool, out) -
 
 def cmd_migrate(
     ctx: typer.Context,
-    name: str | None = typer.Argument(None, help="Project name to migrate. Auto-detected from CWD if omitted."),
-    all_projects: bool = typer.Option(False, "--all", help="Migrate every legacy project under $PROJECTS_DIR."),
-    apply: bool = typer.Option(False, "--apply", help="Actually write the manifests (default is dry-run preview)."),
+    name: str | None = typer.Argument(
+        None, help="Project name to migrate. Auto-detected from CWD if omitted."
+    ),
+    all_projects: bool = typer.Option(
+        False, "--all", help="Migrate every legacy project under $PROJECTS_DIR."
+    ),
+    apply: bool = typer.Option(
+        False, "--apply", help="Actually write the manifests (default is dry-run preview)."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Migrate a project (or all projects) from Bash-CLI format to manifest format.

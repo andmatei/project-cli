@@ -4,6 +4,7 @@ Plugin authors implement TicketProvider; keel core uses it via the registry.
 keel core ships zero real providers — only this protocol and a MockProvider
 in keel.ticketing.mock for tests.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

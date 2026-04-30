@@ -10,21 +10,35 @@ def test_keel_api_exports() -> None:
 
     expected = {
         # Manifest
-        "DeliverableManifest", "DeliverableMeta", "ProjectManifest", "ProjectMeta", "RepoSpec",
-        "load_deliverable_manifest", "load_project_manifest",
-        "save_deliverable_manifest", "save_project_manifest",
+        "DeliverableManifest",
+        "DeliverableMeta",
+        "ProjectManifest",
+        "ProjectMeta",
+        "RepoSpec",
+        "load_deliverable_manifest",
+        "load_project_manifest",
+        "save_deliverable_manifest",
+        "save_project_manifest",
         # Dryrun
-        "Op", "OpLog",
+        "Op",
+        "OpLog",
         # Output
         "Output",
         # Prompts
-        "confirm_destructive", "is_interactive", "require_or_fail",
+        "confirm_destructive",
+        "is_interactive",
+        "require_or_fail",
         # Util
         "slugify",
         # Workspace
         "Scope",
-        "decisions_dir", "deliverable_dir", "deliverable_exists",
-        "detect_scope", "project_dir", "project_exists", "projects_dir",
+        "decisions_dir",
+        "deliverable_dir",
+        "deliverable_exists",
+        "detect_scope",
+        "project_dir",
+        "project_exists",
+        "projects_dir",
         "read_phase",
     }
     actual = set(api.__all__)
@@ -35,5 +49,6 @@ def test_keel_api_exports() -> None:
 def test_keel_api_imports_resolve() -> None:
     """Every name in keel.api.__all__ resolves to an actual object."""
     import keel.api as api
+
     for name in api.__all__:
         assert hasattr(api, name), f"name in __all__ but not exported: {name}"

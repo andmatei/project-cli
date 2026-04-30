@@ -1,4 +1,5 @@
 """Tests for `keel validate`."""
+
 import json
 
 from typer.testing import CliRunner

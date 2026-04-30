@@ -3,6 +3,7 @@
 Plan 5 may add a customisable lifecycle DSL; for now this module is the only
 place phase names live. Other modules import from here.
 """
+
 from __future__ import annotations
 
 PHASES: list[str] = ["scoping", "designing", "poc", "implementing", "shipping", "done"]

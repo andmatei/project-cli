@@ -1,5 +1,6 @@
 # tests/commands/code/test_init.py
 """Tests for `keel code init`."""
+
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -17,15 +18,18 @@ def test_init_creates_missing_worktree(projects, make_project, source_repo) -> N
         RepoSpec,
         save_project_manifest,
     )
+
     proj = make_project("foo")
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(
-            remote=str(source_repo),
-            local_hint=str(source_repo),
-            worktree="code",
-            branch_prefix="alice/foo",
-        )],
+        repos=[
+            RepoSpec(
+                remote=str(source_repo),
+                local_hint=str(source_repo),
+                worktree="code",
+                branch_prefix="alice/foo",
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
 
@@ -45,15 +49,18 @@ def test_init_idempotent(projects, make_project, source_repo) -> None:
         RepoSpec,
         save_project_manifest,
     )
+
     proj = make_project("foo")
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(
-            remote=str(source_repo),
-            local_hint=str(source_repo),
-            worktree="code",
-            branch_prefix="alice/foo",
-        )],
+        repos=[
+            RepoSpec(
+                remote=str(source_repo),
+                local_hint=str(source_repo),
+                worktree="code",
+                branch_prefix="alice/foo",
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
     runner.invoke(app, ["code", "init", "--project", "foo", "-y"])
@@ -70,10 +77,18 @@ def test_init_dry_run_writes_nothing(projects, make_project, source_repo) -> Non
         RepoSpec,
         save_project_manifest,
     )
+
     proj = make_project("foo")
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(remote=str(source_repo), local_hint=str(source_repo), worktree="code", branch_prefix="a/f")],
+        repos=[
+            RepoSpec(
+                remote=str(source_repo),
+                local_hint=str(source_repo),
+                worktree="code",
+                branch_prefix="a/f",
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
     result = runner.invoke(app, ["code", "init", "--project", "foo", "--dry-run", "-y"])
@@ -92,15 +107,18 @@ def test_init_fails_when_local_repo_missing_without_clone_flag(projects, make_pr
         RepoSpec,
         save_project_manifest,
     )
+
     proj = make_project("foo")
     m = ProjectManifest(
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
-        repos=[RepoSpec(
-            remote="git@e.com:o/r.git",
-            local_hint=str(projects / "_does_not_exist"),
-            worktree="code",
-            branch_prefix="a/f",
-        )],
+        repos=[
+            RepoSpec(
+                remote="git@e.com:o/r.git",
+                local_hint=str(projects / "_does_not_exist"),
+                worktree="code",
+                branch_prefix="a/f",
+            )
+        ],
     )
     save_project_manifest(proj / "design" / "project.toml", m)
     result = runner.invoke(app, ["code", "init", "--project", "foo", "-y"])

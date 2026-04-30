@@ -19,7 +19,8 @@ def test_add_creates_first_task(projects, make_project, monkeypatch) -> None:
     monkeypatch.chdir(proj / "design")
     _setup_milestone(proj)
     result = runner.invoke(
-        app, ["task", "add", "t1", "--milestone", "m1", "--title", "Set up"],
+        app,
+        ["task", "add", "t1", "--milestone", "m1", "--title", "Set up"],
         catch_exceptions=False,
     )
     assert result.exit_code == 0, result.stderr
@@ -39,8 +40,15 @@ def test_add_with_dependencies(projects, make_project, monkeypatch) -> None:
     result = runner.invoke(
         app,
         [
-            "task", "add", "t2", "--milestone", "m1", "--title", "Second",
-            "--depends-on", "t1",
+            "task",
+            "add",
+            "t2",
+            "--milestone",
+            "m1",
+            "--title",
+            "Second",
+            "--depends-on",
+            "t1",
         ],
         catch_exceptions=False,
     )
@@ -59,8 +67,15 @@ def test_add_with_multiple_dependencies(projects, make_project, monkeypatch) -> 
     result = runner.invoke(
         app,
         [
-            "task", "add", "t3", "--milestone", "m1", "--title", "c",
-            "--depends-on", "t1,t2",
+            "task",
+            "add",
+            "t3",
+            "--milestone",
+            "m1",
+            "--title",
+            "c",
+            "--depends-on",
+            "t1,t2",
         ],
     )
     assert result.exit_code == 0
@@ -73,7 +88,8 @@ def test_add_unknown_milestone_fails(projects, make_project, monkeypatch) -> Non
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
     result = runner.invoke(
-        app, ["task", "add", "t1", "--milestone", "ghost", "--title", "x"],
+        app,
+        ["task", "add", "t1", "--milestone", "ghost", "--title", "x"],
     )
     assert result.exit_code == 1
     assert "milestone" in result.stderr.lower()
@@ -86,8 +102,15 @@ def test_add_unknown_dependency_fails(projects, make_project, monkeypatch) -> No
     result = runner.invoke(
         app,
         [
-            "task", "add", "t1", "--milestone", "m1", "--title", "x",
-            "--depends-on", "nonexistent",
+            "task",
+            "add",
+            "t1",
+            "--milestone",
+            "m1",
+            "--title",
+            "x",
+            "--depends-on",
+            "nonexistent",
         ],
     )
     assert result.exit_code == 1
@@ -124,7 +147,8 @@ def test_add_duplicate_id_rejected(projects, make_project, monkeypatch) -> None:
     _setup_milestone(proj)
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "First"])
     result = runner.invoke(
-        app, ["task", "add", "t1", "--milestone", "m1", "--title", "Second"],
+        app,
+        ["task", "add", "t1", "--milestone", "m1", "--title", "Second"],
     )
     assert result.exit_code == 1
 

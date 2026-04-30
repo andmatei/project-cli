@@ -1,4 +1,5 @@
 """`keel milestone cancel <id>`."""
+
 from __future__ import annotations
 
 import typer
@@ -11,11 +12,15 @@ def cmd_cancel(
     ctx: typer.Context,
     id: str = typer.Argument(...),
     deliverable: str | None = typer.Option(
-        None, "-D", "--deliverable",
+        None,
+        "-D",
+        "--deliverable",
         help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
     ),
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Project name. Auto-detected from CWD if omitted.",
     ),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip the confirm prompt."),

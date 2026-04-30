@@ -69,7 +69,11 @@ def cmd_add(
     # Validate --repo if provided
     repo_path = None
     if repo and shared:
-        out.fail("--repo and --shared are mutually exclusive", code=ErrorCode.CONFLICTING_FLAGS, exit_code=2)
+        out.fail(
+            "--repo and --shared are mutually exclusive",
+            code=ErrorCode.CONFLICTING_FLAGS,
+            exit_code=2,
+        )
     if repo:
         repo_path = Path(repo).expanduser().resolve()
         if not git_ops.is_git_repo(repo_path):
@@ -184,7 +188,9 @@ def cmd_add(
         parent_design_path.write_text(new_text)
 
     # AST-edit existing siblings' CLAUDE.md to add this new deliverable
-    siblings_dir = workspace.project_dir(project) / "deliverables"  # siblings live in deliverables/, not design/
+    siblings_dir = (
+        workspace.project_dir(project) / "deliverables"
+    )  # siblings live in deliverables/, not design/
     sibling_modifications = []
     if siblings_dir.is_dir():
         for sibling in sorted(siblings_dir.iterdir()):

@@ -1,4 +1,5 @@
 """`keel completion` — print (or install) shell completion for keel."""
+
 from __future__ import annotations
 
 import typer
@@ -17,7 +18,11 @@ _INSTALL_PATHS = {
 def cmd_completion(
     ctx: typer.Context,
     shell: str = typer.Argument(..., help="Shell to generate completion for: bash, zsh, or fish."),
-    install: bool = typer.Option(False, "--install", help="Write the completion script to the canonical location for the chosen shell."),
+    install: bool = typer.Option(
+        False,
+        "--install",
+        help="Write the completion script to the canonical location for the chosen shell.",
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Print (or install) shell completion for `keel`."""

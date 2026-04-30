@@ -19,15 +19,20 @@ def cmd_done(
     ctx: typer.Context,
     id: str = typer.Argument(...),
     deliverable: str | None = typer.Option(
-        None, "-D", "--deliverable",
+        None,
+        "-D",
+        "--deliverable",
         help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
     ),
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Project name. Auto-detected from CWD if omitted.",
     ),
     no_push: bool = typer.Option(
-        False, "--no-push",
+        False,
+        "--no-push",
         help="Skip pushing to the configured ticketing provider for this invocation.",
     ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),

@@ -1,4 +1,5 @@
 """Ticketing plugin protocol — keel core ships only the protocol + a mock provider."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -42,6 +43,7 @@ def with_provider(scope: Scope, *, no_push: bool) -> TicketProvider | None:
         return None
     from keel.manifest import load_project_manifest
     from keel.workspace import manifest_path
+
     proj_manifest = load_project_manifest(manifest_path(scope.project))
     return get_provider_for_project(proj_manifest)
 
@@ -57,4 +59,10 @@ def safe_push(out: Output, op_label: str, fn) -> None:
         out.warn(f"ticket {op_label} failed: {e}")
 
 
-__all__ = ["get_provider_for_project", "with_provider", "safe_push", "list_providers", "load_provider"]
+__all__ = [
+    "get_provider_for_project",
+    "with_provider",
+    "safe_push",
+    "list_providers",
+    "load_provider",
+]

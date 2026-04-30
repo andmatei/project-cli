@@ -1,4 +1,5 @@
 """`keel archive`."""
+
 from __future__ import annotations
 
 import shutil
@@ -13,10 +14,14 @@ from keel.api import ErrorCode, OpLog, Output, confirm_destructive
 
 def cmd_archive(
     ctx: typer.Context,
-    name: str | None = typer.Argument(None, help="Project name. Auto-detected from CWD if omitted."),
+    name: str | None = typer.Argument(
+        None, help="Project name. Auto-detected from CWD if omitted."
+    ),
     force: bool = typer.Option(False, "--force", help="Allow archive even if worktrees are dirty."),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip confirmation prompt."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Soft-delete a project: remove worktrees, move to ~/projects/.archive/."""
@@ -73,7 +78,9 @@ def cmd_archive(
                     git_ops.remove_worktree(wt, force=force)
                     removed_worktrees += 1
                 except git_ops.GitError as e:
-                    out.fail(f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED)
+                    out.fail(
+                        f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED
+                    )
 
     # Move the project tree
     dest.parent.mkdir(parents=True, exist_ok=True)

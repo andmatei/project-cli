@@ -75,11 +75,15 @@ def _render_dot(manifest: MilestonesManifest) -> str:
 def cmd_graph(
     ctx: typer.Context,
     deliverable: str | None = typer.Option(
-        None, "-D", "--deliverable",
+        None,
+        "-D",
+        "--deliverable",
         help="Scope: a deliverable instead of the project. Auto-detected from CWD.",
     ),
     project: str | None = typer.Option(
-        None, "--project", "-p",
+        None,
+        "--project",
+        "-p",
         help="Project name. Auto-detected from CWD if omitted.",
     ),
     milestone: str | None = typer.Option(
@@ -94,7 +98,9 @@ def cmd_graph(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     if dot and json_mode:
-        out.fail("--dot and --json are mutually exclusive", code=ErrorCode.CONFLICTING_FLAGS, exit_code=2)
+        out.fail(
+            "--dot and --json are mutually exclusive", code=ErrorCode.CONFLICTING_FLAGS, exit_code=2
+        )
 
     scope = resolve_cli_scope(project, deliverable, out=out)
     manifest = load_milestones_manifest(scope.milestones_manifest_path)

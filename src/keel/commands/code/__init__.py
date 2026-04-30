@@ -1,4 +1,5 @@
 """`keel code ...` command group — manifest-driven worktree management."""
+
 from __future__ import annotations
 
 import typer

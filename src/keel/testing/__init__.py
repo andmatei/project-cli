@@ -10,6 +10,7 @@ Provides:
 - `make_deliverable` — factory creating a deliverable inside a project
 - `source_repo` — a real one-commit git repo at tmp_path/_source_repo
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -41,6 +42,7 @@ def projects(tmp_path, monkeypatch) -> Path:
 @pytest.fixture
 def make_project(projects) -> Callable[..., Path]:
     """Factory: create a project with empty design dir, manifest, and rendered templates."""
+
     def _make(name: str = "foo", description: str = "test project") -> Path:
         proj = projects / name
         (proj / "design" / "decisions").mkdir(parents=True)
@@ -51,7 +53,9 @@ def make_project(projects) -> Callable[..., Path]:
         save_project_manifest(proj / "design" / "project.toml", m)
         (proj / "design" / ".phase").write_text("scoping\n")
         (proj / "design" / "CLAUDE.md").write_text(
-            templates.render("claude_md.j2", name=name, description=description, repos=[], deliverables=[])
+            templates.render(
+                "claude_md.j2", name=name, description=description, repos=[], deliverables=[]
+            )
         )
         (proj / "design" / "design.md").write_text(
             templates.render("design_md.j2", name=name, description=description)
@@ -60,12 +64,14 @@ def make_project(projects) -> Callable[..., Path]:
             templates.render("scope_md.j2", name=name, description=description)
         )
         return proj
+
     return _make
 
 
 @pytest.fixture
 def make_deliverable(make_project) -> Callable[..., Path]:
     """Factory: create a deliverable inside a (possibly new) project."""
+
     def _make(
         project_name: str = "foo",
         name: str = "bar",
@@ -73,6 +79,7 @@ def make_deliverable(make_project) -> Callable[..., Path]:
         shared_worktree: bool = False,
     ) -> Path:
         from keel import workspace
+
         if not workspace.project_exists(project_name):
             make_project(project_name)
         deliv = workspace.deliverable_dir(project_name, name)
@@ -90,6 +97,7 @@ def make_deliverable(make_project) -> Callable[..., Path]:
         save_deliverable_manifest(deliv / "design" / "deliverable.toml", m)
         (deliv / "design" / ".phase").write_text("scoping\n")
         return deliv
+
     return _make
 
 

@@ -1,4 +1,5 @@
 """Graph helpers for milestone + task DAG validation and queries."""
+
 from __future__ import annotations
 
 from keel.lifecycle import is_terminal_task_state
@@ -22,14 +23,10 @@ def validate_dag(m: MilestonesManifest) -> None:
 
     for t in m.tasks:
         if t.milestone not in milestone_ids:
-            raise GraphError(
-                f"task {t.id!r} references unknown milestone {t.milestone!r}"
-            )
+            raise GraphError(f"task {t.id!r} references unknown milestone {t.milestone!r}")
         for dep in t.depends_on:
             if dep not in task_ids:
-                raise GraphError(
-                    f"task {t.id!r} depends_on unknown task {dep!r}"
-                )
+                raise GraphError(f"task {t.id!r} depends_on unknown task {dep!r}")
 
     # Check for cycles via DFS-based color marking.
     WHITE, GRAY, BLACK = 0, 1, 2

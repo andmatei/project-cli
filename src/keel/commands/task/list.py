@@ -17,9 +17,7 @@ def cmd_list(
     project: str | None = typer.Option(
         None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."
     ),
-    milestone: str | None = typer.Option(
-        None, "--milestone", "-m", help="Filter by milestone id."
-    ),
+    milestone: str | None = typer.Option(None, "--milestone", "-m", help="Filter by milestone id."),
     status: str | None = typer.Option(
         None, "--status", help="Filter by status (planned/active/done/cancelled)."
     ),
@@ -58,14 +56,7 @@ def cmd_list(
         rows = [t for t in rows if t.id in blocked_ids]
 
     if json_mode:
-        out.result(
-            {
-                "tasks": [
-                    {**t.model_dump(), "ready": t.id in ready_ids}
-                    for t in rows
-                ]
-            }
-        )
+        out.result({"tasks": [{**t.model_dump(), "ready": t.id in ready_ids} for t in rows]})
         return
 
     if not rows:

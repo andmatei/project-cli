@@ -1,4 +1,5 @@
 """`keel code add`."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,13 +23,25 @@ from keel.api import (
 
 def cmd_add(
     ctx: typer.Context,
-    project: str | None = typer.Option(None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."),
-    deliverable: str | None = typer.Option(None, "-D", "--deliverable", help="Add the repo at deliverable scope."),
+    project: str | None = typer.Option(
+        None, "--project", "-p", help="Project name. Auto-detected from CWD if omitted."
+    ),
+    deliverable: str | None = typer.Option(
+        None, "-D", "--deliverable", help="Add the repo at deliverable scope."
+    ),
     repo: str = typer.Option(..., "--repo", "-r", help="Source git repo path."),
-    worktree: str | None = typer.Option(None, "--worktree", help="Override the worktree dir name (default: derived from repo basename)."),
-    branch_prefix: str | None = typer.Option(None, "--branch-prefix", help="Override the branch prefix."),
+    worktree: str | None = typer.Option(
+        None,
+        "--worktree",
+        help="Override the worktree dir name (default: derived from repo basename).",
+    ),
+    branch_prefix: str | None = typer.Option(
+        None, "--branch-prefix", help="Override the branch prefix."
+    ),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip interactive prompts."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print intended operations and exit; write nothing."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print intended operations and exit; write nothing."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Add a source repo to the manifest and create its worktree."""
@@ -56,7 +69,9 @@ def cmd_add(
 
     # Load manifest
     if deliverable:
-        manifest_path = workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
+        manifest_path = (
+            workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
+        )
         m: DeliverableManifest = load_deliverable_manifest(manifest_path)
     else:
         manifest_path = workspace.project_dir(project) / "design" / "project.toml"
@@ -65,7 +80,9 @@ def cmd_add(
     # Detect duplicates
     for existing in m.repos:
         if existing.remote == str(repo_path):
-            out.fail(f"duplicate remote: {repo_path} already declared", code=ErrorCode.DUPLICATE_REMOTE)
+            out.fail(
+                f"duplicate remote: {repo_path} already declared", code=ErrorCode.DUPLICATE_REMOTE
+            )
         if existing.worktree == wt_name:
             out.fail(
                 f"worktree name '{wt_name}' already in use. Pass --worktree NAME to disambiguate.",
@@ -101,10 +118,16 @@ def cmd_add(
     try:
         git_ops.create_worktree(repo_path, unit_dir / wt_name, branch=branch_prefix)
     except git_ops.GitError as e:
-        out.info("Manifest was updated; remove the new [[repos]] entry manually if you want to retry.")
+        out.info(
+            "Manifest was updated; remove the new [[repos]] entry manually if you want to retry."
+        )
         out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
     out.result(
-        {"remote": str(repo_path), "worktree": str(unit_dir / wt_name), "branch_prefix": branch_prefix},
+        {
+            "remote": str(repo_path),
+            "worktree": str(unit_dir / wt_name),
+            "branch_prefix": branch_prefix,
+        },
         human_text=f"Repo added: {repo_path}",
     )
