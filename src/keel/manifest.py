@@ -214,6 +214,7 @@ def load_milestones_manifest(path: Path) -> MilestonesManifest:
 
 
 def save_milestones_manifest(path: Path, manifest: MilestonesManifest) -> None:
+    """Write a `milestones.toml`. Uses tomlkit so future edits preserve comments."""
     doc = tomlkit.document()
     if manifest.milestones:
         ms_array = tomlkit.aot()
