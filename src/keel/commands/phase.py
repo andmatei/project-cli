@@ -7,11 +7,13 @@ from pathlib import Path
 
 import typer
 
-from keel import workspace
+from keel import templates, workspace
+from keel.dryrun import OpLog
 from keel.errors import ErrorCode
 from keel.lifecycle import PHASES
 from keel.lifecycle import next_phase as _next_phase
 from keel.output import Output
+from keel.prompts import confirm_destructive
 from keel.workspace import resolve_cli_scope
 
 
@@ -111,16 +113,12 @@ def cmd_phase(
 
     # Backwards transition warning
     if PHASES.index(target) < PHASES.index(current):
-        from keel.prompts import confirm_destructive
-
         confirm_destructive(
             f"Backwards phase transition: {current} → {target}. Continue?",
             yes=yes,
         )
 
     if dry_run:
-        from keel.dryrun import OpLog
-
         log = OpLog()
         log.modify_file(path, diff=f"{current} → {target}")
         if not no_decision:
@@ -141,8 +139,6 @@ def cmd_phase(
 
     # Auto-create phase decision file
     if not no_decision:
-        from keel import templates
-
         _decisions_dir = workspace.decisions_dir(project, deliverable)
         _decisions_dir.mkdir(parents=True, exist_ok=True)
         decision_path = _decisions_dir / f"{today}-phase-{target}.md"

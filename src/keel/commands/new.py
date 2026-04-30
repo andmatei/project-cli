@@ -7,7 +7,8 @@ from pathlib import Path
 
 import typer
 
-from keel import templates, workspace
+from keel import git_ops, templates, workspace
+from keel.dryrun import OpLog
 from keel.errors import ErrorCode
 from keel.manifest import (
     ProjectManifest,
@@ -47,8 +48,6 @@ def cmd_new(
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new project workspace."""
-    from keel import git_ops
-
     out = Output.from_context(ctx, json_mode=json_mode)
     slug = slugify(name)
     if not slug:
@@ -74,8 +73,6 @@ def cmd_new(
 
     design = workspace.design_dir(slug)
     if dry_run:
-        from keel.dryrun import OpLog
-
         log = OpLog()
         log.create_file(design / "project.toml", size=0)
         log.create_file(design / "CLAUDE.md", size=0)

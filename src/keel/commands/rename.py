@@ -6,6 +6,7 @@ import shutil
 import typer
 
 from keel import git_ops, workspace
+from keel.dryrun import OpLog
 from keel.errors import HINT_LIST_PROJECTS, ErrorCode
 from keel.manifest import (
     ProjectManifest,
@@ -46,7 +47,6 @@ def cmd_rename(
     new_path = workspace.project_dir(new_slug)
 
     if dry_run:
-        from keel.dryrun import OpLog
         log = OpLog()
         log.modify_file(old_path, diff=f"rename → {new_path}")
         out.info(log.format_summary())

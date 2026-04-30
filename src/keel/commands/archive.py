@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
+from keel.dryrun import OpLog
 from keel.errors import ErrorCode
 from keel.output import Output
 from keel.prompts import confirm_destructive
@@ -31,7 +32,6 @@ def cmd_archive(
     dest = workspace.projects_dir() / ".archive" / f"{project}-{today}"
 
     if dry_run:
-        from keel.dryrun import OpLog
         log = OpLog()
         log.modify_file(proj_dir, diff=f"move → {dest}")
         out.info(log.format_summary())

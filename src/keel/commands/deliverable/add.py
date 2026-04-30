@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, templates, workspace
+from keel.dryrun import OpLog
 from keel.errors import ErrorCode
 from keel.manifest import (
     DeliverableManifest,
@@ -80,8 +81,6 @@ def cmd_add(
 
     deliv_design = workspace.design_dir(project, slug)
     if dry_run:
-        from keel.dryrun import OpLog
-
         log = OpLog()
         log.create_file(deliv_design / "deliverable.toml", size=0)
         log.create_file(deliv_design / "CLAUDE.md", size=0)

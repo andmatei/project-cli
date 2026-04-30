@@ -2,12 +2,22 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from pathlib import Path
 
 import typer
 
-from keel import workspace
+from keel import git_ops, workspace
 from keel.errors import HINT_LIST_PROJECTS, HINT_PASS_PROJECT, ErrorCode
+from keel.manifest import (
+    DeliverableManifest,
+    DeliverableMeta,
+    ProjectManifest,
+    ProjectMeta,
+    RepoSpec,
+    save_deliverable_manifest,
+    save_project_manifest,
+)
 from keel.output import Output
 
 _CODE_SECTION_RE = re.compile(r"## Code\n(.*?)(?:\n## |\Z)", re.DOTALL)
@@ -23,8 +33,6 @@ def _parse_code_section(claude_md_text: str, project_name: str) -> tuple[list, b
 
     Returns (list[RepoSpec], shared_worktree).
     """
-    from keel.manifest import RepoSpec
-
     section_match = _CODE_SECTION_RE.search(claude_md_text)
     if not section_match:
         return [], False
@@ -78,8 +86,6 @@ def _parse_code_section(claude_md_text: str, project_name: str) -> tuple[list, b
 
 def _enrich_with_worktree_state(unit_dir: Path, repos: list) -> list:
     """For each repo with a worktree on disk, fill branch_prefix from the current branch."""
-    from keel import git_ops
-    from keel.manifest import RepoSpec
 
     enriched: list[RepoSpec] = []
     for r in repos:
@@ -124,10 +130,6 @@ def _migrate_deliverables(proj_dir: Path, project_name: str, apply: bool, out) -
 
     Returns count of deliverables migrated (or that would be in dry-run).
     """
-    from datetime import date
-
-    from keel.manifest import DeliverableManifest, DeliverableMeta, save_deliverable_manifest
-
     deliv_dir = proj_dir / "deliverables"
     if not deliv_dir.is_dir():
         return 0
@@ -206,10 +208,6 @@ def cmd_migrate(
             out.error(f"not a project: {name}\n  {HINT_LIST_PROJECTS}", code=ErrorCode.NOT_FOUND)
             raise typer.Exit(code=1)
         targets = [name]
-
-    from datetime import date
-
-    from keel.manifest import ProjectManifest, ProjectMeta, save_project_manifest
 
     results: list[dict] = []
     for target in targets:
