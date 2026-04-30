@@ -385,6 +385,6 @@ def test_milestone_add_provider_failure_does_not_fail_command(projects, make_pro
     saved = load_milestones_manifest(proj / "design" / "milestones.toml")
     assert len(saved.milestones) == 1
     assert saved.milestones[0].ticket_id is None
-    # Warning surfaced somewhere (stderr or stdout — out.info usually goes to stderr)
+    # Warning surfaced somewhere (stderr or stdout; out.warn goes to stderr)
     combined = result.stderr.lower() + result.stdout.lower()
-    assert "warning" in combined
+    assert "ticket" in combined and "failed" in combined

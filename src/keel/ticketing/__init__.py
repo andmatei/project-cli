@@ -54,7 +54,7 @@ def safe_push(out: Output, op_label: str, fn) -> None:
     try:
         fn()
     except Exception as e:  # noqa: BLE001
-        out.info(f"[warning] ticket {op_label} failed: {e}")
+        out.warn(f"ticket {op_label} failed: {e}")
 
 
 __all__ = ["get_provider_for_project", "with_provider", "safe_push", "list_providers", "load_provider"]
