@@ -31,3 +31,7 @@ app.command(name="done")(cmd_done)
 from keel.commands.task.cancel import cmd_cancel  # noqa: E402
 
 app.command(name="cancel")(cmd_cancel)
+
+from keel.commands.task.graph import cmd_graph  # noqa: E402
+
+app.command(name="graph")(cmd_graph)
