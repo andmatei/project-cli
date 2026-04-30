@@ -120,6 +120,10 @@ from keel.commands.decision import app as decision_app  # noqa: E402
 
 app.add_typer(decision_app, name="decision")
 
+from keel.commands.milestone import app as milestone_app  # noqa: E402
+
+app.add_typer(milestone_app, name="milestone")
+
 from keel.commands.design import app as design_app  # noqa: E402
 
 app.add_typer(design_app, name="design")
