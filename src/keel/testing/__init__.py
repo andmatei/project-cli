@@ -28,6 +28,7 @@ from keel.manifest import (
     save_deliverable_manifest,
     save_project_manifest,
 )
+from keel.ticketing.mock import MockProvider
 
 
 @pytest.fixture
@@ -104,3 +105,9 @@ def source_repo(tmp_path) -> Path:
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
     return repo
+
+
+@pytest.fixture
+def mock_ticket_provider() -> MockProvider:
+    """A fresh MockProvider instance for each test."""
+    return MockProvider()
