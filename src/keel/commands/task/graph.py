@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import typer
 
-from keel.errors import ErrorCode
-from keel.manifest import MilestonesManifest, Task, load_milestones_manifest
-from keel.milestones import blocked_tasks, ready_tasks, topological_sort
-from keel.output import Output
+from keel.api import (
+    ErrorCode,
+    MilestonesManifest,
+    Output,
+    Task,
+    blocked_tasks,
+    load_milestones_manifest,
+    ready_tasks,
+    topological_sort,
+)
 from keel.workspace import resolve_cli_scope
 
 

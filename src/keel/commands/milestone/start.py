@@ -3,9 +3,7 @@ from __future__ import annotations
 
 import typer
 
-from keel.errors import ErrorCode
-from keel.manifest import edit_milestones, find_milestone
-from keel.output import Output
+from keel.api import ErrorCode, Output, edit_milestones, find_milestone
 from keel.workspace import resolve_cli_scope
 
 

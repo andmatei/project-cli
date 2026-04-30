@@ -5,11 +5,8 @@ from __future__ import annotations
 import typer
 
 from keel import workspace
+from keel.api import HINT_LIST_DECISIONS, ErrorCode, OpLog, Output, confirm_destructive
 from keel.commands.decision.show import _find_decision
-from keel.dryrun import OpLog
-from keel.errors import HINT_LIST_DECISIONS, ErrorCode
-from keel.output import Output
-from keel.prompts import confirm_destructive
 from keel.workspace import resolve_cli_scope
 
 

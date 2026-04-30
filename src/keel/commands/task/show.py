@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from keel.errors import ErrorCode
-from keel.manifest import find_task, load_milestones_manifest
-from keel.output import Output
+from keel.api import ErrorCode, Output, find_task, load_milestones_manifest
 from keel.workspace import resolve_cli_scope
 
 

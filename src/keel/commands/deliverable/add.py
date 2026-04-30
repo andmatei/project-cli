@@ -8,19 +8,19 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, templates, workspace
-from keel.dryrun import OpLog
-from keel.errors import ErrorCode
-from keel.manifest import (
+from keel.api import (
     DeliverableManifest,
     DeliverableMeta,
+    ErrorCode,
+    OpLog,
+    Output,
     RepoSpec,
     load_deliverable_manifest,
+    require_or_fail,
     save_deliverable_manifest,
+    slugify,
 )
 from keel.markdown_edit import insert_under_heading
-from keel.output import Output
-from keel.prompts import require_or_fail
-from keel.util import slugify
 from keel.workspace import resolve_cli_scope
 
 

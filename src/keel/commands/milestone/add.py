@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import typer
 
-from keel.dryrun import OpLog
-from keel.errors import ErrorCode
-from keel.manifest import (
+from keel.api import (
+    ErrorCode,
     Milestone,
+    OpLog,
+    Output,
     edit_milestones,
     find_milestone,
+    safe_push,
+    with_provider,
 )
-from keel.output import Output
-from keel.ticketing import safe_push, with_provider
 from keel.workspace import resolve_cli_scope
 
 

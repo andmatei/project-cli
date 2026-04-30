@@ -7,11 +7,8 @@ import shutil
 import typer
 
 from keel import git_ops, workspace
-from keel.dryrun import OpLog
-from keel.errors import HINT_LIST_DELIVERABLES, ErrorCode
+from keel.api import HINT_LIST_DELIVERABLES, ErrorCode, OpLog, Output, confirm_destructive
 from keel.markdown_edit import remove_bullet_under_heading
-from keel.output import Output
-from keel.prompts import confirm_destructive
 from keel.workspace import resolve_cli_scope
 
 

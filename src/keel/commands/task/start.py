@@ -6,10 +6,7 @@ import os
 
 import typer
 
-from keel.errors import ErrorCode
-from keel.manifest import edit_milestones, find_task
-from keel.output import Output
-from keel.util import slugify
+from keel.api import ErrorCode, Output, edit_milestones, find_task, slugify
 from keel.workspace import resolve_cli_scope
 
 

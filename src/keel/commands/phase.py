@@ -8,12 +8,9 @@ from pathlib import Path
 import typer
 
 from keel import templates, workspace
-from keel.dryrun import OpLog
-from keel.errors import ErrorCode
+from keel.api import ErrorCode, OpLog, Output, confirm_destructive
 from keel.lifecycle import PHASES
 from keel.lifecycle import next_phase as _next_phase
-from keel.output import Output
-from keel.prompts import confirm_destructive
 from keel.workspace import resolve_cli_scope
 
 

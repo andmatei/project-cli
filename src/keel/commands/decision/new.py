@@ -12,10 +12,7 @@ from pathlib import Path
 import typer
 
 from keel import templates, workspace
-from keel.dryrun import OpLog
-from keel.errors import HINT_LIST_DECISIONS, ErrorCode
-from keel.output import Output
-from keel.util import slugify
+from keel.api import HINT_LIST_DECISIONS, ErrorCode, OpLog, Output, slugify
 from keel.workspace import resolve_cli_scope
 
 

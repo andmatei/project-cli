@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import typer
 
-from keel.errors import ErrorCode
-from keel.output import Output
+from keel.api import ErrorCode, Output
 
 _SUPPORTED = {"bash", "zsh", "fish"}
 

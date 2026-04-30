@@ -5,10 +5,7 @@ from __future__ import annotations
 import typer
 from rich.table import Table
 
-from keel.errors import ErrorCode
-from keel.manifest import load_milestones_manifest
-from keel.milestones import blocked_tasks, ready_tasks
-from keel.output import Output
+from keel.api import ErrorCode, Output, blocked_tasks, load_milestones_manifest, ready_tasks
 from keel.workspace import resolve_cli_scope
 
 

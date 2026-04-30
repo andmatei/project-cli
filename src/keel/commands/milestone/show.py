@@ -6,9 +6,7 @@ from collections import Counter
 
 import typer
 
-from keel.errors import ErrorCode
-from keel.manifest import find_milestone, load_milestones_manifest
-from keel.output import Output
+from keel.api import ErrorCode, Output, find_milestone, load_milestones_manifest
 from keel.workspace import resolve_cli_scope
 
 

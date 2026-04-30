@@ -4,18 +4,18 @@ from __future__ import annotations
 import typer
 
 from keel import git_ops, workspace
-from keel.dryrun import OpLog
-from keel.errors import ErrorCode
-from keel.manifest import (
+from keel.api import (
     DeliverableManifest,
+    ErrorCode,
+    OpLog,
+    Output,
     ProjectManifest,
+    confirm_destructive,
     load_deliverable_manifest,
     load_project_manifest,
     save_deliverable_manifest,
     save_project_manifest,
 )
-from keel.output import Output
-from keel.prompts import confirm_destructive
 
 
 def cmd_rm(

@@ -10,7 +10,7 @@ import typer
 from rich.table import Table
 
 from keel import workspace
-from keel.output import Output
+from keel.api import Output
 from keel.workspace import resolve_cli_scope
 
 

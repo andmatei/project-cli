@@ -8,17 +8,19 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
-from keel.errors import HINT_LIST_PROJECTS, HINT_PASS_PROJECT, ErrorCode
-from keel.manifest import (
+from keel.api import (
+    HINT_LIST_PROJECTS,
+    HINT_PASS_PROJECT,
     DeliverableManifest,
     DeliverableMeta,
+    ErrorCode,
+    Output,
     ProjectManifest,
     ProjectMeta,
     RepoSpec,
     save_deliverable_manifest,
     save_project_manifest,
 )
-from keel.output import Output
 
 _CODE_SECTION_RE = re.compile(r"## Code\n(.*?)(?:\n## |\Z)", re.DOTALL)
 _SINGLE_CODE_RE = re.compile(r"^Code:\s+\.\./code/?\s*$", re.MULTILINE)

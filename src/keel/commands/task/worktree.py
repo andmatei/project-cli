@@ -7,16 +7,16 @@ from pathlib import Path
 import typer
 
 from keel import git_ops
-from keel.errors import ErrorCode
-from keel.manifest import (
+from keel.api import (
     DeliverableManifest,
+    ErrorCode,
+    Output,
     ProjectManifest,
     find_task,
     load_deliverable_manifest,
     load_milestones_manifest,
     load_project_manifest,
 )
-from keel.output import Output
 from keel.workspace import resolve_cli_scope
 
 

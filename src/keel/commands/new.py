@@ -8,17 +8,17 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, templates, workspace
-from keel.dryrun import OpLog
-from keel.errors import ErrorCode
-from keel.manifest import (
+from keel.api import (
+    ErrorCode,
+    OpLog,
+    Output,
     ProjectManifest,
     ProjectMeta,
     RepoSpec,
+    require_or_fail,
     save_project_manifest,
+    slugify,
 )
-from keel.output import Output
-from keel.prompts import require_or_fail
-from keel.util import slugify
 
 
 def cmd_new(

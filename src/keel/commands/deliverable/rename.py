@@ -7,16 +7,17 @@ import shutil
 import typer
 
 from keel import git_ops, workspace
-from keel.dryrun import OpLog
-from keel.errors import HINT_LIST_DELIVERABLES, ErrorCode
-from keel.manifest import (
+from keel.api import (
+    HINT_LIST_DELIVERABLES,
     DeliverableManifest,
     DeliverableMeta,
+    ErrorCode,
+    OpLog,
+    Output,
     load_deliverable_manifest,
     save_deliverable_manifest,
 )
 from keel.markdown_edit import insert_under_heading, remove_bullet_under_heading
-from keel.output import Output
 from keel.workspace import resolve_cli_scope
 
 

@@ -8,8 +8,7 @@ import typer
 from rich.tree import Tree
 
 from keel import workspace
-from keel.manifest import load_project_manifest
-from keel.output import Output
+from keel.api import Output, load_project_manifest
 
 
 @dataclass

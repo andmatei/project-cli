@@ -7,10 +7,7 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
-from keel.dryrun import OpLog
-from keel.errors import ErrorCode
-from keel.manifest import load_deliverable_manifest, load_project_manifest
-from keel.output import Output
+from keel.api import ErrorCode, OpLog, Output, load_deliverable_manifest, load_project_manifest
 
 
 def cmd_init(

@@ -6,10 +6,11 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
-from keel.dryrun import OpLog
-from keel.errors import ErrorCode
-from keel.manifest import (
+from keel.api import (
     DeliverableManifest,
+    ErrorCode,
+    OpLog,
+    Output,
     ProjectManifest,
     RepoSpec,
     load_deliverable_manifest,
@@ -17,7 +18,6 @@ from keel.manifest import (
     save_deliverable_manifest,
     save_project_manifest,
 )
-from keel.output import Output
 
 
 def cmd_add(

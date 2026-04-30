@@ -6,18 +6,19 @@ import shutil
 import typer
 
 from keel import git_ops, workspace
-from keel.dryrun import OpLog
-from keel.errors import HINT_LIST_PROJECTS, ErrorCode
-from keel.manifest import (
+from keel.api import (
+    HINT_LIST_PROJECTS,
+    ErrorCode,
+    OpLog,
+    Output,
     ProjectManifest,
     ProjectMeta,
     RepoSpec,
+    confirm_destructive,
     load_project_manifest,
     save_project_manifest,
+    slugify,
 )
-from keel.output import Output
-from keel.prompts import confirm_destructive
-from keel.util import slugify
 
 
 def cmd_rename(

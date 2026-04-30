@@ -5,8 +5,7 @@ from __future__ import annotations
 import typer
 from rich.table import Table
 
-from keel.manifest import load_milestones_manifest
-from keel.output import Output
+from keel.api import Output, load_milestones_manifest
 from keel.workspace import resolve_cli_scope
 
 

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import typer
 
-from keel.errors import ErrorCode
-from keel.manifest import (
+from keel.api import (
+    ErrorCode,
+    Output,
     edit_milestones,
     find_task,
+    safe_push,
+    with_provider,
 )
-from keel.output import Output
-from keel.ticketing import safe_push, with_provider
 from keel.workspace import resolve_cli_scope
 
 

@@ -8,10 +8,7 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
-from keel.dryrun import OpLog
-from keel.errors import ErrorCode
-from keel.output import Output
-from keel.prompts import confirm_destructive
+from keel.api import ErrorCode, OpLog, Output, confirm_destructive
 
 
 def cmd_archive(

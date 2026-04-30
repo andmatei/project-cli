@@ -9,8 +9,7 @@ from pathlib import Path
 import typer
 
 from keel import workspace
-from keel.manifest import load_deliverable_manifest, load_project_manifest
-from keel.output import Output
+from keel.api import Output, load_deliverable_manifest, load_project_manifest
 
 _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?", re.DOTALL)
 

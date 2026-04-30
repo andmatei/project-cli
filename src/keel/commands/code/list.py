@@ -5,8 +5,7 @@ import typer
 from rich.table import Table
 
 from keel import workspace
-from keel.manifest import load_deliverable_manifest, load_project_manifest
-from keel.output import Output
+from keel.api import Output, load_deliverable_manifest, load_project_manifest
 
 
 def cmd_list(
