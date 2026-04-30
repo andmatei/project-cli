@@ -5,8 +5,9 @@ import typer
 
 from keel import workspace
 from keel.errors import ErrorCode
-from keel.manifest import load_milestones_manifest, save_milestones_manifest
+from keel.manifest import load_milestones_manifest, load_project_manifest, save_milestones_manifest
 from keel.output import Output
+from keel.ticketing import get_provider_for_project
 from keel.workspace import resolve_cli_scope
 
 
@@ -17,6 +18,10 @@ def cmd_done(
     project: str | None = typer.Option(None, "--project", "-p"),
     force: bool = typer.Option(
         False, "--force", help="Skip fan-out completion check."
+    ),
+    no_push: bool = typer.Option(
+        False, "--no-push",
+        help="Skip pushing to the configured ticketing provider for this invocation.",
     ),
     json_mode: bool = typer.Option(False, "--json"),
 ) -> None:
@@ -61,4 +66,14 @@ def cmd_done(
 
     milestone.status = "done"
     save_milestones_manifest(path, manifest)
+
+    if not no_push:
+        proj_manifest = load_project_manifest(workspace.manifest_path(scope.project))
+        provider = get_provider_for_project(proj_manifest)
+        if provider is not None and milestone.jira_id:
+            try:
+                provider.transition(milestone.jira_id, "done")
+            except Exception as e:  # noqa: BLE001
+                out.info(f"[warning] ticket transition failed: {e}")
+
     out.result(milestone.model_dump(), human_text=f"Milestone done: {id}")

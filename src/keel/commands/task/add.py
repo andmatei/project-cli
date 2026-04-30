@@ -8,10 +8,12 @@ from keel.errors import ErrorCode
 from keel.manifest import (
     Task,
     load_milestones_manifest,
+    load_project_manifest,
     save_milestones_manifest,
 )
 from keel.milestones import GraphError, validate_dag
 from keel.output import Output
+from keel.ticketing import get_provider_for_project
 from keel.workspace import resolve_cli_scope
 
 
@@ -81,5 +83,20 @@ def cmd_add(
 
     path.parent.mkdir(parents=True, exist_ok=True)
     save_milestones_manifest(path, manifest)
+
+    if not no_push:
+        from keel.workspace import manifest_path as proj_mp
+        proj_manifest = load_project_manifest(proj_mp(scope.project))
+        provider = get_provider_for_project(proj_manifest)
+        if provider is not None:
+            # Parent: the milestone's jira_id (set when milestone was pushed)
+            parent_milestone = next((m for m in manifest.milestones if m.id == milestone), None)
+            parent_id = parent_milestone.jira_id if parent_milestone and parent_milestone.jira_id else ""
+            try:
+                ticket = provider.create_task(parent_id, new_task.title, new_task.description)
+                new_task.jira_id = ticket.id
+                save_milestones_manifest(path, manifest)
+            except Exception as e:  # noqa: BLE001
+                out.info(f"[warning] ticket creation failed: {e}")
 
     out.result(new_task.model_dump(), human_text=f"Task created: {id}")

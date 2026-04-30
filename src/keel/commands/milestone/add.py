@@ -9,9 +9,11 @@ from keel.errors import ErrorCode
 from keel.manifest import (
     Milestone,
     load_milestones_manifest,
+    load_project_manifest,
     save_milestones_manifest,
 )
 from keel.output import Output
+from keel.ticketing import get_provider_for_project
 from keel.workspace import resolve_cli_scope
 
 
@@ -52,6 +54,22 @@ def cmd_add(
     manifest.milestones.append(new_milestone)
     path.parent.mkdir(parents=True, exist_ok=True)
     save_milestones_manifest(path, manifest)
+
+    # If ticketing is configured and --no-push wasn't passed, push to the provider.
+    if not no_push:
+        from keel.workspace import manifest_path as proj_mp
+        proj_manifest = load_project_manifest(proj_mp(scope.project))
+        provider = get_provider_for_project(proj_manifest)
+        if provider is not None:
+            # parent_id: project-level Epic id from [extensions.ticketing] config
+            parent_id = proj_manifest.extensions.get("ticketing", {}).get("parent_id", "")
+            try:
+                ticket = provider.create_milestone(parent_id, new_milestone.title, new_milestone.description)
+                new_milestone.jira_id = ticket.id
+                # Re-save to persist the ticket id
+                save_milestones_manifest(path, manifest)
+            except Exception as e:  # noqa: BLE001
+                out.info(f"[warning] ticket creation failed: {e} (milestone saved locally)")
 
     payload = new_milestone.model_dump()
     out.result(

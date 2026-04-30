@@ -232,3 +232,121 @@ def test_get_provider_for_project_loads_and_configures(make_project) -> None:
         provider = get_provider_for_project(m2)
     assert provider is fake
     assert ("configure", {"key": "value"}) in fake.calls
+
+
+# Task 4.5 tests
+def test_milestone_add_pushes_to_provider(make_project, monkeypatch) -> None:
+    """When ticketing is configured + provider available, milestone add records ticket id."""
+    from unittest.mock import patch
+
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.manifest import (
+        load_milestones_manifest,
+        load_project_manifest,
+        save_project_manifest,
+    )
+    from keel.ticketing.mock import MockProvider
+
+    runner = CliRunner()
+    proj = make_project("foo")
+    m = load_project_manifest(proj / "design" / "project.toml")
+    m.extensions["ticketing"] = {"provider": "mock", "parent_id": "EPIC-1"}
+    save_project_manifest(proj / "design" / "project.toml", m)
+    monkeypatch.chdir(proj / "design")
+
+    fake = MockProvider()
+    with patch("keel.ticketing.load_provider", return_value=fake):
+        result = runner.invoke(app, ["milestone", "add", "m1", "--title", "X"], catch_exceptions=False)
+    assert result.exit_code == 0
+    saved = load_milestones_manifest(proj / "design" / "milestones.toml")
+    assert saved.milestones[0].jira_id is not None
+    assert saved.milestones[0].jira_id.startswith("MOCK-")
+    assert any(c[0] == "create_milestone" for c in fake.calls)
+
+
+def test_milestone_add_no_push_skips_provider(make_project, monkeypatch) -> None:
+    """--no-push skips the provider call even when configured."""
+    from unittest.mock import patch
+
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.manifest import (
+        load_milestones_manifest,
+        load_project_manifest,
+        save_project_manifest,
+    )
+    from keel.ticketing.mock import MockProvider
+
+    runner = CliRunner()
+    proj = make_project("foo")
+    m = load_project_manifest(proj / "design" / "project.toml")
+    m.extensions["ticketing"] = {"provider": "mock"}
+    save_project_manifest(proj / "design" / "project.toml", m)
+    monkeypatch.chdir(proj / "design")
+
+    fake = MockProvider()
+    with patch("keel.ticketing.load_provider", return_value=fake):
+        result = runner.invoke(app, ["milestone", "add", "m1", "--title", "X", "--no-push"])
+    assert result.exit_code == 0
+    saved = load_milestones_manifest(proj / "design" / "milestones.toml")
+    assert saved.milestones[0].jira_id is None
+    assert not any(c[0] == "create_milestone" for c in fake.calls)
+
+
+def test_task_add_pushes_with_parent_milestone_jira_id(make_project, monkeypatch) -> None:
+    from unittest.mock import patch
+
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.manifest import (
+        load_milestones_manifest,
+        load_project_manifest,
+        save_project_manifest,
+    )
+    from keel.ticketing.mock import MockProvider
+
+    runner = CliRunner()
+    proj = make_project("foo")
+    m = load_project_manifest(proj / "design" / "project.toml")
+    m.extensions["ticketing"] = {"provider": "mock", "parent_id": "EPIC-1"}
+    save_project_manifest(proj / "design" / "project.toml", m)
+    monkeypatch.chdir(proj / "design")
+
+    fake = MockProvider()
+    with patch("keel.ticketing.load_provider", return_value=fake):
+        runner.invoke(app, ["milestone", "add", "m1", "--title", "M"], catch_exceptions=False)
+        # milestone now has jira_id = MOCK-1 (or similar)
+        result = runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "T"])
+    assert result.exit_code == 0
+    saved = load_milestones_manifest(proj / "design" / "milestones.toml")
+    assert saved.tasks[0].jira_id is not None
+
+
+def test_milestone_done_transitions_provider(make_project, monkeypatch) -> None:
+    from unittest.mock import patch
+
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.manifest import load_project_manifest, save_project_manifest
+    from keel.ticketing.mock import MockProvider
+
+    runner = CliRunner()
+    proj = make_project("foo")
+    m = load_project_manifest(proj / "design" / "project.toml")
+    m.extensions["ticketing"] = {"provider": "mock"}
+    save_project_manifest(proj / "design" / "project.toml", m)
+    monkeypatch.chdir(proj / "design")
+
+    fake = MockProvider()
+    with patch("keel.ticketing.load_provider", return_value=fake):
+        runner.invoke(app, ["milestone", "add", "m1", "--title", "X"], catch_exceptions=False)
+        runner.invoke(app, ["milestone", "start", "m1"])
+        result = runner.invoke(app, ["milestone", "done", "m1"], catch_exceptions=False)
+    assert result.exit_code == 0
+    transitions = [c for c in fake.calls if c[0] == "transition"]
+    assert any(args[2] == "done" for args in transitions)
