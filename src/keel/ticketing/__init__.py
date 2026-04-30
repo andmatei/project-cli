@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from keel.ticketing.registry import load_provider, list_providers
+from keel.ticketing.registry import list_providers, load_provider
 
 if TYPE_CHECKING:
     from keel.manifest import ProjectManifest
