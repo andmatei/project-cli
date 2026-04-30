@@ -30,8 +30,7 @@ def cmd_rm(
 
     milestone = next((m for m in manifest.milestones if m.id == id), None)
     if milestone is None:
-        out.error(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
-        raise typer.Exit(code=1)
+        out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
 
     if milestone.status != "cancelled" and not force:
         out.error(

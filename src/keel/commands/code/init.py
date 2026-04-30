@@ -67,23 +67,20 @@ def cmd_init(
                         check=True, capture_output=True,
                     )
                 except subprocess.CalledProcessError as e:
-                    out.error(f"clone failed for {r.remote}: {e.stderr.decode()}", code=ErrorCode.CLONE_FAILED)
-                    raise typer.Exit(code=1) from None
+                    out.fail(f"clone failed for {r.remote}: {e.stderr.decode()}", code=ErrorCode.CLONE_FAILED)
                 source = target
             else:
-                out.error(
+                out.fail(
                     f"source repo missing: {r.local_hint or r.remote}. "
                     f"Pass --clone-missing to clone it, or set local_hint to a valid path.",
                     code=ErrorCode.SOURCE_MISSING,
                 )
-                raise typer.Exit(code=1)
 
         try:
             git_ops.create_worktree(source, wt, branch=r.branch_prefix or "main")
             created.append(str(wt))
         except git_ops.GitError as e:
-            out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
-            raise typer.Exit(code=1) from None
+            out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
     out.info(f"Initialized {len(created)} worktree(s).")
     out.result(

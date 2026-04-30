@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import Any
+from typing import Any, NoReturn
 
 from rich.console import Console
 
@@ -48,6 +48,13 @@ class Output:
     def debug(self, message: str) -> None:
         if self.verbose:
             self._stderr.print(f"[dim]{message}[/dim]")
+
+    def fail(self, message: str, *, code: str | None = None, exit_code: int = 1) -> NoReturn:
+        """Emit an error and exit. Equivalent to: out.error(...); raise typer.Exit(exit_code)."""
+        import typer  # lazy import — keep output.py typer-free at module load
+
+        self.error(message, code=code)
+        raise typer.Exit(code=exit_code)
 
     def print_rich(self, renderable) -> None:
         """Print a Rich renderable to stdout (only in human mode)."""

@@ -43,8 +43,7 @@ def cmd_rm(
 
     target = next((r for r in m.repos if r.remote == repo), None)
     if target is None:
-        out.error(f"no repo with remote: {repo}", code=ErrorCode.NOT_FOUND)
-        raise typer.Exit(code=1)
+        out.fail(f"no repo with remote: {repo}", code=ErrorCode.NOT_FOUND)
 
     unit_dir = manifest_path.parent.parent
     wt_path = unit_dir / target.worktree
@@ -67,8 +66,7 @@ def cmd_rm(
         try:
             git_ops.remove_worktree(wt_path, force=force)
         except git_ops.GitError as e:
-            out.error(f"worktree removal failed (use --force if dirty): {e}", code=ErrorCode.GIT_FAILED)
-            raise typer.Exit(code=1) from None
+            out.fail(f"worktree removal failed (use --force if dirty): {e}", code=ErrorCode.GIT_FAILED)
 
     # Update manifest
     new_repos = [r for r in m.repos if r.remote != repo]

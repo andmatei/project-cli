@@ -46,11 +46,10 @@ def cmd_rm(
     scope = resolve_cli_scope(project, None, allow_deliverable=False, out=out)
     project = scope.project
     if not workspace.deliverable_exists(project, name):
-        out.error(
+        out.fail(
             f"deliverable not found: {project}/{name}\n  {HINT_LIST_DELIVERABLES}",
             code=ErrorCode.NOT_FOUND,
         )
-        raise typer.Exit(code=1)
 
     deliv = workspace.deliverable_dir(project, name)
 
@@ -80,8 +79,7 @@ def cmd_rm(
         try:
             git_ops.remove_worktree(code_dir, force=force)
         except git_ops.GitError as e:
-            out.error(f"failed to remove worktree at {code_dir}: {e}", code=ErrorCode.GIT_FAILED)
-            raise typer.Exit(code=1) from None
+            out.fail(f"failed to remove worktree at {code_dir}: {e}", code=ErrorCode.GIT_FAILED)
 
     # Remove design dir (unless --keep-design)
     if not keep_design:

@@ -43,28 +43,25 @@ def cmd_add(
     manifest = load_milestones_manifest(path)
 
     if not any(m.id == milestone for m in manifest.milestones):
-        out.error(
+        out.fail(
             f"unknown milestone '{milestone}' (use 'keel milestone list' to see existing)",
             code=ErrorCode.NOT_FOUND,
         )
-        raise typer.Exit(code=1)
 
     if any(t.id == id for t in manifest.tasks):
-        out.error(
+        out.fail(
             f"task with id '{id}' already exists",
             code=ErrorCode.EXISTS,
         )
-        raise typer.Exit(code=1)
 
     deps_list = [d.strip() for d in depends_on.split(",") if d.strip()]
     existing_task_ids = {t.id for t in manifest.tasks}
     for dep in deps_list:
         if dep not in existing_task_ids:
-            out.error(
+            out.fail(
                 f"unknown task '{dep}' in --depends-on",
                 code=ErrorCode.NOT_FOUND,
             )
-            raise typer.Exit(code=1)
 
     new_task = Task(
         id=id,
@@ -78,8 +75,7 @@ def cmd_add(
     try:
         validate_dag(manifest)
     except GraphError as e:
-        out.error(f"invalid task graph: {e}", code=ErrorCode.INVALID_STATE)
-        raise typer.Exit(code=1) from e
+        out.fail(f"invalid task graph: {e}", code=ErrorCode.INVALID_STATE)
 
     path.parent.mkdir(parents=True, exist_ok=True)
     save_milestones_manifest(path, manifest)

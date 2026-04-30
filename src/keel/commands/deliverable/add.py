@@ -58,26 +58,22 @@ def cmd_add(
 
     slug = slugify(name)
     if not slug:
-        out.error("invalid deliverable name", code=ErrorCode.INVALID_NAME)
-        raise typer.Exit(code=2)
+        out.fail("invalid deliverable name", code=ErrorCode.INVALID_NAME, exit_code=2)
 
     deliv = workspace.deliverable_dir(project, slug)
     if deliv.exists():
-        out.error(f"deliverable already exists: {deliv}", code=ErrorCode.EXISTS)
-        raise typer.Exit(code=1)
+        out.fail(f"deliverable already exists: {deliv}", code=ErrorCode.EXISTS)
 
     description = require_or_fail(description, arg_name="--description", label="Description")
 
     # Validate --repo if provided
     repo_path = None
     if repo and shared:
-        out.error("--repo and --shared are mutually exclusive", code=ErrorCode.CONFLICTING_FLAGS)
-        raise typer.Exit(code=2)
+        out.fail("--repo and --shared are mutually exclusive", code=ErrorCode.CONFLICTING_FLAGS, exit_code=2)
     if repo:
         repo_path = Path(repo).expanduser().resolve()
         if not git_ops.is_git_repo(repo_path):
-            out.error(f"not a git repo: {repo_path}", code=ErrorCode.NOT_A_REPO)
-            raise typer.Exit(code=1)
+            out.fail(f"not a git repo: {repo_path}", code=ErrorCode.NOT_A_REPO)
 
     deliv_design = workspace.design_dir(project, slug)
     if dry_run:
@@ -168,9 +164,8 @@ def cmd_add(
             git_ops.create_worktree(repo_path, wt_dest, branch=repo_specs[0].branch_prefix)
             created_worktree = str(wt_dest)
         except git_ops.GitError as e:
-            out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
             out.info(f"Design files are at {deliv / 'design'}; clean up manually if needed.")
-            raise typer.Exit(code=1) from None
+            out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
     # AST-edit the parent's CLAUDE.md to list this deliverable
     parent_claude_path = workspace.design_dir(project) / "CLAUDE.md"

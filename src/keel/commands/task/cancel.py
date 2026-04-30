@@ -28,8 +28,7 @@ def cmd_cancel(
 
     task = next((t for t in manifest.tasks if t.id == id), None)
     if task is None:
-        out.error(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
-        raise typer.Exit(code=1)
+        out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
 
     confirm_destructive(f"Cancel task {id} (currently {task.status})?", yes=yes)
 

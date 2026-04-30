@@ -64,14 +64,12 @@ def cmd_new(
     today = date.today().isoformat()
     slug_value = slug or slugify(title)
     if not slug_value:
-        out.error("invalid title (slug is empty)", code=ErrorCode.INVALID_TITLE)
-        raise typer.Exit(code=2)
+        out.fail("invalid title (slug is empty)", code=ErrorCode.INVALID_TITLE, exit_code=2)
     filename = f"{today}-{slug_value}.md"
     path = target_dir / filename
 
     if path.exists() and not force:
-        out.error(f"decision file already exists: {path}", code=ErrorCode.EXISTS)
-        raise typer.Exit(code=1)
+        out.fail(f"decision file already exists: {path}", code=ErrorCode.EXISTS)
 
     # Validate --supersedes early, before creating the new file
     supersedes_path: Path | None = None
@@ -83,11 +81,10 @@ def cmd_new(
         )
         candidate_paths = [c for c in candidate_paths if c.is_file()]
         if not candidate_paths:
-            out.error(
+            out.fail(
                 f"--supersedes: no decision matching '{supersedes}' found in {target_dir}\n  {HINT_LIST_DECISIONS}",
                 code=ErrorCode.NOT_FOUND,
             )
-            raise typer.Exit(code=1)
         supersedes_path = candidate_paths[0]
 
     if dry_run:

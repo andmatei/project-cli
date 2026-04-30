@@ -38,15 +38,13 @@ def cmd_worktree(
 
     task = next((t for t in manifest.tasks if t.id == id), None)
     if task is None:
-        out.error(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
-        raise typer.Exit(code=1)
+        out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
 
     if not task.branch:
-        out.error(
+        out.fail(
             f"task '{id}' has no branch recorded; run 'keel task start {id}' first",
             code=ErrorCode.INVALID_STATE,
         )
-        raise typer.Exit(code=1)
 
     # Locate the project (or deliverable) manifest to get repos.
     if scope.deliverable:
@@ -58,27 +56,24 @@ def cmd_worktree(
         repos = proj_m.repos
 
     if not repos:
-        out.error(
+        out.fail(
             "no [[repos]] declared in the manifest; run 'keel code add' first",
             code=ErrorCode.NOT_FOUND,
         )
-        raise typer.Exit(code=1)
 
     if repo is not None:
         target = next((r for r in repos if r.worktree == repo), None)
         if target is None:
-            out.error(
+            out.fail(
                 f"no repo with worktree dir '{repo}' found in manifest",
                 code=ErrorCode.NOT_FOUND,
             )
-            raise typer.Exit(code=1)
     elif len(repos) > 1:
         names = ", ".join(r.worktree for r in repos)
-        out.error(
+        out.fail(
             f"project has multiple repos ({names}); use --repo NAME to choose one",
             code=ErrorCode.CONFLICTING_FLAGS,
         )
-        raise typer.Exit(code=1)
     else:
         target = repos[0]
 
@@ -90,8 +85,7 @@ def cmd_worktree(
     try:
         git_ops.create_worktree(repo_path, dest, branch=task.branch)
     except git_ops.GitError as e:
-        out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
-        raise typer.Exit(code=1) from None
+        out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
     out.result(
         {"task": id, "branch": task.branch, "worktree": str(dest)},

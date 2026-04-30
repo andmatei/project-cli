@@ -92,20 +92,18 @@ def cmd_phase(
     target = phase
     if next_phase:
         if current not in PHASES:
-            out.error(f"invalid current phase: {current}", code=ErrorCode.INVALID_PHASE)
-            raise typer.Exit(code=1)
+            out.fail(f"invalid current phase: {current}", code=ErrorCode.INVALID_PHASE)
         nxt = _next_phase(current)
         if nxt is None:
-            out.error(f"no phase after {current}", code=ErrorCode.END_OF_LIFECYCLE)
-            raise typer.Exit(code=1)
+            out.fail(f"no phase after {current}", code=ErrorCode.END_OF_LIFECYCLE)
         target = nxt
 
     if target not in PHASES:
-        out.error(
+        out.fail(
             f"invalid phase: {target}. Valid phases: {', '.join(PHASES)}",
             code=ErrorCode.INVALID_PHASE,
+            exit_code=2,
         )
-        raise typer.Exit(code=2)
 
     if target == current:
         out.info(f"already in phase: {current}")

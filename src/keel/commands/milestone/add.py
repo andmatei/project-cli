@@ -39,8 +39,7 @@ def cmd_add(
 
     manifest = load_milestones_manifest(path)
     if any(m.id == id for m in manifest.milestones):
-        out.error(f"milestone with id '{id}' already exists in {path}", code=ErrorCode.EXISTS)
-        raise typer.Exit(code=1)
+        out.fail(f"milestone with id '{id}' already exists in {path}", code=ErrorCode.EXISTS)
 
     new_milestone = Milestone(id=id, title=title, description=description)
 

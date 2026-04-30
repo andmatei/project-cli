@@ -25,11 +25,11 @@ def cmd_completion(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     if shell not in _SUPPORTED:
-        out.error(
+        out.fail(
             f"unsupported shell: {shell!r}. Supported: {', '.join(sorted(_SUPPORTED))}",
             code=ErrorCode.BAD_SHELL,
+            exit_code=2,
         )
-        raise typer.Exit(code=2)
 
     # Use Click's completion machinery directly — works in-process under CliRunner.
     import click.shell_completion as cc

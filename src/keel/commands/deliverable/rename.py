@@ -46,14 +46,12 @@ def cmd_rename(
     scope = resolve_cli_scope(project, None, allow_deliverable=False, out=out)
     project = scope.project
     if not workspace.deliverable_exists(project, old):
-        out.error(
+        out.fail(
             f"deliverable not found: {project}/{old}\n  {HINT_LIST_DELIVERABLES}",
             code=ErrorCode.NOT_FOUND,
         )
-        raise typer.Exit(code=1)
     if workspace.deliverable_exists(project, new):
-        out.error(f"target already exists: {project}/{new}", code=ErrorCode.EXISTS)
-        raise typer.Exit(code=1)
+        out.fail(f"target already exists: {project}/{new}", code=ErrorCode.EXISTS)
 
     old_path = workspace.deliverable_dir(project, old)
     new_path = workspace.deliverable_dir(project, new)

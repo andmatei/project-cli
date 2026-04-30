@@ -27,8 +27,7 @@ def cmd_show(
 
     milestone = next((m for m in manifest.milestones if m.id == id), None)
     if milestone is None:
-        out.error(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
-        raise typer.Exit(code=1)
+        out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
 
     tasks = [t for t in manifest.tasks if t.milestone == id]
     by_status = Counter(t.status for t in tasks)

@@ -51,13 +51,11 @@ def cmd_new(
     out = Output.from_context(ctx, json_mode=json_mode)
     slug = slugify(name)
     if not slug:
-        out.error("invalid project name", code=ErrorCode.INVALID_NAME)
-        raise typer.Exit(code=2)
+        out.fail("invalid project name", code=ErrorCode.INVALID_NAME, exit_code=2)
 
     proj = workspace.project_dir(slug)
     if proj.exists():
-        out.error(f"project already exists: {proj}", code=ErrorCode.EXISTS)
-        raise typer.Exit(code=1)
+        out.fail(f"project already exists: {proj}", code=ErrorCode.EXISTS)
 
     description = require_or_fail(description, arg_name="--description", label="Description")
 
@@ -67,8 +65,7 @@ def cmd_new(
         for r in repos:
             rp = Path(r).expanduser().resolve()
             if not git_ops.is_git_repo(rp):
-                out.error(f"not a git repo: {rp}", code=ErrorCode.NOT_A_REPO)
-                raise typer.Exit(code=1)
+                out.fail(f"not a git repo: {rp}", code=ErrorCode.NOT_A_REPO)
             repo_paths.append(rp)
 
     design = workspace.design_dir(slug)
@@ -157,11 +154,10 @@ def cmd_new(
             git_ops.create_worktree(rp, wt_dest, branch=spec.branch_prefix)
             created_worktrees.append(str(wt_dest))
         except git_ops.GitError as e:
-            out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
             out.info(
                 f"Design files are at {proj / 'design'}; clean up with `rm -rf {proj}` or retry."
             )
-            raise typer.Exit(code=1) from None
+            out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
     out.result(
         {"path": str(proj), "design": str(design), "worktrees": created_worktrees},

@@ -63,8 +63,7 @@ def cmd_archive(
             git_ops.remove_worktree(wt, force=force)
             removed_worktrees += 1
         except git_ops.GitError as e:
-            out.error(f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED)
-            raise typer.Exit(code=1) from None
+            out.fail(f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED)
 
     # Also handle deliverable worktrees
     deliv_dir = proj_dir / "deliverables"
@@ -77,8 +76,7 @@ def cmd_archive(
                     git_ops.remove_worktree(wt, force=force)
                     removed_worktrees += 1
                 except git_ops.GitError as e:
-                    out.error(f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED)
-                    raise typer.Exit(code=1) from None
+                    out.fail(f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED)
 
     # Move the project tree
     dest.parent.mkdir(parents=True, exist_ok=True)

@@ -82,8 +82,7 @@ def cmd_graph(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     if dot and json_mode:
-        out.error("--dot and --json are mutually exclusive", code=ErrorCode.CONFLICTING_FLAGS)
-        raise typer.Exit(code=2)
+        out.fail("--dot and --json are mutually exclusive", code=ErrorCode.CONFLICTING_FLAGS, exit_code=2)
 
     scope = resolve_cli_scope(project, deliverable, out=out)
     manifest = load_milestones_manifest(scope.milestones_manifest_path)

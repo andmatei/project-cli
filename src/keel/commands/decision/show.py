@@ -68,8 +68,7 @@ def cmd_show(
 
     path = _find_decision(target_dir, slug)
     if path is None:
-        out.error(f"decision not found: {slug}\n  {HINT_LIST_DECISIONS}", code=ErrorCode.NOT_FOUND)
-        raise typer.Exit(code=1)
+        out.fail(f"decision not found: {slug}\n  {HINT_LIST_DECISIONS}", code=ErrorCode.NOT_FOUND)
 
     text = path.read_text()
     fm, body = _split_frontmatter(text)

@@ -39,8 +39,7 @@ def cmd_add(
 
     repo_path = Path(repo).expanduser().resolve()
     if not git_ops.is_git_repo(repo_path):
-        out.error(f"not a git repo: {repo_path}", code=ErrorCode.NOT_A_REPO)
-        raise typer.Exit(code=1)
+        out.fail(f"not a git repo: {repo_path}", code=ErrorCode.NOT_A_REPO)
 
     # Decide worktree dir name — derived from repo basename, prefixed with "code-".
     # An explicit --worktree always wins.
@@ -66,14 +65,12 @@ def cmd_add(
     # Detect duplicates
     for existing in m.repos:
         if existing.remote == str(repo_path):
-            out.error(f"duplicate remote: {repo_path} already declared", code=ErrorCode.DUPLICATE_REMOTE)
-            raise typer.Exit(code=1)
+            out.fail(f"duplicate remote: {repo_path} already declared", code=ErrorCode.DUPLICATE_REMOTE)
         if existing.worktree == wt_name:
-            out.error(
+            out.fail(
                 f"worktree name '{wt_name}' already in use. Pass --worktree NAME to disambiguate.",
                 code=ErrorCode.DUPLICATE_WORKTREE,
             )
-            raise typer.Exit(code=1)
 
     new_spec = RepoSpec(
         remote=str(repo_path),
@@ -104,9 +101,8 @@ def cmd_add(
     try:
         git_ops.create_worktree(repo_path, unit_dir / wt_name, branch=branch_prefix)
     except git_ops.GitError as e:
-        out.error(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
         out.info("Manifest was updated; remove the new [[repos]] entry manually if you want to retry.")
-        raise typer.Exit(code=1) from None
+        out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
     out.info(f"Added repo {repo_path} → worktree {unit_dir / wt_name}")
     out.result(

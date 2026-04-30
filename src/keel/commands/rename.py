@@ -33,15 +33,12 @@ def cmd_rename(
     out = Output.from_context(ctx, json_mode=json_mode)
     new_slug = slugify(new)
     if not new_slug:
-        out.error("invalid new project name", code=ErrorCode.INVALID_NAME)
-        raise typer.Exit(code=2)
+        out.fail("invalid new project name", code=ErrorCode.INVALID_NAME, exit_code=2)
 
     if not workspace.project_exists(old):
-        out.error(f"project not found: {old}\n  {HINT_LIST_PROJECTS}", code=ErrorCode.NOT_FOUND)
-        raise typer.Exit(code=1)
+        out.fail(f"project not found: {old}\n  {HINT_LIST_PROJECTS}", code=ErrorCode.NOT_FOUND)
     if workspace.project_exists(new_slug):
-        out.error(f"target project already exists: {new_slug}", code=ErrorCode.EXISTS)
-        raise typer.Exit(code=1)
+        out.fail(f"target project already exists: {new_slug}", code=ErrorCode.EXISTS)
 
     old_path = workspace.project_dir(old)
     new_path = workspace.project_dir(new_slug)

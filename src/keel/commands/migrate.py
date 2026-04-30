@@ -199,14 +199,12 @@ def cmd_migrate(
             scope = workspace.detect_scope()
             name = scope.project
         if name is None:
-            out.error(
+            out.fail(
                 f"no project specified and none detected from CWD\n  {HINT_PASS_PROJECT}",
                 code=ErrorCode.NO_PROJECT,
             )
-            raise typer.Exit(code=1)
         if not (workspace.project_dir(name) / "design" / "CLAUDE.md").is_file():
-            out.error(f"not a project: {name}\n  {HINT_LIST_PROJECTS}", code=ErrorCode.NOT_FOUND)
-            raise typer.Exit(code=1)
+            out.fail(f"not a project: {name}\n  {HINT_LIST_PROJECTS}", code=ErrorCode.NOT_FOUND)
         targets = [name]
 
     results: list[dict] = []
