@@ -180,3 +180,55 @@ def test_mock_provider_link_url() -> None:
     p = MockProvider()
     url = p.link_url("MOCK-42")
     assert "MOCK-42" in url
+
+
+# Task 4.4 tests
+def test_get_provider_for_project_no_config(make_project) -> None:
+    """No [extensions.ticketing] → returns None."""
+    from keel.manifest import load_project_manifest
+    from keel.ticketing import get_provider_for_project
+
+    proj = make_project("foo")
+    m = load_project_manifest(proj / "design" / "project.toml")
+    assert get_provider_for_project(m) is None
+
+
+def test_get_provider_for_project_unknown_provider(make_project) -> None:
+    """[extensions.ticketing.provider] = "ghost" but no plugin installed → None."""
+    from keel.manifest import (
+        load_project_manifest,
+        save_project_manifest,
+    )
+    from keel.ticketing import get_provider_for_project
+
+    proj = make_project("foo")
+    m = load_project_manifest(proj / "design" / "project.toml")
+    m.extensions["ticketing"] = {"provider": "ghost"}
+    save_project_manifest(proj / "design" / "project.toml", m)
+    m2 = load_project_manifest(proj / "design" / "project.toml")
+    assert get_provider_for_project(m2) is None
+
+
+def test_get_provider_for_project_loads_and_configures(make_project) -> None:
+    """Configured provider is loaded and `.configure()` is called with the provider's subsection."""
+    from unittest.mock import patch
+
+    from keel.manifest import (
+        load_project_manifest,
+        save_project_manifest,
+    )
+    from keel.ticketing import get_provider_for_project
+    from keel.ticketing.mock import MockProvider
+
+    proj = make_project("foo")
+    m = load_project_manifest(proj / "design" / "project.toml")
+    m.extensions["ticketing"] = {"provider": "mock", "mock": {"key": "value"}}
+    save_project_manifest(proj / "design" / "project.toml", m)
+    m2 = load_project_manifest(proj / "design" / "project.toml")
+
+    # Patch load_provider to return a fresh MockProvider for "mock"
+    fake = MockProvider()
+    with patch("keel.ticketing.load_provider", return_value=fake):
+        provider = get_provider_for_project(m2)
+    assert provider is fake
+    assert ("configure", {"key": "value"}) in fake.calls

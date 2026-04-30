@@ -43,6 +43,7 @@ from keel.milestones import (
 )
 from keel.output import Output
 from keel.prompts import confirm_destructive, is_interactive, require_or_fail
+from keel.ticketing import get_provider_for_project
 from keel.ticketing.base import Ticket, TicketProvider
 from keel.ticketing.registry import list_providers, load_provider
 from keel.util import slugify
@@ -90,5 +91,5 @@ __all__ = [
     "project_dir", "project_exists", "projects_dir",
     "read_phase",
     # Ticketing
-    "Ticket", "TicketProvider", "list_providers", "load_provider",
+    "Ticket", "TicketProvider", "get_provider_for_project", "list_providers", "load_provider",
 ]
