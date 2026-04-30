@@ -8,6 +8,13 @@ Anything outside `keel.api` and `keel.testing` is internal and may change.
 from __future__ import annotations
 
 from keel.dryrun import Op, OpLog
+from keel.errors import (
+    HINT_LIST_DECISIONS,
+    HINT_LIST_DELIVERABLES,
+    HINT_LIST_PROJECTS,
+    HINT_PASS_PROJECT,
+    ErrorCode,
+)
 from keel.lifecycle import (
     DEFAULT_MILESTONE_STATE,
     DEFAULT_TASK_STATE,
@@ -67,6 +74,12 @@ from keel.workspace import (
 )
 
 __all__ = [
+    # Errors
+    "ErrorCode",
+    "HINT_LIST_DECISIONS",
+    "HINT_LIST_DELIVERABLES",
+    "HINT_LIST_PROJECTS",
+    "HINT_PASS_PROJECT",
     # Lifecycle
     "DEFAULT_MILESTONE_STATE", "DEFAULT_TASK_STATE",
     "MILESTONE_STATES", "TASK_STATES",
