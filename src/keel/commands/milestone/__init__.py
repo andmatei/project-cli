@@ -11,5 +11,7 @@ app = typer.Typer(
 )
 
 from keel.commands.milestone.add import cmd_add  # noqa: E402
+from keel.commands.milestone.list import cmd_list  # noqa: E402
 
 app.command(name="add")(cmd_add)
+app.command(name="list")(cmd_list)
