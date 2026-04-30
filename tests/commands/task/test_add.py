@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -93,28 +94,29 @@ def test_add_unknown_dependency_fails(projects, make_project, monkeypatch) -> No
     assert result.exit_code == 1
 
 
-def test_add_cycle_introduction_rejected(projects, make_project, monkeypatch) -> None:
-    """Adding a task that creates a cycle must be rejected (DAG validation)."""
+def test_add_rejects_cycle_in_existing_manifest(projects, make_project, monkeypatch) -> None:
+    """Adding a task fails if the loaded manifest already contains a cycle (DAG validation runs on save)."""
+    import tomlkit
+
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
-    _setup_milestone(proj)
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "a"])
     runner.invoke(
-        app, ["task", "add", "t2", "--milestone", "m1", "--title", "b", "--depends-on", "t1"],
+        app, ["task", "add", "t2", "--milestone", "m1", "--title", "b", "--depends-on", "t1"]
     )
-    # Now we'd need to make t1 depend on t2 to introduce a cycle.
-    # But task add only adds new tasks, doesn't modify existing ones.
-    # Instead, simulate cycle by editing TOML and re-adding... no, more directly:
-    # test the validate_dag wiring by trying to add t3 that depends on itself
-    result = runner.invoke(
-        app,
-        ["task", "add", "t3", "--milestone", "m1", "--title", "c", "--depends-on", "t3"],
-    )
+    # Inject a cycle: t1 depends on t2
+    mp = proj / "design" / "milestones.toml"
+    doc = tomlkit.parse(mp.read_text())
+    for t in doc["tasks"]:
+        if t["id"] == "t1":
+            t["depends_on"] = ["t2"]
+    mp.write_text(tomlkit.dumps(doc))
+
+    # Now adding any new task triggers validate_dag and exits 1
+    result = runner.invoke(app, ["task", "add", "t3", "--milestone", "m1", "--title", "c"])
     assert result.exit_code == 1
-    # The error should mention the dep doesn't exist (since t3 isn't saved yet) or cycle
-    # In our implementation, the dependency check runs before the task is added, so t3's
-    # self-dep will fail as "unknown task t3".
-    assert "t3" in result.stderr or "cycle" in result.stderr.lower() or "unknown" in result.stderr.lower()
+    assert "cycle" in result.stderr.lower()
 
 
 def test_add_duplicate_id_rejected(projects, make_project, monkeypatch) -> None:

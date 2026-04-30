@@ -1,5 +1,6 @@
 """Tests for `keel milestone start/done/cancel`."""
 
+import pytest
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -92,22 +93,25 @@ def test_done_with_fan_out_blocks_when_subs_not_done(
     assert result.exit_code == 0
 
 
-def test_cancel_from_any_state(projects, make_project, monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "setup_actions,expected_initial",
+    [
+        ([], "planned"),
+        ([("milestone", "start", "m1")], "active"),
+        ([("milestone", "start", "m1"), ("milestone", "done", "m1")], "done"),
+    ],
+    ids=["from_planned", "from_active", "from_done"],
+)
+def test_cancel_from_state(projects, make_project, monkeypatch, setup_actions, expected_initial) -> None:
+    """Cancel works from any non-terminal state and from `done`."""
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
-    _add(proj)
-    result = runner.invoke(app, ["milestone", "cancel", "m1", "-y"], catch_exceptions=False)
-    assert result.exit_code == 0
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
-    assert m.milestones[0].status == "cancelled"
-
-
-def test_cancel_active_milestone(projects, make_project, monkeypatch) -> None:
-    proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
-    _add(proj)
-    runner.invoke(app, ["milestone", "start", "m1"])
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "x"])
+    for cmd in setup_actions:
+        runner.invoke(app, list(cmd))
+    m_state = load_milestones_manifest(proj / "design" / "milestones.toml")
+    assert m_state.milestones[0].status == expected_initial
     result = runner.invoke(app, ["milestone", "cancel", "m1", "-y"])
     assert result.exit_code == 0
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
-    assert m.milestones[0].status == "cancelled"
+    m_after = load_milestones_manifest(proj / "design" / "milestones.toml")
+    assert m_after.milestones[0].status == "cancelled"
