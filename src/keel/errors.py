@@ -34,3 +34,4 @@ class ErrorCode(StrEnum):
     BAD_SHELL = "bad_shell"
     END_OF_LIFECYCLE = "end_of_lifecycle"
     INVALID_STATE = "invalid_state"
+    PREFLIGHT_BLOCKED = "preflight_blocked"

@@ -11,6 +11,7 @@ from keel import templates, workspace
 from keel.api import ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
 from keel.lifecycle import PHASES
 from keel.lifecycle import next_phase as _next_phase
+from keel.preflights.builtin import builtin_preflights
 
 
 def _read_phase(path: Path) -> tuple[str, list[str]]:
@@ -40,8 +41,13 @@ def cmd_phase(
     no_decision: bool = typer.Option(
         False, "--no-decision", help="Skip auto-creating a phase-transition decision file."
     ),
-    yes: bool = typer.Option(
-        False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."
+    strict: bool = typer.Option(False, "--strict", help="Treat preflight warnings as blockers."),
+    force: bool = typer.Option(False, "--force", help="Skip preflight checks entirely."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Skip the warning confirmation prompt."),
+    list_next: bool = typer.Option(
+        False,
+        "--list-next",
+        help="Print the valid next phase(s) from the current state and exit (no transition).",
     ),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Print intended operations and exit; write nothing."
@@ -57,6 +63,19 @@ def cmd_phase(
 
     path = scope.phase_file
     current, history = _read_phase(path)
+
+    # --list-next mode: show valid next transitions and exit
+    if list_next:
+        next_p = _next_phase(current)
+        nexts = [next_p] if next_p is not None else []
+        if json_mode:
+            out.result({"current": current, "next": nexts})
+        else:
+            if nexts:
+                out.info(f"Current: {current} → next: {', '.join(nexts)}")
+            else:
+                out.info(f"Current: {current} (end of lifecycle)")
+        return
 
     if phase is None and not next_phase:
         # Show mode
@@ -107,6 +126,32 @@ def cmd_phase(
             f"Backwards phase transition: {current} → {target}. Continue?",
             yes=yes,
         )
+
+    # Run preflights
+    if not force and current != target:  # skip when forcing or no-op
+        accumulated_warnings: list[str] = []
+        accumulated_blockers: list[str] = []
+        for pf in builtin_preflights():
+            result = pf.check(scope, current, target)
+            accumulated_warnings.extend(result.warnings)
+            accumulated_blockers.extend(result.blockers)
+        if strict:
+            accumulated_blockers.extend(accumulated_warnings)
+            accumulated_warnings = []
+        if accumulated_blockers:
+            for b in accumulated_blockers:
+                out.error(f"preflight blocker: {b}", code=ErrorCode.PREFLIGHT_BLOCKED)
+            out.fail(
+                "phase transition blocked by preflight checks (use --force to override)",
+                code=ErrorCode.PREFLIGHT_BLOCKED,
+            )
+        if accumulated_warnings:
+            for w in accumulated_warnings:
+                out.warn(f"preflight: {w}")
+            confirm_destructive(
+                f"Continue with phase {current} -> {target}? (use --strict to block on warnings)",
+                yes=yes,
+            )
 
     if dry_run:
         log = OpLog()

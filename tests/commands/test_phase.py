@@ -1,5 +1,7 @@
 """Tests for `keel phase`."""
 
+import json
+
 from typer.testing import CliRunner
 
 from keel.app import app
@@ -105,3 +107,78 @@ def test_phase_does_not_print_duplicate_messages(projects, make_project, monkeyp
     # The transition line should appear only once (on stdout via out.result), not also on stderr
     assert "scoping → designing" not in result.stderr
     assert result.stdout  # non-empty
+
+
+# ---------------------------------------------------------------------------
+# Task 2.1: Preflights with --strict, --force, -y
+# ---------------------------------------------------------------------------
+
+
+def test_phase_next_warns_on_template_scope(projects, make_project, monkeypatch) -> None:
+    from keel import templates
+
+    proj = make_project("foo")
+    # Overwrite scope.md with the unedited template
+    (proj / "design" / "scope.md").write_text(
+        templates.render("scope_md.j2", name="foo", description="")
+    )
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(app, ["phase", "--next", "-y"])
+    assert result.exit_code == 0
+    assert "scope.md" in result.stderr.lower()
+
+
+def test_phase_strict_blocks_on_warning(projects, make_project, monkeypatch) -> None:
+    from keel import templates
+
+    proj = make_project("foo")
+    # Overwrite scope.md with the unedited template to trigger a warning
+    (proj / "design" / "scope.md").write_text(
+        templates.render("scope_md.j2", name="foo", description="")
+    )
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(app, ["phase", "--next", "--strict"])
+    assert result.exit_code != 0
+
+
+def test_phase_force_skips_preflight(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(app, ["phase", "--next", "--force"])
+    assert result.exit_code == 0
+
+
+def test_phase_blocker_blocks_without_force(projects, make_project, monkeypatch) -> None:
+    """poc → implementing without milestones blocks."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    # Force ahead through scoping→designing→poc, then try implementing without milestones
+    runner.invoke(app, ["phase", "designing", "--force"])
+    runner.invoke(app, ["phase", "poc", "--force"])
+    result = runner.invoke(app, ["phase", "implementing", "--strict"])
+    assert result.exit_code != 0
+    assert "milestone" in result.stderr.lower()
+
+
+# ---------------------------------------------------------------------------
+# Task 2.2: --list-next flag
+# ---------------------------------------------------------------------------
+
+
+def test_phase_list_next_default(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    result = runner.invoke(app, ["phase", "--list-next", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data == {"current": "scoping", "next": ["designing"]}
+
+
+def test_phase_list_next_at_end(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    runner.invoke(app, ["phase", "done", "--force"])
+    result = runner.invoke(app, ["phase", "--list-next", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data == {"current": "done", "next": []}
