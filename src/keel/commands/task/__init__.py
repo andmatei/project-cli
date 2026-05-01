@@ -43,3 +43,7 @@ app.command(name="rm")(cmd_rm)
 from keel.commands.task.worktree import cmd_worktree  # noqa: E402
 
 app.command(name="worktree")(cmd_worktree)
+
+from keel.commands.task.next import cmd_next  # noqa: E402
+
+app.command(name="next")(cmd_next)
