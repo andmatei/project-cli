@@ -13,12 +13,18 @@ from typing import Protocol, runtime_checkable
 
 @dataclass(frozen=True)
 class Ticket:
-    """Provider-agnostic ticket reference."""
+    """Provider-agnostic ticket reference.
+
+    The `status` field contains the provider's status string. For real providers this is the
+    native state name (e.g. Jira's 'In Progress'). For MockProvider it equals keel's neutral
+    state ('planned', 'active', 'done', 'cancelled') by design — this makes mock-based tests
+    easier to write and assert on.
+    """
 
     id: str
     url: str
     title: str | None = None
-    status: str | None = None  # provider's native status, not keel's neutral state
+    status: str | None = None
 
 
 @runtime_checkable

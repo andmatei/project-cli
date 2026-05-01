@@ -27,6 +27,7 @@ def get_milestone(manifest: MilestonesManifest, id: str, *, out: "Output") -> Mi
     m = find_milestone(manifest, id)
     if m is None:
         from keel.errors import ErrorCode
+
         out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
     return m
 
@@ -36,6 +37,7 @@ def get_task(manifest: MilestonesManifest, id: str, *, out: "Output") -> Task:
     t = find_task(manifest, id)
     if t is None:
         from keel.errors import ErrorCode
+
         out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
     return t
 

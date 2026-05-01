@@ -47,7 +47,7 @@ def cmd_rm(
 
     # Pre-validate before write
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
-    task = get_task(manifest, id, out=out)
+    get_task(manifest, id, out=out)  # validate that task exists
 
     dependents = [t.id for t in manifest.tasks if id in t.depends_on]
     if dependents and not force:
