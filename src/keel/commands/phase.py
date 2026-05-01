@@ -11,7 +11,7 @@ from keel import templates, workspace
 from keel.api import ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
 from keel.lifecycle import PHASES
 from keel.lifecycle import next_phase as _next_phase
-from keel.preflights.builtin import builtin_preflights
+from keel.preflights import iter_preflights
 
 
 def _read_phase(path: Path) -> tuple[str, list[str]]:
@@ -131,7 +131,7 @@ def cmd_phase(
     if not force and current != target:  # skip when forcing or no-op
         accumulated_warnings: list[str] = []
         accumulated_blockers: list[str] = []
-        for pf in builtin_preflights():
+        for pf in iter_preflights():
             result = pf.check(scope, current, target)
             accumulated_warnings.extend(result.warnings)
             accumulated_blockers.extend(result.blockers)

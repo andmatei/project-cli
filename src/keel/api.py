@@ -59,7 +59,7 @@ from keel.milestones import (
     validate_dag,
 )
 from keel.output import Output
-from keel.preflights import PhasePreflight, PreflightResult
+from keel.preflights import PhasePreflight, PreflightResult, iter_preflights
 from keel.prompts import confirm_destructive, is_interactive, require_or_fail
 from keel.ticketing import get_provider_for_project, safe_push, with_provider
 from keel.ticketing.base import Ticket, TicketProvider
@@ -132,6 +132,7 @@ __all__ = [
     # Preflights
     "PhasePreflight",
     "PreflightResult",
+    "iter_preflights",
     # Prompts
     "confirm_destructive",
     "is_interactive",
