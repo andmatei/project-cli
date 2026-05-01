@@ -59,6 +59,11 @@ from keel.milestones import (
     validate_dag,
 )
 from keel.output import Output
+from keel.phase_events import (
+    PhaseTransitionHook,
+    fire_phase_transition,
+    iter_phase_transition_hooks,
+)
 from keel.preflights import PhasePreflight, PreflightResult, iter_preflights
 from keel.prompts import confirm_destructive, is_interactive, require_or_fail
 from keel.ticketing import get_provider_for_project, safe_push, with_provider
@@ -133,6 +138,10 @@ __all__ = [
     "PhasePreflight",
     "PreflightResult",
     "iter_preflights",
+    # Phase events
+    "PhaseTransitionHook",
+    "fire_phase_transition",
+    "iter_phase_transition_hooks",
     # Prompts
     "confirm_destructive",
     "is_interactive",

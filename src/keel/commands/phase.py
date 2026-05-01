@@ -11,6 +11,7 @@ from keel import templates, workspace
 from keel.api import ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
 from keel.lifecycle import PHASES
 from keel.lifecycle import next_phase as _next_phase
+from keel.phase_events import fire_phase_transition
 from keel.preflights import iter_preflights
 
 
@@ -183,6 +184,9 @@ def cmd_phase(
                     title=f"Phase transition: {current} → {target}",
                 )
             )
+
+    # Fire phase transition hooks
+    fire_phase_transition(scope, current, target, out=out)
 
     out.result(
         {
