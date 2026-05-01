@@ -57,3 +57,42 @@ def test_show_json_shape(projects, make_project) -> None:
     assert payload["repos"] == []
     assert payload["decision_count"] == 0
     assert payload["deliverables"] == []
+
+
+def test_show_with_milestones_summary(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
+    runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "x"])
+    runner.invoke(
+        app, ["task", "add", "t2", "--milestone", "m1", "--title", "y", "--depends-on", "t1"]
+    )
+    result = runner.invoke(app, ["show", "foo"])
+    assert result.exit_code == 0
+    assert "Milestones" in result.stdout or "milestone" in result.stdout.lower()
+
+
+def test_show_json_includes_milestones(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
+    result = runner.invoke(app, ["show", "foo", "--json"])
+    data = json.loads(result.stdout)
+    assert "milestones" in data
+    assert data["milestones"]["by_status"]["planned"] == 1
+
+
+def test_show_brief_skips_milestones(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
+    result = runner.invoke(app, ["show", "foo", "--brief", "--json"])
+    data = json.loads(result.stdout)
+    assert "milestones" not in data
+
+
+def test_show_no_milestones_file_no_section(projects, make_project) -> None:
+    make_project("foo")  # No milestones.toml created
+    result = runner.invoke(app, ["show", "foo", "--json"])
+    data = json.loads(result.stdout)
+    assert "milestones" not in data
