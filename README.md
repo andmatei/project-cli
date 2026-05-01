@@ -182,19 +182,43 @@ keel migrate my-project --apply
 keel migrate --all --apply
 ```
 
+## Milestones, tasks, and ticketing
+
+keel supports dependency-tracked milestones and tasks via DAG topology and ready-task queries:
+
+```bash
+keel milestone add m1 --title "Foundation"
+keel task add t1 --milestone m1 --title "Set up"
+keel task add t2 --milestone m1 --title "Deps" --depends-on t1
+keel task start t1                      # records branch, planned → active
+keel task done t1                       # active → done
+keel task list --ready                  # shows t2 (now unblocked)
+keel task graph                         # ASCII tree of the DAG
+```
+
+For ticketing integration, keel ships a `TicketProvider` Protocol and entry-point
+discovery mechanism. Real providers ship as separate packages (`keel-jira`, etc.);
+none exist yet. A user installs a provider with `pip install keel-cli keel-<provider>`
+and configures it in `project.toml` under `[extensions.ticketing]`.
+See [`design/decisions/2026-04-29-plan-5-plugin-model.md`](design/decisions/2026-04-29-plan-5-plugin-model.md)
+for the plugin model rationale.
+
 ## Roadmap
 
-Plans 1-4 have all shipped:
+Plans 1–5.2 have all shipped:
 
 - **Plan 1 — Foundation:** core modules + `new`, `list`, `show`
 - **Plan 2 — Deliverable, decision, phase:** `deliverable`, `decision`, `phase`
+- **Plan 2.5 — Cleanup:** small fixes and refactors
 - **Plan 3 — Validate, export, code, archive, rename:** `validate`, `design export`, `code`, `archive`, `rename`
-- **Plan 4 — Migration, completion, cutover:** `migrate`, `completion`, workspace cutover
+- **Plan 4 — Migration, completion, cutover:** `migrate`, `completion`, workspace cutover + rename to `keel`
+- **Plan 4.5 — Pre-plan-5 cleanup:** API surface stabilization, testing fixtures, error-code enum
+- **Plan 5 — Milestones, tasks, ticketing:** `milestone`, `task`, plugin protocol
+- **Plan 5.1 — Simplification:** helpers, `jira_id` → `ticket_id`, dead code removal
+- **Plan 5.2 — API consistency:** `--dry-run`, JSON shapes, help text
 
 See [`design/plans/`](design/plans/) for the implementation plan documents and
 [`design/decisions/`](design/decisions/) for the rationale behind major choices.
-
-Open ideas not yet planned: milestone tracking, Jira link integration.
 
 ## Development
 
