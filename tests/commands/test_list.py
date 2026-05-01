@@ -64,3 +64,28 @@ def test_list_phase_filter_no_match(projects, make_project) -> None:
     result = runner.invoke(app, ["list", "--phase", "done"])
     assert result.exit_code == 0
     assert "no projects in phase 'done'" in result.stdout
+
+
+def test_list_with_active_columns(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj / "design")
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
+    runner.invoke(app, ["milestone", "start", "m1"])
+    result = runner.invoke(app, ["list", "--json"])
+    data = json.loads(result.stdout)
+    proj_entry = next(p for p in data["projects"] if p["name"] == "foo")
+    assert proj_entry["active_milestones"] == 1
+    assert proj_entry["active_tasks"] == 0
+
+
+def test_list_active_filter(projects, make_project, monkeypatch) -> None:
+    make_project("alpha")  # no milestones — not active
+    proj_b = make_project("beta")
+    monkeypatch.chdir(proj_b / "design")
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
+    runner.invoke(app, ["milestone", "start", "m1"])
+    monkeypatch.chdir(proj_b.parent)  # leave the project dir
+    result = runner.invoke(app, ["list", "--active", "--json"])
+    data = json.loads(result.stdout)
+    names = {p["name"] for p in data["projects"]}
+    assert names == {"beta"}

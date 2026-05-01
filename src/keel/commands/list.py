@@ -8,7 +8,7 @@ import typer
 from rich.tree import Tree
 
 from keel import workspace
-from keel.api import Output, load_project_manifest
+from keel.api import Output, load_milestones_manifest, load_project_manifest
 
 
 @dataclass
@@ -17,6 +17,8 @@ class _ProjectRow:
     phase: str
     description: str
     deliverable_count: int
+    active_milestones: int
+    active_tasks: int
 
 
 def _scan(projects_root) -> list[_ProjectRow]:
@@ -36,12 +38,28 @@ def _scan(projects_root) -> list[_ProjectRow]:
             d_count = sum(
                 1 for d in d_dir.iterdir() if (d / "design" / "deliverable.toml").is_file()
             )
+
+        # Load milestones and count active ones
+        active_milestones_count = 0
+        active_tasks_count = 0
+        milestones_file = design / "milestones.toml"
+        if milestones_file.is_file():
+            try:
+                mm = load_milestones_manifest(milestones_file)
+                active_milestones_count = sum(1 for m in mm.milestones if m.status == "active")
+                active_tasks_count = sum(1 for t in mm.tasks if t.status == "active")
+            except Exception:
+                # If milestones.toml is malformed, just skip
+                pass
+
         rows.append(
             _ProjectRow(
                 name=m.project.name,
                 phase=phase,
                 description=m.project.description,
                 deliverable_count=d_count,
+                active_milestones=active_milestones_count,
+                active_tasks=active_tasks_count,
             )
         )
     return rows
@@ -52,6 +70,9 @@ def cmd_list(
     phase: str | None = typer.Option(
         None, "--phase", help="Filter to projects in the given phase."
     ),
+    active: bool = typer.Option(
+        False, "--active", help="Show only projects with at least one active milestone or task."
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """List projects in the workspace."""
@@ -60,6 +81,8 @@ def cmd_list(
     total = len(rows)
     if phase:
         rows = [r for r in rows if r.phase == phase]
+    if active:
+        rows = [r for r in rows if r.active_milestones > 0 or r.active_tasks > 0]
 
     if json_mode:
         out.result(
@@ -70,6 +93,8 @@ def cmd_list(
                         "phase": r.phase,
                         "description": r.description,
                         "deliverable_count": r.deliverable_count,
+                        "active_milestones": r.active_milestones,
+                        "active_tasks": r.active_tasks,
                     }
                     for r in rows
                 ]
@@ -91,5 +116,8 @@ def cmd_list(
             label += (
                 f"  ({r.deliverable_count} deliverable{'s' if r.deliverable_count != 1 else ''})"
             )
+        # Add active milestones and tasks info
+        if r.active_milestones or r.active_tasks:
+            label += f"  [yellow]Active M: {r.active_milestones} T: {r.active_tasks}[/yellow]"
         tree.add(label)
     out.print_rich(tree)
