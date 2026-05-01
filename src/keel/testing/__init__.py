@@ -31,6 +31,8 @@ from keel.manifest import (
 )
 from keel.ticketing.mock import MockProvider
 
+__all__ = ["MockProvider"]
+
 
 @pytest.fixture
 def projects(tmp_path, monkeypatch) -> Path:
