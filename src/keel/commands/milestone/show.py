@@ -6,7 +6,7 @@ from collections import Counter
 
 import typer
 
-from keel.api import ErrorCode, Output, find_milestone, load_milestones_manifest, resolve_cli_scope
+from keel.api import Output, get_milestone, load_milestones_manifest, resolve_cli_scope
 
 
 def cmd_show(
@@ -22,9 +22,7 @@ def cmd_show(
     scope = resolve_cli_scope(project, deliverable, out=out)
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
 
-    milestone = find_milestone(manifest, id)
-    if milestone is None:
-        out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
+    milestone = get_milestone(manifest, id, out=out)
 
     tasks = [t for t in manifest.tasks if t.milestone == id]
     by_status = Counter(t.status for t in tasks)

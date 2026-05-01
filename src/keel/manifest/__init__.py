@@ -30,6 +30,8 @@ from keel.manifest.queries import (
     edit_milestones,
     find_milestone,
     find_task,
+    get_milestone,
+    get_task,
 )
 
 __all__ = [
@@ -50,4 +52,6 @@ __all__ = [
     "edit_milestones",
     "find_milestone",
     "find_task",
+    "get_milestone",
+    "get_task",
 ]

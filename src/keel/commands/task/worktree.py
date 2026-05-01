@@ -12,7 +12,7 @@ from keel.api import (
     ErrorCode,
     Output,
     ProjectManifest,
-    find_task,
+    get_task,
     load_deliverable_manifest,
     load_milestones_manifest,
     load_project_manifest,
@@ -49,9 +49,7 @@ def cmd_worktree(
     scope = resolve_cli_scope(project, deliverable, out=out)
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
 
-    task = find_task(manifest, id)
-    if task is None:
-        out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
+    task = get_task(manifest, id, out=out)
 
     if not task.branch:
         out.fail(

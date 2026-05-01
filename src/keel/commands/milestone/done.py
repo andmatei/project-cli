@@ -10,7 +10,7 @@ from keel.api import (
     OpLog,
     Output,
     edit_milestones,
-    find_milestone,
+    get_milestone,
     load_milestones_manifest,
     resolve_cli_scope,
     safe_push,
@@ -51,9 +51,7 @@ def cmd_done(
 
     # Pre-validate before write
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
-    milestone = find_milestone(manifest, id)
-    if milestone is None:
-        out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
+    milestone = get_milestone(manifest, id, out=out)
 
     if milestone.status != "active":
         out.error(
@@ -89,7 +87,7 @@ def cmd_done(
         return
 
     with edit_milestones(scope) as manifest:
-        milestone = find_milestone(manifest, id)
+        milestone = get_milestone(manifest, id, out=out)
         milestone.status = "done"
 
     provider = with_provider(scope, no_push=no_push)

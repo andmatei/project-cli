@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from keel.api import ErrorCode, Output, edit_milestones, find_milestone, resolve_cli_scope
+from keel.api import ErrorCode, Output, edit_milestones, get_milestone, resolve_cli_scope
 
 
 def cmd_start(
@@ -33,9 +33,7 @@ def cmd_start(
     scope = resolve_cli_scope(project, deliverable, out=out)
 
     with edit_milestones(scope) as manifest:
-        milestone = find_milestone(manifest, id)
-        if milestone is None:
-            out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
+        milestone = get_milestone(manifest, id, out=out)
 
         if milestone.status == "planned" or (milestone.status == "done" and reopen):
             milestone.status = "active"

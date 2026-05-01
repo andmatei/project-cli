@@ -8,6 +8,7 @@ from keel.manifest.io import load_milestones_manifest, save_milestones_manifest
 from keel.manifest.models import Milestone, MilestonesManifest, Task
 
 if TYPE_CHECKING:
+    from keel.output import Output
     from keel.workspace import Scope
 
 
@@ -19,6 +20,24 @@ def find_milestone(manifest: MilestonesManifest, id: str) -> Milestone | None:
 def find_task(manifest: MilestonesManifest, id: str) -> Task | None:
     """Return the task with the given id, or None."""
     return next((t for t in manifest.tasks if t.id == id), None)
+
+
+def get_milestone(manifest: MilestonesManifest, id: str, *, out: "Output") -> Milestone:
+    """Return the milestone with the given id, or call out.fail() with NOT_FOUND."""
+    m = find_milestone(manifest, id)
+    if m is None:
+        from keel.errors import ErrorCode
+        out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
+    return m
+
+
+def get_task(manifest: MilestonesManifest, id: str, *, out: "Output") -> Task:
+    """Return the task with the given id, or call out.fail() with NOT_FOUND."""
+    t = find_task(manifest, id)
+    if t is None:
+        from keel.errors import ErrorCode
+        out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
+    return t
 
 
 @contextmanager

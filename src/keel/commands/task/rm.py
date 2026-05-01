@@ -10,7 +10,7 @@ from keel.api import (
     Output,
     confirm_destructive,
     edit_milestones,
-    find_task,
+    get_task,
     load_milestones_manifest,
     resolve_cli_scope,
 )
@@ -47,9 +47,7 @@ def cmd_rm(
 
     # Pre-validate before write
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
-    task = find_task(manifest, id)
-    if task is None:
-        out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
+    task = get_task(manifest, id, out=out)
 
     dependents = [t.id for t in manifest.tasks if id in t.depends_on]
     if dependents and not force:

@@ -8,7 +8,7 @@ from keel.api import (
     ErrorCode,
     Output,
     edit_milestones,
-    find_task,
+    get_task,
     resolve_cli_scope,
     safe_push,
     with_provider,
@@ -43,9 +43,7 @@ def cmd_done(
     scope = resolve_cli_scope(project, deliverable, out=out)
 
     with edit_milestones(scope) as manifest:
-        task = find_task(manifest, id)
-        if task is None:
-            out.fail(f"no task with id '{id}'", code=ErrorCode.NOT_FOUND)
+        task = get_task(manifest, id, out=out)
 
         if task.status != "active":
             out.error(

@@ -10,7 +10,7 @@ from keel.api import (
     Output,
     confirm_destructive,
     edit_milestones,
-    find_milestone,
+    get_milestone,
     load_milestones_manifest,
     resolve_cli_scope,
 )
@@ -49,9 +49,7 @@ def cmd_rm(
 
     # Pre-validate before write: load and validate conditions
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
-    milestone = find_milestone(manifest, id)
-    if milestone is None:
-        out.fail(f"no milestone with id '{id}'", code=ErrorCode.NOT_FOUND)
+    milestone = get_milestone(manifest, id, out=out)
 
     if milestone.status != "cancelled" and not force:
         out.error(
