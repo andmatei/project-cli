@@ -7,6 +7,17 @@ The `default` lifecycle (the original 6 phases) ships in
 
 from __future__ import annotations
 
+from keel.lifecycles.loader import (
+    LifecycleNotFoundError,
+    iter_lifecycles,
+    load_lifecycle,
+)
 from keel.lifecycles.models import Lifecycle, LifecycleState
 
-__all__ = ["Lifecycle", "LifecycleState"]
+__all__ = [
+    "Lifecycle",
+    "LifecycleNotFoundError",
+    "LifecycleState",
+    "iter_lifecycles",
+    "load_lifecycle",
+]
