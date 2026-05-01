@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from keel.output import Output
     from keel.workspace import Scope
 
-PhaseTransitionHook = Callable["Scope", str, str, None]
+PhaseTransitionHook = Callable[["Scope", str, str], None]
 
 
 def iter_phase_transition_hooks() -> list[PhaseTransitionHook]:
