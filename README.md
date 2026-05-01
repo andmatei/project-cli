@@ -64,10 +64,13 @@ keel design export
 |---|---|---|
 | `new` | Create a new project workspace | `keel new my-project -d "..."` |
 | `list` | List projects, optionally filtered | `keel list --phase implementing` |
+| `list --active` | Show only projects with active milestones/tasks | `keel list --active` |
 | `show` | Show a project's structure and state | `keel show my-project` |
+| `show --brief` | Skip milestone/task summary (faster) | `keel show my-project --brief` |
 | `phase` | Show or transition the lifecycle phase | `keel phase implementing` |
 | `validate` | Check project structure and content | `keel validate --content` |
 | `archive` | Soft-delete: remove worktrees, move to `.archive/` | `keel archive my-project` |
+| `restore` | Restore a project from `.archive/` | `keel restore my-project` |
 | `rename` | Rename directory, worktrees, and branch prefixes | `keel rename old-name new-name` |
 
 `show` and most commands auto-detect the project from `$PWD`:
@@ -190,10 +193,13 @@ keel supports dependency-tracked milestones and tasks via DAG topology and ready
 keel milestone add m1 --title "Foundation"
 keel task add t1 --milestone m1 --title "Set up"
 keel task add t2 --milestone m1 --title "Deps" --depends-on t1
+keel task next                          # print the topologically-first ready task
+keel task next --start                  # start it immediately (planned → active, records branch)
 keel task start t1                      # records branch, planned → active
 keel task done t1                       # active → done
 keel task list --ready                  # shows t2 (now unblocked)
 keel task graph                         # ASCII tree of the DAG
+keel show my-project                    # shows active tasks + ready-next hints (if milestones.toml exists)
 ```
 
 For ticketing integration, keel ships a `TicketProvider` Protocol and entry-point
