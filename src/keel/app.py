@@ -141,5 +141,13 @@ from keel.commands.code import app as code_app  # noqa: E402
 
 app.add_typer(code_app, name="code")
 
+from keel.commands.plugin import app as plugin_app  # noqa: E402
+
+app.add_typer(plugin_app, name="plugin")
+
+from keel.commands.manifest_cli import app as manifest_app  # noqa: E402
+
+app.add_typer(manifest_app, name="manifest")
+
 # Load any third-party plugins last so they can extend existing groups.
 _load_plugin_commands()
