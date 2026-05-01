@@ -18,13 +18,17 @@ from keel.errors import (
 )
 from keel.lifecycle import (
     DEFAULT_MILESTONE_STATE,
+    DEFAULT_PHASE,
     DEFAULT_TASK_STATE,
     MILESTONE_STATES,
+    PHASES,
     TASK_STATES,
     is_terminal_milestone_state,
     is_terminal_task_state,
     is_valid_milestone_state,
+    is_valid_phase,
     is_valid_task_state,
+    next_phase,
 )
 from keel.manifest import (
     DeliverableManifest,
@@ -79,13 +83,17 @@ __all__ = [
     "HINT_PASS_PROJECT",
     # Lifecycle
     "DEFAULT_MILESTONE_STATE",
+    "DEFAULT_PHASE",
     "DEFAULT_TASK_STATE",
     "MILESTONE_STATES",
+    "PHASES",
     "TASK_STATES",
     "is_terminal_milestone_state",
     "is_terminal_task_state",
     "is_valid_milestone_state",
+    "is_valid_phase",
     "is_valid_task_state",
+    "next_phase",
     # Manifest
     "DeliverableManifest",
     "DeliverableMeta",
