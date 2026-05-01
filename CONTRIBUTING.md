@@ -159,6 +159,90 @@ For a command group (e.g. `keel bar add` / `keel bar list`):
 
 For a third-party plugin: register via the `keel.commands` entry-point group in your plugin's `pyproject.toml`. See the docstring at `src/keel/app.py` for the contract.
 
+## Authoring a plugin
+
+keel exposes four entry-point groups that plugins can hook into. Plugin packages
+declare these in their `pyproject.toml` under `[project.entry-points]`.
+
+### `keel.commands` — register a CLI command
+
+```toml
+[project.entry-points."keel.commands"]
+my_cmd = "my_pkg.cli:register"
+```
+
+```python
+# my_pkg/cli.py
+import typer
+
+def register(app: typer.Typer) -> None:
+    app.command(name="my-cmd")(my_func)
+```
+
+### `keel.ticket_providers` — implement the `TicketProvider` Protocol
+
+See `keel.ticketing.base.TicketProvider` and the reference `MockProvider`.
+
+```toml
+[project.entry-points."keel.ticket_providers"]
+jira = "keel_jira.provider:JiraProvider"
+```
+
+### `keel.phase_preflights` — add preflight checks for phase transitions
+
+```toml
+[project.entry-points."keel.phase_preflights"]
+my_rules = "my_pkg.preflights:get_preflights"
+```
+
+```python
+# my_pkg/preflights.py
+from keel.api import PhasePreflight, PreflightResult
+
+class TicketsAcceptedPreflight:
+    name = "tickets-accepted"
+    def check(self, scope, from_phase, to_phase):
+        if to_phase != "implementing":
+            return PreflightResult()
+        # ... query ticketing system ...
+        return PreflightResult(warnings=[]) if accepted else PreflightResult(blockers=["..."])
+
+def get_preflights():
+    return [TicketsAcceptedPreflight()]
+```
+
+### `keel.phase_transitions` — react after a successful transition
+
+```toml
+[project.entry-points."keel.phase_transitions"]
+my_hook = "my_pkg.hooks:on_transition"
+```
+
+```python
+# my_pkg/hooks.py
+def on_transition(scope, from_phase, to_phase):
+    # Side-effect only. Errors are caught and logged via out.warn.
+    print(f"transitioned {from_phase} -> {to_phase}")
+```
+
+### Testing your plugin
+
+`pip install --extra dev keel-cli`, then in your `tests/conftest.py`:
+
+```python
+pytest_plugins = ["keel.testing"]
+```
+
+You get the `projects`, `make_project`, `make_deliverable`, `source_repo`, and
+`mock_ticket_provider` fixtures for free. `MockProvider` is also re-exported
+from `keel.testing` for use in non-fixture contexts.
+
+### Inspecting installed plugins
+
+`keel plugin list` shows everything registered across the four groups.
+`keel plugin doctor` validates that the current project's `[extensions]` config
+points at installed plugins and that providers can be instantiated.
+
 ## License
 
 By contributing, you agree your contributions are licensed under the
