@@ -1,20 +1,11 @@
-"""Manifest schema (Pydantic) and TOML round-trip helpers.
-
-Manifests live at:
-    <project>/design/project.toml
-    <project>/deliverables/<name>/design/deliverable.toml
-"""
+"""Manifest Pydantic schemas."""
 
 from __future__ import annotations
 
-import tomllib
-from collections.abc import Iterator
-from contextlib import contextmanager
 from datetime import date as _date
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import tomlkit
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from keel.lifecycle import (
@@ -23,9 +14,6 @@ from keel.lifecycle import (
     MILESTONE_STATES,
     TASK_STATES,
 )
-
-if TYPE_CHECKING:
-    from keel.workspace import Scope
 
 
 class RepoSpec(BaseModel):
@@ -110,53 +98,6 @@ class DeliverableManifest(BaseModel):
         return v
 
 
-def _dict_no_none(d: dict) -> dict:
-    """Filter out None values from a dictionary."""
-    return {k: v for k, v in d.items() if v is not None}
-
-
-def load_project_manifest(path: Path) -> ProjectManifest:
-    """Read and validate a `project.toml`."""
-    with path.open("rb") as f:
-        raw = tomllib.load(f)
-    return ProjectManifest.model_validate(raw)
-
-
-def save_project_manifest(path: Path, manifest: ProjectManifest) -> None:
-    """Write a `project.toml`. Uses tomlkit so future edits preserve comments."""
-    doc = tomlkit.document()
-    doc["project"] = _dict_no_none(manifest.project.model_dump())
-    if manifest.repos:
-        repos_array = tomlkit.aot()
-        for r in manifest.repos:
-            repos_array.append(tomlkit.item(_dict_no_none(r.model_dump())))
-        doc["repos"] = repos_array
-    if manifest.extensions:
-        doc["extensions"] = tomlkit.item(manifest.extensions)
-    path.write_text(tomlkit.dumps(doc))
-
-
-def load_deliverable_manifest(path: Path) -> DeliverableManifest:
-    """Read and validate a `deliverable.toml`."""
-    with path.open("rb") as f:
-        raw = tomllib.load(f)
-    return DeliverableManifest.model_validate(raw)
-
-
-def save_deliverable_manifest(path: Path, manifest: DeliverableManifest) -> None:
-    """Write a `deliverable.toml`. Uses tomlkit so future edits preserve comments."""
-    doc = tomlkit.document()
-    doc["deliverable"] = _dict_no_none(manifest.deliverable.model_dump())
-    if manifest.repos:
-        repos_array = tomlkit.aot()
-        for r in manifest.repos:
-            repos_array.append(tomlkit.item(_dict_no_none(r.model_dump())))
-        doc["repos"] = repos_array
-    if manifest.extensions:
-        doc["extensions"] = tomlkit.item(manifest.extensions)
-    path.write_text(tomlkit.dumps(doc))
-
-
 class Milestone(BaseModel):
     """A grouping of related implementation work, scoped to the `implementing` phase."""
 
@@ -222,53 +163,3 @@ class MilestonesManifest(BaseModel):
 
     milestones: list[Milestone] = Field(default_factory=list)
     tasks: list[Task] = Field(default_factory=list)
-
-
-def find_milestone(manifest: MilestonesManifest, id: str) -> Milestone | None:
-    """Return the milestone with the given id, or None."""
-    return next((m for m in manifest.milestones if m.id == id), None)
-
-
-def find_task(manifest: MilestonesManifest, id: str) -> Task | None:
-    """Return the task with the given id, or None."""
-    return next((t for t in manifest.tasks if t.id == id), None)
-
-
-@contextmanager
-def edit_milestones(scope: Scope) -> Iterator[MilestonesManifest]:
-    """Load → yield → save the milestones manifest at the scope's path.
-
-    Usage:
-        with edit_milestones(scope) as manifest:
-            # mutate manifest in place
-    """
-    path = scope.milestones_manifest_path
-    manifest = load_milestones_manifest(path)
-    yield manifest
-    path.parent.mkdir(parents=True, exist_ok=True)
-    save_milestones_manifest(path, manifest)
-
-
-def load_milestones_manifest(path: Path) -> MilestonesManifest:
-    """Read and validate `milestones.toml`. Returns an empty manifest if the file doesn't exist."""
-    if not path.is_file():
-        return MilestonesManifest()
-    with path.open("rb") as f:
-        raw = tomllib.load(f)
-    return MilestonesManifest.model_validate(raw)
-
-
-def save_milestones_manifest(path: Path, manifest: MilestonesManifest) -> None:
-    """Write a `milestones.toml`. Uses tomlkit so future edits preserve comments."""
-    doc = tomlkit.document()
-    if manifest.milestones:
-        ms_array = tomlkit.aot()
-        for m in manifest.milestones:
-            ms_array.append(tomlkit.item(_dict_no_none(m.model_dump())))
-        doc["milestones"] = ms_array
-    if manifest.tasks:
-        ts_array = tomlkit.aot()
-        for t in manifest.tasks:
-            ts_array.append(tomlkit.item(_dict_no_none(t.model_dump())))
-        doc["tasks"] = ts_array
-    path.write_text(tomlkit.dumps(doc))
