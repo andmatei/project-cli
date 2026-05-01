@@ -1,4 +1,5 @@
 """Tests for keel.phase_transitions event hooks."""
+
 from unittest.mock import MagicMock, patch
 
 from keel.phase_events import (
@@ -14,8 +15,12 @@ def test_iter_hooks_empty_by_default() -> None:
 
 def test_fire_calls_each_hook() -> None:
     calls = []
-    def hook_a(scope, from_, to_): calls.append(("a", from_, to_))
-    def hook_b(scope, from_, to_): calls.append(("b", from_, to_))
+
+    def hook_a(scope, from_, to_):
+        calls.append(("a", from_, to_))
+
+    def hook_b(scope, from_, to_):
+        calls.append(("b", from_, to_))
 
     out_mock = MagicMock()
     with patch("keel.phase_events.iter_phase_transition_hooks", return_value=[hook_a, hook_b]):
@@ -26,6 +31,7 @@ def test_fire_calls_each_hook() -> None:
 def test_fire_swallows_hook_errors() -> None:
     def bad_hook(scope, from_, to_):
         raise RuntimeError("boom")
+
     out_mock = MagicMock()
     with patch("keel.phase_events.iter_phase_transition_hooks", return_value=[bad_hook]):
         fire_phase_transition(scope=None, from_phase="x", to_phase="y", out=out_mock)
@@ -33,7 +39,9 @@ def test_fire_swallows_hook_errors() -> None:
 
 
 def test_iter_hooks_loads_from_entry_points() -> None:
-    def hook(scope, from_, to_): pass
+    def hook(scope, from_, to_):
+        pass
+
     fake_ep = MagicMock()
     fake_ep.load.return_value = hook
     with patch("keel.phase_events.entry_points", return_value=[fake_ep]):

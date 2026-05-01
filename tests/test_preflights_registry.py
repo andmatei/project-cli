@@ -1,7 +1,8 @@
 """Tests for the phase preflight registry."""
+
 from unittest.mock import MagicMock, patch
 
-from keel.preflights import iter_preflights, PreflightResult
+from keel.preflights import PreflightResult, iter_preflights
 from keel.preflights.builtin import builtin_preflights
 
 
@@ -14,6 +15,7 @@ def test_iter_preflights_returns_builtins() -> None:
 def test_iter_preflights_includes_plugins() -> None:
     class FakePreflight:
         name = "fake"
+
         def check(self, scope, from_phase, to_phase):
             return PreflightResult()
 

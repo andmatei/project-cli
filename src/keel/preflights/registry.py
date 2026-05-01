@@ -7,6 +7,7 @@ Plugin packages declare in their pyproject.toml:
 
 `get_preflights` must return list[PhasePreflight].
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -25,5 +26,4 @@ def iter_preflights() -> Iterable[PhasePreflight]:
             yielded = getter()
         except Exception:
             continue
-        for pf in yielded:
-            yield pf
+        yield from yielded

@@ -8,16 +8,18 @@ Plugin packages declare in their pyproject.toml:
 The function receives (scope, from_phase, to_phase). Errors are caught and
 logged via out.warn — a failing hook will not roll back the phase change.
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from importlib.metadata import entry_points
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from keel.output import Output
     from keel.workspace import Scope
 
-PhaseTransitionHook = Callable[["Scope", str, str], None]
+PhaseTransitionHook = Callable["Scope", str, str, None]
 
 
 def iter_phase_transition_hooks() -> list[PhaseTransitionHook]:
@@ -32,7 +34,7 @@ def iter_phase_transition_hooks() -> list[PhaseTransitionHook]:
     return out
 
 
-def fire_phase_transition(scope: "Scope", from_phase: str, to_phase: str, *, out: "Output") -> None:
+def fire_phase_transition(scope: Scope, from_phase: str, to_phase: str, *, out: Output) -> None:
     """Fire all registered post-transition hooks. Warns on failures; never raises."""
     for hook in iter_phase_transition_hooks():
         try:
