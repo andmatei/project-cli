@@ -61,8 +61,8 @@ After Plan 4 lands, new/changed files:
 - Plan 3 is complete and tagged `keel-plan-3`
 - 217 tests passing on `main`
 - Ruff clean
-- Working dir for keel source: `/Users/andrei.matei/projects/keel/`
-- Workspace root: `/Users/andrei.matei/projects/`
+- Working dir for keel source: `keel/`
+- Workspace root: `~/projects/`
 - Run tests: `uv run --extra dev pytest`
 
 ---
@@ -78,7 +78,7 @@ A description of the project.
 
 ## Code
 Code: ../code/
-Source repo: /Users/andrei.matei/some-source-repo
+Source repo: ~/some-source-repo
 
 ## Deliverables
 - **alpha**: ../deliverables/alpha/design/ -- the alpha thing
@@ -94,7 +94,7 @@ For multi-repo projects:
 ## Code
 Code (mms): ../code-mms/
 Code (ipa): ../code-ipa/
-Source repos: /Users/andrei.matei/mms /Users/andrei.matei/ipa
+Source repos: ~/mms ~/ipa
 ```
 
 Deliverable CLAUDE.md (owned worktree):
@@ -108,7 +108,7 @@ Parent design: ../../../design/
 
 ## Code
 Code: ../code/
-Source repo: /Users/andrei.matei/some-repo
+Source repo: ~/some-repo
 
 ## Sibling deliverables
 - beta: ../beta/design/ -- the beta thing
@@ -248,7 +248,7 @@ app.command(name="migrate")(cmd_migrate)
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/commands/migrate.py keel/src/keel/app.py keel/tests/commands/test_migrate.py
+cd ~/projects && git add keel/src/keel/commands/migrate.py keel/src/keel/app.py keel/tests/commands/test_migrate.py
 git commit -m "feat(keel): scaffold 'migrate' command with dry-run skeleton"
 ```
 
@@ -393,7 +393,7 @@ def _parse_code_section(claude_md_text: str, project_name: str) -> tuple[list, b
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
+cd ~/projects && git add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
 git commit -m "feat(keel): parse legacy '## Code' section in migrate"
 ```
 
@@ -463,7 +463,7 @@ def _enrich_with_worktree_state(unit_dir: Path, repos: list) -> list:
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
+cd ~/projects && git add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
 git commit -m "feat(keel): derive branch_prefix from existing worktrees in migrate"
 ```
 
@@ -597,7 +597,7 @@ def _extract_description(text: str) -> str | None:
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
+cd ~/projects && git add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
 git commit -m "feat(keel): migrate writes project.toml with --apply"
 ```
 
@@ -758,7 +758,7 @@ In `cmd_migrate`, after writing the project manifest (or in dry-run, after the d
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
+cd ~/projects && git add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
 git commit -m "feat(keel): migrate deliverables (deliverable.toml + .phase init)"
 ```
 
@@ -852,7 +852,7 @@ Source repo: see parent
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/tests/commands/test_migrate.py
+cd ~/projects && git add keel/tests/commands/test_migrate.py
 git commit -m "test(keel): end-to-end migrate --all integration test"
 ```
 
@@ -992,7 +992,7 @@ If this also doesn't work cleanly, downgrade the test scope to "exit code 0" + "
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/commands/completion.py keel/src/keel/app.py keel/tests/commands/test_completion.py
+cd ~/projects && git add keel/src/keel/commands/completion.py keel/src/keel/app.py keel/tests/commands/test_completion.py
 git commit -m "feat(keel): implement 'completion' command (bash/zsh/fish)"
 ```
 
@@ -1000,19 +1000,19 @@ git commit -m "feat(keel): implement 'completion' command (bash/zsh/fish)"
 
 ## Milestone 3: Slash command rewrites
 
-The slash commands live at `/Users/andrei.matei/projects/.claude/commands/`. They are workspace-local. They currently invoke the Bash CLI at `~/projects/bin/project`. After Plan 4, they invoke `keel`.
+The slash commands live at `~/projects/.claude/commands/`. They are workspace-local. They currently invoke the Bash CLI at `~/projects/bin/project`. After Plan 4, they invoke `keel`.
 
 ### Task 3.1: `/decide` slash command
 
 **Files:**
-- Modify: `/Users/andrei.matei/projects/.claude/commands/decide.md`
+- Modify: `~/projects/.claude/commands/decide.md`
 
 Current behavior calls `~/projects/bin/project decision -t "<title>"` — replace with `keel decision new "<title>"`.
 
 - [ ] **Step 1: Read the current file**
 
 ```bash
-cat /Users/andrei.matei/projects/.claude/commands/decide.md
+cat ~/projects/.claude/commands/decide.md
 ```
 
 - [ ] **Step 2: Replace the Bash-CLI invocation**
@@ -1026,13 +1026,13 @@ Call `keel decision new "<title>"` with the detected `--project` / `-D` flags. B
 - [ ] **Step 3: Verify there are no remaining `~/projects/bin/project` references**
 
 ```bash
-grep -n 'projects/bin/project' /Users/andrei.matei/projects/.claude/commands/decide.md || echo "none"
+grep -n 'projects/bin/project' ~/projects/.claude/commands/decide.md || echo "none"
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add .claude/commands/decide.md
+cd ~/projects && git add .claude/commands/decide.md
 git commit -m "chore(slash): repoint /decide at 'keel decision new'"
 ```
 
@@ -1041,7 +1041,7 @@ git commit -m "chore(slash): repoint /decide at 'keel decision new'"
 ### Task 3.2: `/phase` slash command
 
 **Files:**
-- Modify: `/Users/andrei.matei/projects/.claude/commands/phase.md`
+- Modify: `~/projects/.claude/commands/phase.md`
 
 - [ ] **Step 1: Read current file**
 
@@ -1052,13 +1052,13 @@ Specifically: any line that calls the Bash CLI's `phase` subcommand should call 
 - [ ] **Step 3: Verify**
 
 ```bash
-grep -n 'projects/bin/project' /Users/andrei.matei/projects/.claude/commands/phase.md || echo "none"
+grep -n 'projects/bin/project' ~/projects/.claude/commands/phase.md || echo "none"
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add .claude/commands/phase.md
+cd ~/projects && git add .claude/commands/phase.md
 git commit -m "chore(slash): repoint /phase at 'keel phase'"
 ```
 
@@ -1067,7 +1067,7 @@ git commit -m "chore(slash): repoint /phase at 'keel phase'"
 ### Task 3.3: `/export-design` slash command
 
 **Files:**
-- Modify: `/Users/andrei.matei/projects/.claude/commands/export-design.md`
+- Modify: `~/projects/.claude/commands/export-design.md`
 
 - [ ] **Step 1: Read current file**
 
@@ -1078,8 +1078,8 @@ The Bash CLI's `export-design -p NAME [-D DELIV] [-o PATH]` maps to `keel design
 - [ ] **Step 3: Verify and commit**
 
 ```bash
-grep -n 'projects/bin/project' /Users/andrei.matei/projects/.claude/commands/export-design.md || echo "none"
-cd /Users/andrei.matei/projects && git add .claude/commands/export-design.md
+grep -n 'projects/bin/project' ~/projects/.claude/commands/export-design.md || echo "none"
+cd ~/projects && git add .claude/commands/export-design.md
 git commit -m "chore(slash): repoint /export-design at 'keel design export'"
 ```
 
@@ -1095,7 +1095,7 @@ There may be other slash commands (`new-project.md`, `review-scope.md`, etc.) th
 - [ ] **Step 1: Audit**
 
 ```bash
-grep -rn -E 'projects/bin/project|project decision|project phase|project export-design|project new |project list |project show ' /Users/andrei.matei/projects/.claude/commands/ 2>&1
+grep -rn -E 'projects/bin/project|project decision|project phase|project export-design|project new |project list |project show ' ~/projects/.claude/commands/ 2>&1
 ```
 
 - [ ] **Step 2: Update each match**
@@ -1112,13 +1112,13 @@ For every match that's a real invocation (not just text describing the *concept*
 - [ ] **Step 3: Verify**
 
 ```bash
-grep -rn 'projects/bin/project' /Users/andrei.matei/projects/.claude/commands/ || echo "no remaining references"
+grep -rn 'projects/bin/project' ~/projects/.claude/commands/ || echo "no remaining references"
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add .claude/commands/
+cd ~/projects && git add .claude/commands/
 git commit -m "chore(slash): audit and repoint remaining slash commands at keel"
 ```
 
@@ -1129,14 +1129,14 @@ git commit -m "chore(slash): audit and repoint remaining slash commands at keel"
 ### Task 4.1: Update `~/projects/CLAUDE.md` to reference `keel`
 
 **File:**
-- Modify: `/Users/andrei.matei/projects/CLAUDE.md`
+- Modify: `~/projects/CLAUDE.md`
 
 The workspace conventions doc currently points at `~/projects/bin/project` and the Bash slash commands. Update to reference `keel`.
 
 - [ ] **Step 1: Read current `CLAUDE.md`**
 
 ```bash
-cat /Users/andrei.matei/projects/CLAUDE.md
+cat ~/projects/CLAUDE.md
 ```
 
 - [ ] **Step 2: Replace each `project` CLI reference with `keel`**
@@ -1156,13 +1156,13 @@ Leave the `~/projects/bin/gdocs*` references alone — those are unrelated tools
 - [ ] **Step 3: Verify**
 
 ```bash
-grep -n 'projects/bin/project\b' /Users/andrei.matei/projects/CLAUDE.md || echo "no remaining bash-cli references"
+grep -n 'projects/bin/project\b' ~/projects/CLAUDE.md || echo "no remaining bash-cli references"
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add CLAUDE.md
+cd ~/projects && git add CLAUDE.md
 git commit -m "docs(workspace): update conventions to reference keel"
 ```
 
@@ -1180,10 +1180,10 @@ Keep `~/projects/bin/gdocs*` in place (separate tool).
 - [ ] **Step 1: Stage the archive directory and move files**
 
 ```bash
-mkdir -p /Users/andrei.matei/projects/bin/.archive-bash-cli
-git -C /Users/andrei.matei/projects mv bin/project bin/.archive-bash-cli/project
-git -C /Users/andrei.matei/projects mv bin/commands bin/.archive-bash-cli/commands
-git -C /Users/andrei.matei/projects mv bin/lib bin/.archive-bash-cli/lib
+mkdir -p ~/projects/bin/.archive-bash-cli
+git -C ~/projects mv bin/project bin/.archive-bash-cli/project
+git -C ~/projects mv bin/commands bin/.archive-bash-cli/commands
+git -C ~/projects mv bin/lib bin/.archive-bash-cli/lib
 ```
 
 - [ ] **Step 2: Add a README at the archive root**
@@ -1215,13 +1215,13 @@ back on `$PATH`. Old commands map to keel like this:
 
 ```bash
 which project || echo "no 'project' on PATH (expected)"
-test -f /Users/andrei.matei/projects/bin/project && echo "ERROR: still in bin/" || echo "moved cleanly"
+test -f ~/projects/bin/project && echo "ERROR: still in bin/" || echo "moved cleanly"
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add bin/
+cd ~/projects && git add bin/
 git commit -m "chore(workspace): archive Bash CLI to bin/.archive-bash-cli/"
 ```
 
@@ -1232,7 +1232,7 @@ git commit -m "chore(workspace): archive Bash CLI to bin/.archive-bash-cli/"
 - [ ] **Step 1: Run keel test suite**
 
 ```bash
-cd /Users/andrei.matei/projects/keel && uv run --extra dev pytest -v
+cd ~/projects/keel && uv run --extra dev pytest -v
 ```
 Expected: substantially more than 217 PASS (Plan 4 added ~10 tests for migrate, 4 for completion).
 
@@ -1281,13 +1281,13 @@ keel completion fish | head -3
 - [ ] **Step 5: Verify slash commands no longer reference Bash**
 
 ```bash
-grep -rn 'projects/bin/project' /Users/andrei.matei/projects/.claude/commands/ /Users/andrei.matei/projects/CLAUDE.md && echo "ERROR: remaining references" || echo "clean"
+grep -rn 'projects/bin/project' ~/projects/.claude/commands/ ~/projects/CLAUDE.md && echo "ERROR: remaining references" || echo "clean"
 ```
 
 - [ ] **Step 6: Tag**
 
 ```bash
-git -C /Users/andrei.matei/projects tag keel-plan-4
+git -C ~/projects tag keel-plan-4
 ```
 
 ---

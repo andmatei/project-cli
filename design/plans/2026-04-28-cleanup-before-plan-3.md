@@ -55,7 +55,7 @@ After Plan 2.5 lands, new/changed files:
 
 - Plan 2 is complete and tagged `keel-plan-2`
 - 157 tests passing on `main`
-- Working dir: `/Users/andrei.matei/projects/keel/`
+- Working dir: `keel/`
 - Run tests: `uv run --extra dev pytest`
 
 ---
@@ -133,7 +133,7 @@ Expected: 12 PASS (existing 11 + 1 new).
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/commands/deliverable/add.py keel/tests/commands/deliverable/test_add.py
+cd ~/projects && git add keel/src/keel/commands/deliverable/add.py keel/tests/commands/deliverable/test_add.py
 git commit -m "fix(keel): new deliverable's CLAUDE.md lists existing siblings"
 ```
 
@@ -192,7 +192,7 @@ Expected: all PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/_templates/claude_md.j2 keel/tests/test_templates.py
+cd ~/projects && git add keel/src/keel/_templates/claude_md.j2 keel/tests/test_templates.py
 git commit -m "fix(keel): suppress empty '## Sibling deliverables' heading"
 ```
 
@@ -248,7 +248,7 @@ Expected: 158 PASS (157 + 1 sibling test from M1; this task doesn't add tests).
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/util.py keel/src/keel/commands/new.py keel/src/keel/commands/deliverable/add.py keel/src/keel/commands/decision/new.py keel/tests/commands/test_slugify.py
+cd ~/projects && git add keel/src/keel/util.py keel/src/keel/commands/new.py keel/src/keel/commands/deliverable/add.py keel/src/keel/commands/decision/new.py keel/tests/commands/test_slugify.py
 git commit -m "refactor(keel): centralize slugify in keel.util"
 ```
 
@@ -407,7 +407,7 @@ Run: `uv run --extra dev pytest`
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/workspace.py keel/tests/test_workspace.py keel/src/keel/commands/
+cd ~/projects && git add keel/src/keel/workspace.py keel/tests/test_workspace.py keel/src/keel/commands/
 git commit -m "refactor(keel): extract resolve_cli_scope helper, remove 8 sites of boilerplate"
 ```
 
@@ -477,7 +477,7 @@ Expected: 164 PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/workspace.py keel/tests/test_workspace.py keel/src/keel/commands/
+cd ~/projects && git add keel/src/keel/workspace.py keel/tests/test_workspace.py keel/src/keel/commands/
 git commit -m "refactor(keel): centralize decisions/ path computation in workspace.decisions_dir"
 ```
 
@@ -549,7 +549,7 @@ Expected: 167 PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/workspace.py keel/tests/test_workspace.py keel/src/keel/commands/
+cd ~/projects && git add keel/src/keel/workspace.py keel/tests/test_workspace.py keel/src/keel/commands/
 git commit -m "refactor(keel): centralize .phase reading in workspace.read_phase"
 ```
 
@@ -669,7 +669,7 @@ Expected: 169 PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/markdown_edit.py keel/tests/test_markdown_edit.py keel/src/keel/commands/
+cd ~/projects && git add keel/src/keel/markdown_edit.py keel/tests/test_markdown_edit.py keel/src/keel/commands/
 git commit -m "refactor(keel): extract remove_bullet_under_heading, dedupe rm + rename"
 ```
 
@@ -789,7 +789,7 @@ Expected: 173 PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/app.py keel/src/keel/output.py keel/src/keel/commands/ keel/tests/test_output.py
+cd ~/projects && git add keel/src/keel/app.py keel/src/keel/output.py keel/src/keel/commands/ keel/tests/test_output.py
 git commit -m "feat(keel): wire global --quiet/--verbose to Output via Typer context"
 ```
 
@@ -894,7 +894,7 @@ Expected: still 173 PASS (test count unchanged).
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/src/keel/commands/
+cd ~/projects && git add keel/src/keel/commands/
 git commit -m "docs(keel): fill in help= text on every command option"
 ```
 
@@ -905,7 +905,7 @@ git commit -m "docs(keel): fill in help= text on every command option"
 ### Task 4.1: Sync best-practice files into local workspace
 
 **Files:**
-- Copy from `/tmp/project-cli-publish/` into `/Users/andrei.matei/projects/keel/`:
+- Copy from `<public-repo>/` into `keel/`:
   - `LICENSE`
   - `CONTRIBUTING.md`
   - `SECURITY.md`
@@ -920,18 +920,18 @@ git commit -m "docs(keel): fill in help= text on every command option"
 - [ ] **Step 1: Copy files**
 
 ```bash
-cd /Users/andrei.matei/projects/keel
-cp /tmp/project-cli-publish/LICENSE .
-cp /tmp/project-cli-publish/CONTRIBUTING.md .
-cp /tmp/project-cli-publish/SECURITY.md .
-cp /tmp/project-cli-publish/README.md .
-cp /tmp/project-cli-publish/.editorconfig .
+cd ~/projects/keel
+cp <public-repo>/LICENSE .
+cp <public-repo>/CONTRIBUTING.md .
+cp <public-repo>/SECURITY.md .
+cp <public-repo>/README.md .
+cp <public-repo>/.editorconfig .
 mkdir -p .github/workflows .github/ISSUE_TEMPLATE
-cp /tmp/project-cli-publish/.github/dependabot.yml .github/
-cp /tmp/project-cli-publish/.github/workflows/ci.yml .github/workflows/
-cp /tmp/project-cli-publish/.github/ISSUE_TEMPLATE/bug.md .github/ISSUE_TEMPLATE/
-cp /tmp/project-cli-publish/.github/ISSUE_TEMPLATE/feature.md .github/ISSUE_TEMPLATE/
-cp /tmp/project-cli-publish/.github/PULL_REQUEST_TEMPLATE.md .github/
+cp <public-repo>/.github/dependabot.yml .github/
+cp <public-repo>/.github/workflows/ci.yml .github/workflows/
+cp <public-repo>/.github/ISSUE_TEMPLATE/bug.md .github/ISSUE_TEMPLATE/
+cp <public-repo>/.github/ISSUE_TEMPLATE/feature.md .github/ISSUE_TEMPLATE/
+cp <public-repo>/.github/PULL_REQUEST_TEMPLATE.md .github/
 ```
 
 - [ ] **Step 2: Run tests sanity check**
@@ -941,7 +941,7 @@ Run: `uv run --extra dev pytest`. Expected: 173 PASS. (Files added are docs-only
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/LICENSE keel/CONTRIBUTING.md keel/SECURITY.md keel/README.md keel/.editorconfig keel/.github/
+cd ~/projects && git add keel/LICENSE keel/CONTRIBUTING.md keel/SECURITY.md keel/README.md keel/.editorconfig keel/.github/
 git commit -m "chore(keel): sync public-repo best-practice files into local workspace"
 ```
 
@@ -989,7 +989,7 @@ Add `ruff>=0.6` to `[project.optional-dependencies].dev`.
 - [ ] **Step 2: Run ruff fix on the codebase**
 
 ```bash
-cd /Users/andrei.matei/projects/keel
+cd ~/projects/keel
 uv sync --extra dev
 uv run ruff check --fix src tests
 uv run ruff format src tests
@@ -1033,7 +1033,7 @@ Update `build` job's `needs: test` to `needs: [test, lint]`.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/pyproject.toml keel/.github/workflows/ci.yml keel/src keel/tests
+cd ~/projects && git add keel/pyproject.toml keel/.github/workflows/ci.yml keel/src keel/tests
 git commit -m "chore(keel): add ruff config + lint step in CI"
 ```
 
@@ -1047,7 +1047,7 @@ git commit -m "chore(keel): add ruff config + lint step in CI"
 
 - [ ] **Step 1: Create the new decision file**
 
-Create `/Users/andrei.matei/projects/keel/design/decisions/2026-04-28-plan-2-implementation-fixes.md`:
+Create `keel/design/decisions/2026-04-28-plan-2-implementation-fixes.md`:
 
 ```markdown
 ---
@@ -1126,7 +1126,7 @@ stale).
 
 - [ ] **Step 2: Mark the Plan 1 fixes file as superseded**
 
-In `/Users/andrei.matei/projects/keel/design/decisions/2026-04-27-plan-1-implementation-fixes.md`, change frontmatter `status: accepted` to `status: superseded` and add at the top of the body:
+In `keel/design/decisions/2026-04-27-plan-1-implementation-fixes.md`, change frontmatter `status: accepted` to `status: superseded` and add at the top of the body:
 
 ```markdown
 > **Superseded by `2026-04-28-plan-2-implementation-fixes.md`** for the
@@ -1138,7 +1138,7 @@ In `/Users/andrei.matei/projects/keel/design/decisions/2026-04-27-plan-1-impleme
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /Users/andrei.matei/projects && git add keel/design/decisions/
+cd ~/projects && git add keel/design/decisions/
 git commit -m "docs(keel): record Plan 2 fixes and supersede Plan 1 forward-debt list"
 ```
 
@@ -1148,7 +1148,7 @@ git commit -m "docs(keel): record Plan 2 fixes and supersede Plan 1 forward-debt
 
 - [ ] **Step 1: Run full suite**
 
-Run: `cd /Users/andrei.matei/projects/keel && uv run --extra dev pytest -v`
+Run: `cd ~/projects/keel && uv run --extra dev pytest -v`
 Expected: 173 PASS.
 
 - [ ] **Step 2: Run ruff check (must be clean)**
@@ -1162,7 +1162,7 @@ Run `keel --help`, `keel deliverable add --help`, `keel decision new --help`, `k
 - [ ] **Step 4: Tag**
 
 ```bash
-git -C /Users/andrei.matei/projects tag keel-plan-2.5
+git -C ~/projects tag keel-plan-2.5
 ```
 
 ---
