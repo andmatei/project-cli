@@ -11,8 +11,8 @@ from pathlib import Path
 
 import typer
 
-from keel import templates, workspace
-from keel.api import HINT_LIST_DECISIONS, ErrorCode, OpLog, Output, slugify, resolve_cli_scope
+from keel import templates
+from keel.api import HINT_LIST_DECISIONS, ErrorCode, OpLog, Output, resolve_cli_scope, slugify
 
 
 def cmd_new(

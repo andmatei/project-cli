@@ -5,15 +5,15 @@ from __future__ import annotations
 import typer
 
 from keel.api import (
-ErrorCode,
-Milestone,
-OpLog,
-Output,
-edit_milestones,
-find_milestone,
+    ErrorCode,
+    Milestone,
+    OpLog,
+    Output,
+    edit_milestones,
+    find_milestone,
     resolve_cli_scope,
-safe_push,
-with_provider,
+    safe_push,
+    with_provider,
 )
 
 

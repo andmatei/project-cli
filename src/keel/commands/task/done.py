@@ -5,13 +5,13 @@ from __future__ import annotations
 import typer
 
 from keel.api import (
-ErrorCode,
-Output,
-edit_milestones,
-find_task,
+    ErrorCode,
+    Output,
+    edit_milestones,
+    find_task,
     resolve_cli_scope,
-safe_push,
-with_provider,
+    safe_push,
+    with_provider,
 )
 
 

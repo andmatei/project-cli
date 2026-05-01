@@ -8,15 +8,15 @@ import typer
 
 from keel import git_ops, workspace
 from keel.api import (
-HINT_LIST_DELIVERABLES,
-DeliverableManifest,
-DeliverableMeta,
-ErrorCode,
-OpLog,
-Output,
-load_deliverable_manifest,
+    HINT_LIST_DELIVERABLES,
+    DeliverableManifest,
+    DeliverableMeta,
+    ErrorCode,
+    OpLog,
+    Output,
+    load_deliverable_manifest,
     resolve_cli_scope,
-save_deliverable_manifest,
+    save_deliverable_manifest,
 )
 from keel.markdown_edit import insert_under_heading, remove_bullet_under_heading
 

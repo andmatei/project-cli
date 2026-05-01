@@ -113,9 +113,7 @@ def cmd_phase(
         log.modify_file(path, diff=f"{current} → {target}")
         if not no_decision:
             today = date.today().isoformat()
-            log.create_file(
-                scope.decisions_dir / f"{today}-phase-{target}.md", size=0
-            )
+            log.create_file(scope.decisions_dir / f"{today}-phase-{target}.md", size=0)
         out.info(log.format_summary())
         return
 

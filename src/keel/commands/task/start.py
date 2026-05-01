@@ -6,7 +6,7 @@ import os
 
 import typer
 
-from keel.api import ErrorCode, Output, edit_milestones, find_task, slugify, resolve_cli_scope
+from keel.api import ErrorCode, Output, edit_milestones, find_task, resolve_cli_scope, slugify
 
 
 def _default_branch(user: str, project: str, milestone_id: str, task_id: str) -> str:

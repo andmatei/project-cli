@@ -8,16 +8,16 @@ import typer
 
 from keel import git_ops
 from keel.api import (
-DeliverableManifest,
-ErrorCode,
-Output,
-ProjectManifest,
-find_task,
-load_deliverable_manifest,
-load_milestones_manifest,
-load_project_manifest,
-
-    resolve_cli_scope,)
+    DeliverableManifest,
+    ErrorCode,
+    Output,
+    ProjectManifest,
+    find_task,
+    load_deliverable_manifest,
+    load_milestones_manifest,
+    load_project_manifest,
+    resolve_cli_scope,
+)
 
 
 def cmd_worktree(

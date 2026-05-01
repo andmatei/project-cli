@@ -9,7 +9,7 @@ import typer
 from rich.table import Table
 
 from keel import git_ops, workspace
-from keel.api import Output, load_deliverable_manifest, load_project_manifest, resolve_cli_scope
+from keel.api import Output, load_deliverable_manifest, load_project_manifest
 
 
 @dataclass
@@ -150,7 +150,6 @@ def cmd_validate(
     """Validate project structure and (optionally) content."""
     out = Output.from_context(ctx, json_mode=json_mode)
     scope = workspace.resolve_cli_scope(name, None, allow_deliverable=False)
-    project = scope.project
 
     findings: list[_Finding] = []
 

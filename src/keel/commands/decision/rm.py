@@ -4,8 +4,14 @@ from __future__ import annotations
 
 import typer
 
-from keel import workspace
-from keel.api import HINT_LIST_DECISIONS, ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
+from keel.api import (
+    HINT_LIST_DECISIONS,
+    ErrorCode,
+    OpLog,
+    Output,
+    confirm_destructive,
+    resolve_cli_scope,
+)
 from keel.commands.decision.show import _find_decision
 
 

@@ -6,15 +6,15 @@ import typer
 
 from keel import workspace
 from keel.api import (
-ErrorCode,
-OpLog,
-Output,
-edit_milestones,
-find_milestone,
-load_milestones_manifest,
+    ErrorCode,
+    OpLog,
+    Output,
+    edit_milestones,
+    find_milestone,
+    load_milestones_manifest,
     resolve_cli_scope,
-safe_push,
-with_provider,
+    safe_push,
+    with_provider,
 )
 
 

@@ -5,15 +5,15 @@ from __future__ import annotations
 import typer
 
 from keel.api import (
-ErrorCode,
-MilestonesManifest,
-Output,
-Task,
-blocked_tasks,
-load_milestones_manifest,
-ready_tasks,
+    ErrorCode,
+    MilestonesManifest,
+    Output,
+    Task,
+    blocked_tasks,
+    load_milestones_manifest,
+    ready_tasks,
     resolve_cli_scope,
-topological_sort,
+    topological_sort,
 )
 
 
