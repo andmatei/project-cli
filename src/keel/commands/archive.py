@@ -9,7 +9,7 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
-from keel.api import ErrorCode, OpLog, Output, confirm_destructive
+from keel.api import ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
 
 
 def cmd_archive(

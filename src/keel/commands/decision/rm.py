@@ -5,9 +5,8 @@ from __future__ import annotations
 import typer
 
 from keel import workspace
-from keel.api import HINT_LIST_DECISIONS, ErrorCode, OpLog, Output, confirm_destructive
+from keel.api import HINT_LIST_DECISIONS, ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
 from keel.commands.decision.show import _find_decision
-from keel.workspace import resolve_cli_scope
 
 
 def cmd_rm(

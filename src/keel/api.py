@@ -67,6 +67,7 @@ from keel.workspace import (
     project_exists,
     projects_dir,
     read_phase,
+    resolve_cli_scope,
 )
 
 __all__ = [
@@ -129,6 +130,7 @@ __all__ = [
     "project_exists",
     "projects_dir",
     "read_phase",
+    "resolve_cli_scope",
     # Ticketing
     "Ticket",
     "TicketProvider",

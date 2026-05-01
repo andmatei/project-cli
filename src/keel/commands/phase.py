@@ -8,10 +8,9 @@ from pathlib import Path
 import typer
 
 from keel import templates, workspace
-from keel.api import ErrorCode, OpLog, Output, confirm_destructive
+from keel.api import ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
 from keel.lifecycle import PHASES
 from keel.lifecycle import next_phase as _next_phase
-from keel.workspace import resolve_cli_scope
 
 
 def _read_phase(path: Path) -> tuple[str, list[str]]:

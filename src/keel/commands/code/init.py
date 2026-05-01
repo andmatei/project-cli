@@ -8,7 +8,7 @@ from pathlib import Path
 import typer
 
 from keel import git_ops, workspace
-from keel.api import ErrorCode, OpLog, Output, load_deliverable_manifest, load_project_manifest
+from keel.api import ErrorCode, OpLog, Output, load_deliverable_manifest, load_project_manifest, resolve_cli_scope
 
 
 def cmd_init(

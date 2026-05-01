@@ -8,8 +8,7 @@ import typer
 from rich.table import Table
 
 from keel import workspace
-from keel.api import Output, load_deliverable_manifest
-from keel.workspace import resolve_cli_scope
+from keel.api import Output, load_deliverable_manifest, resolve_cli_scope
 
 
 @dataclass

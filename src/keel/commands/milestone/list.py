@@ -5,8 +5,7 @@ from __future__ import annotations
 import typer
 from rich.table import Table
 
-from keel.api import Output, load_milestones_manifest
-from keel.workspace import resolve_cli_scope
+from keel.api import Output, load_milestones_manifest, resolve_cli_scope
 
 
 def cmd_list(

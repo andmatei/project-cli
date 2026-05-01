@@ -7,8 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from keel import workspace
-from keel.api import Output, load_project_manifest
-from keel.workspace import resolve_cli_scope
+from keel.api import Output, load_project_manifest, resolve_cli_scope
 
 
 def cmd_show(

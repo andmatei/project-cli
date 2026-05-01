@@ -9,7 +9,7 @@ import typer
 from rich.table import Table
 
 from keel import git_ops, workspace
-from keel.api import Output, load_deliverable_manifest, load_project_manifest
+from keel.api import Output, load_deliverable_manifest, load_project_manifest, resolve_cli_scope
 
 
 @dataclass

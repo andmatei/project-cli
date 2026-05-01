@@ -6,16 +6,16 @@ import typer
 
 from keel import workspace
 from keel.api import (
-    ErrorCode,
-    OpLog,
-    Output,
-    edit_milestones,
-    find_milestone,
-    load_milestones_manifest,
-    safe_push,
-    with_provider,
+ErrorCode,
+OpLog,
+Output,
+edit_milestones,
+find_milestone,
+load_milestones_manifest,
+    resolve_cli_scope,
+safe_push,
+with_provider,
 )
-from keel.workspace import resolve_cli_scope
 
 
 def cmd_done(

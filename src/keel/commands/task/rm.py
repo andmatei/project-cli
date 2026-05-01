@@ -5,15 +5,15 @@ from __future__ import annotations
 import typer
 
 from keel.api import (
-    ErrorCode,
-    OpLog,
-    Output,
-    confirm_destructive,
-    edit_milestones,
-    find_task,
-    load_milestones_manifest,
-)
-from keel.workspace import resolve_cli_scope
+ErrorCode,
+OpLog,
+Output,
+confirm_destructive,
+edit_milestones,
+find_task,
+load_milestones_manifest,
+
+    resolve_cli_scope,)
 
 
 def cmd_rm(

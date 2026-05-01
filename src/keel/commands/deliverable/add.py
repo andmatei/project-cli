@@ -9,19 +9,19 @@ import typer
 
 from keel import git_ops, templates, workspace
 from keel.api import (
-    DeliverableManifest,
-    DeliverableMeta,
-    ErrorCode,
-    OpLog,
-    Output,
-    RepoSpec,
-    load_deliverable_manifest,
-    require_or_fail,
-    save_deliverable_manifest,
-    slugify,
+DeliverableManifest,
+DeliverableMeta,
+ErrorCode,
+OpLog,
+Output,
+RepoSpec,
+load_deliverable_manifest,
+require_or_fail,
+    resolve_cli_scope,
+save_deliverable_manifest,
+slugify,
 )
 from keel.markdown_edit import insert_under_heading
-from keel.workspace import resolve_cli_scope
 
 
 def cmd_add(

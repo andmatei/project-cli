@@ -6,8 +6,7 @@ from collections import Counter
 
 import typer
 
-from keel.api import ErrorCode, Output, find_milestone, load_milestones_manifest
-from keel.workspace import resolve_cli_scope
+from keel.api import ErrorCode, Output, find_milestone, load_milestones_manifest, resolve_cli_scope
 
 
 def cmd_show(

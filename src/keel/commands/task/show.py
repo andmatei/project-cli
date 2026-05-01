@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from keel.api import ErrorCode, Output, find_task, load_milestones_manifest
-from keel.workspace import resolve_cli_scope
+from keel.api import ErrorCode, Output, find_task, load_milestones_manifest, resolve_cli_scope
 
 
 def cmd_show(

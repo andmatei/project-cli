@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from keel.api import ErrorCode, Output, edit_milestones, find_milestone
-from keel.workspace import resolve_cli_scope
+from keel.api import ErrorCode, Output, edit_milestones, find_milestone, resolve_cli_scope
 
 
 def cmd_start(

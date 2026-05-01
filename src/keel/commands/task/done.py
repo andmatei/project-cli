@@ -5,14 +5,14 @@ from __future__ import annotations
 import typer
 
 from keel.api import (
-    ErrorCode,
-    Output,
-    edit_milestones,
-    find_task,
-    safe_push,
-    with_provider,
+ErrorCode,
+Output,
+edit_milestones,
+find_task,
+    resolve_cli_scope,
+safe_push,
+with_provider,
 )
-from keel.workspace import resolve_cli_scope
 
 
 def cmd_done(

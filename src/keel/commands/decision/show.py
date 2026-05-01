@@ -9,8 +9,7 @@ import typer
 from rich.markdown import Markdown
 
 from keel import workspace
-from keel.api import HINT_LIST_DECISIONS, ErrorCode, Output
-from keel.workspace import resolve_cli_scope
+from keel.api import HINT_LIST_DECISIONS, ErrorCode, Output, resolve_cli_scope
 
 _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?", re.DOTALL)
 

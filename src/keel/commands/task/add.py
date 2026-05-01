@@ -5,20 +5,20 @@ from __future__ import annotations
 import typer
 
 from keel.api import (
-    ErrorCode,
-    GraphError,
-    OpLog,
-    Output,
-    Task,
-    edit_milestones,
-    find_milestone,
-    find_task,
-    load_milestones_manifest,
-    safe_push,
-    validate_dag,
-    with_provider,
+ErrorCode,
+GraphError,
+OpLog,
+Output,
+Task,
+edit_milestones,
+find_milestone,
+find_task,
+load_milestones_manifest,
+    resolve_cli_scope,
+safe_push,
+validate_dag,
+with_provider,
 )
-from keel.workspace import resolve_cli_scope
 
 
 def cmd_add(

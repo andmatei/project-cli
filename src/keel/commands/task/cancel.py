@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from keel.api import ErrorCode, Output, confirm_destructive, edit_milestones, find_task
-from keel.workspace import resolve_cli_scope
+from keel.api import ErrorCode, Output, confirm_destructive, edit_milestones, find_task, resolve_cli_scope
 
 
 def cmd_cancel(

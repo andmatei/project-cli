@@ -7,9 +7,8 @@ import shutil
 import typer
 
 from keel import git_ops, workspace
-from keel.api import HINT_LIST_DELIVERABLES, ErrorCode, OpLog, Output, confirm_destructive
+from keel.api import HINT_LIST_DELIVERABLES, ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
 from keel.markdown_edit import remove_bullet_under_heading
-from keel.workspace import resolve_cli_scope
 
 
 def cmd_rm(
