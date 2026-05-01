@@ -48,18 +48,19 @@ def cmd_rm(
             code=ErrorCode.NOT_FOUND,
         )
 
-    deliv = workspace.deliverable_dir(project, name)
+    deliv_scope = workspace.Scope(project=project, deliverable=name)
+    deliv = deliv_scope.unit_dir
 
     if dry_run:
         log = OpLog()
         if not keep_design:
             log.delete_file(deliv)
         log.modify_file(
-            workspace.design_dir(project) / "CLAUDE.md",
+            scope.design_dir / "CLAUDE.md",
             diff=f"- - **{name}**: ...",
         )
         log.modify_file(
-            workspace.design_dir(project) / "design.md",
+            scope.design_dir / "design.md",
             diff=f"- - **{name}**: ...",
         )
         out.info(log.format_summary())
@@ -93,14 +94,14 @@ def cmd_rm(
         pass  # best-effort
 
     # Clean up parent CLAUDE.md
-    parent_claude = workspace.design_dir(project) / "CLAUDE.md"
+    parent_claude = scope.design_dir / "CLAUDE.md"
     if parent_claude.is_file():
         parent_claude.write_text(
             remove_bullet_under_heading(parent_claude.read_text(), "Deliverables", f"- **{name}**:")
         )
 
     # Clean up parent design.md
-    parent_design = workspace.design_dir(project) / "design.md"
+    parent_design = scope.design_dir / "design.md"
     if parent_design.is_file():
         parent_design.write_text(
             remove_bullet_under_heading(parent_design.read_text(), "Deliverables", f"- **{name}**:")

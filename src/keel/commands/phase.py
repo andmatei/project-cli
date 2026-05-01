@@ -56,7 +56,7 @@ def cmd_phase(
     project = scope.project
     deliverable = scope.deliverable
 
-    path = workspace.phase_file(project, deliverable)
+    path = scope.phase_file
     current, history = _read_phase(path)
 
     if phase is None and not next_phase:
@@ -115,7 +115,7 @@ def cmd_phase(
         if not no_decision:
             today = date.today().isoformat()
             log.create_file(
-                workspace.decisions_dir(project, deliverable) / f"{today}-phase-{target}.md", size=0
+                scope.decisions_dir / f"{today}-phase-{target}.md", size=0
             )
         out.info(log.format_summary())
         return
@@ -130,7 +130,7 @@ def cmd_phase(
 
     # Auto-create phase decision file
     if not no_decision:
-        _decisions_dir = workspace.decisions_dir(project, deliverable)
+        _decisions_dir = scope.decisions_dir
         _decisions_dir.mkdir(parents=True, exist_ok=True)
         decision_path = _decisions_dir / f"{today}-phase-{target}.md"
         if not decision_path.exists():

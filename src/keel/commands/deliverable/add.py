@@ -60,7 +60,8 @@ def cmd_add(
     if not slug:
         out.fail("invalid deliverable name", code=ErrorCode.INVALID_NAME, exit_code=2)
 
-    deliv = workspace.deliverable_dir(project, slug)
+    deliv_scope = workspace.Scope(project=project, deliverable=slug)
+    deliv = deliv_scope.unit_dir
     if deliv.exists():
         out.fail(f"deliverable already exists: {deliv}", code=ErrorCode.EXISTS)
 
@@ -79,7 +80,7 @@ def cmd_add(
         if not git_ops.is_git_repo(repo_path):
             out.fail(f"not a git repo: {repo_path}", code=ErrorCode.NOT_A_REPO)
 
-    deliv_design = workspace.design_dir(project, slug)
+    deliv_design = deliv_scope.design_dir
     if dry_run:
         log = OpLog()
         log.create_file(deliv_design / "deliverable.toml", size=0)
@@ -92,7 +93,7 @@ def cmd_add(
         return
 
     # Create directories
-    workspace.decisions_dir(project, slug).mkdir(parents=True)
+    deliv_scope.decisions_dir.mkdir(parents=True)
 
     # Build manifest
     repo_specs: list[RepoSpec] = []
@@ -119,7 +120,7 @@ def cmd_add(
         ),
         repos=repo_specs,
     )
-    save_deliverable_manifest(workspace.manifest_path(project, slug), manifest)
+    save_deliverable_manifest(deliv_scope.manifest_path, manifest)
 
     # Discover existing siblings for the new deliverable's CLAUDE.md
     existing_siblings: list[dict[str, str]] = []
@@ -152,11 +153,11 @@ def cmd_add(
     )
 
     # Phase
-    workspace.phase_file(project, slug).write_text("scoping\n")
+    deliv_scope.phase_file.write_text("scoping\n")
 
     # Initial decision
     today = date.today().isoformat()
-    (workspace.decisions_dir(project, slug) / f"{today}-deliverable-created.md").write_text(
+    (deliv_scope.decisions_dir / f"{today}-deliverable-created.md").write_text(
         templates.render("decision_entry.j2", date=today, title=f"Create deliverable {slug}")
     )
 

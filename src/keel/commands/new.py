@@ -53,7 +53,8 @@ def cmd_new(
     if not slug:
         out.fail("invalid project name", code=ErrorCode.INVALID_NAME, exit_code=2)
 
-    proj = workspace.project_dir(slug)
+    scope = workspace.Scope(project=slug, deliverable=None)
+    proj = scope.unit_dir
     if proj.exists():
         out.fail(f"project already exists: {proj}", code=ErrorCode.EXISTS)
 
@@ -68,7 +69,7 @@ def cmd_new(
                 out.fail(f"not a git repo: {rp}", code=ErrorCode.NOT_A_REPO)
             repo_paths.append(rp)
 
-    design = workspace.design_dir(slug)
+    design = scope.design_dir
     if dry_run:
         log = OpLog()
         log.create_file(design / "project.toml", size=0)
@@ -90,7 +91,7 @@ def cmd_new(
         return
 
     # Make directories
-    workspace.decisions_dir(slug).mkdir(parents=True)
+    scope.decisions_dir.mkdir(parents=True)
 
     # Build manifest with repos (worktree path defaults to "code" when single, "code-<repo>" otherwise)
     repo_specs: list[RepoSpec] = []
@@ -114,7 +115,7 @@ def cmd_new(
         project=ProjectMeta(name=slug, description=description, created=date.today()),
         repos=repo_specs,
     )
-    save_project_manifest(workspace.manifest_path(slug), manifest)
+    save_project_manifest(scope.manifest_path, manifest)
 
     # Templates
     repos_for_template = [
@@ -137,11 +138,11 @@ def cmd_new(
     )
 
     # Phase
-    workspace.phase_file(slug).write_text("scoping\n")
+    scope.phase_file.write_text("scoping\n")
 
     # Initial decision file
     today = date.today().isoformat()
-    decision_path = workspace.decisions_dir(slug) / f"{today}-project-setup.md"
+    decision_path = scope.decisions_dir / f"{today}-project-setup.md"
     decision_path.write_text(
         templates.render("decision_entry.j2", date=today, title="Project workspace setup")
     )

@@ -167,9 +167,9 @@ def _migrate_deliverables(proj_dir: Path, project_name: str, apply: bool, out) -
         if apply:
             save_deliverable_manifest(manifest_path, manifest)
             # Initialize .phase if missing
-            phase_file = workspace.phase_file(project_name, deliv.name)
-            if not phase_file.is_file():
-                phase_file.write_text("scoping\n")
+            deliv_scope = workspace.Scope(project=project_name, deliverable=deliv.name)
+            if not deliv_scope.phase_file.is_file():
+                deliv_scope.phase_file.write_text("scoping\n")
             out.info(f"  deliverable {deliv.name}: wrote {manifest_path}")
         else:
             out.info(f"  [dry-run] deliverable {deliv.name}: would write deliverable.toml")
@@ -219,7 +219,8 @@ def cmd_migrate(
     results: list[dict] = []
     for target in targets:
         proj_dir = workspace.project_dir(target)
-        manifest_path = workspace.manifest_path(target)
+        target_scope = workspace.Scope(project=target, deliverable=None)
+        manifest_path = target_scope.manifest_path
         if manifest_path.is_file():
             out.info(f"{target}: already migrated, skipping")
             results.append({"name": target, "status": "skipped"})

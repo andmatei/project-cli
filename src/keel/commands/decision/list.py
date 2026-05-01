@@ -96,11 +96,11 @@ def cmd_list(
 
     rows: list[_DecisionRow] = []
     if deliverable:
-        rows.extend(_scan(workspace.decisions_dir(project, deliverable)))
+        rows.extend(_scan(scope.decisions_dir))
         if all_scopes:
-            rows.extend(_scan(workspace.decisions_dir(project)))
+            rows.extend(_scan(workspace.Scope(project=project, deliverable=None).decisions_dir))
     else:
-        rows.extend(_scan(workspace.decisions_dir(project)))
+        rows.extend(_scan(scope.decisions_dir))
 
     if status:
         rows = [r for r in rows if r.status == status]

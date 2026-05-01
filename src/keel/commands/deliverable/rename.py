@@ -54,8 +54,10 @@ def cmd_rename(
     if workspace.deliverable_exists(project, new):
         out.fail(f"target already exists: {project}/{new}", code=ErrorCode.EXISTS)
 
-    old_path = workspace.deliverable_dir(project, old)
-    new_path = workspace.deliverable_dir(project, new)
+    old_scope = workspace.Scope(project=project, deliverable=old)
+    new_scope = workspace.Scope(project=project, deliverable=new)
+    old_path = old_scope.unit_dir
+    new_path = new_scope.unit_dir
 
     if dry_run:
         log = OpLog()
@@ -79,7 +81,7 @@ def cmd_rename(
         old_path.rmdir()
 
     # 2. Update manifest's `name`
-    manifest_path = workspace.manifest_path(project, new)
+    manifest_path = new_scope.manifest_path
     m = load_deliverable_manifest(manifest_path)
     new_manifest = DeliverableManifest(
         deliverable=DeliverableMeta(
@@ -95,7 +97,8 @@ def cmd_rename(
 
     # 3. Update parent CLAUDE.md and design.md references
     description = m.deliverable.description
-    parent_claude = workspace.design_dir(project) / "CLAUDE.md"
+    parent_scope = workspace.Scope(project=project, deliverable=None)
+    parent_claude = parent_scope.design_dir / "CLAUDE.md"
     if parent_claude.is_file():
         text = remove_bullet_under_heading(
             parent_claude.read_text(), "Deliverables", f"- **{old}**:"
@@ -105,7 +108,7 @@ def cmd_rename(
         )
         parent_claude.write_text(text)
 
-    parent_design = workspace.design_dir(project) / "design.md"
+    parent_design = parent_scope.design_dir / "design.md"
     if parent_design.is_file():
         text = remove_bullet_under_heading(
             parent_design.read_text(), "Deliverables", f"- **{old}**:"

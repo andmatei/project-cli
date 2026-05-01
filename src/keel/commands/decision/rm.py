@@ -37,7 +37,7 @@ def cmd_rm(
     project = scope.project
     deliverable = scope.deliverable
 
-    target_dir = workspace.decisions_dir(project, deliverable)
+    target_dir = scope.decisions_dir
 
     path = _find_decision(target_dir, slug)
     if path is None:

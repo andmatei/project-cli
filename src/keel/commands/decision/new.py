@@ -55,7 +55,7 @@ def cmd_new(
     deliverable = scope.deliverable
 
     # Compute target dir
-    target_dir = workspace.decisions_dir(project, deliverable)
+    target_dir = scope.decisions_dir
     scope_label = "deliverable" if deliverable else "project"
 
     today = date.today().isoformat()

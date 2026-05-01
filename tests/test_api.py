@@ -32,7 +32,6 @@ def test_keel_api_exports() -> None:
         "slugify",
         # Workspace
         "Scope",
-        "decisions_dir",
         "deliverable_dir",
         "deliverable_exists",
         "detect_scope",

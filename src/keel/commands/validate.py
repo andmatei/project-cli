@@ -105,12 +105,12 @@ def _check_worktrees(unit_dir: Path, repos, label: str) -> list[_Finding]:
     return findings
 
 
-def _check_deliverable_references(project: str) -> list[_Finding]:
+def _check_deliverable_references(scope: workspace.Scope) -> list[_Finding]:
     findings: list[_Finding] = []
-    deliv_dir = workspace.project_dir(project) / "deliverables"
+    deliv_dir = scope.unit_dir / "deliverables"
     if not deliv_dir.is_dir():
         return findings
-    parent_claude = workspace.design_dir(project) / "CLAUDE.md"
+    parent_claude = scope.design_dir / "CLAUDE.md"
     parent_text = parent_claude.read_text() if parent_claude.is_file() else ""
     for d in sorted(deliv_dir.iterdir()):
         if not d.is_dir() or not (d / "design" / "deliverable.toml").is_file():
@@ -155,13 +155,13 @@ def cmd_validate(
     findings: list[_Finding] = []
 
     # Project-level checks
-    proj_dir = workspace.project_dir(project)
+    proj_dir = scope.unit_dir
     findings.extend(_check_required_design_files(proj_dir, "project"))
     proj_findings, m = _check_manifest(scope.manifest_path, load_project_manifest, "project")
     findings.extend(proj_findings)
     if m is not None:
         findings.extend(_check_worktrees(proj_dir, m.repos, "project"))
-    findings.extend(_check_deliverable_references(project))
+    findings.extend(_check_deliverable_references(scope))
 
     # Deliverables
     deliv_dir = proj_dir / "deliverables"

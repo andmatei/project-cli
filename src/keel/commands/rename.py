@@ -50,6 +50,8 @@ def cmd_rename(
 
     old_path = workspace.project_dir(old)
     new_path = workspace.project_dir(new_slug)
+    old_scope = workspace.Scope(project=old, deliverable=None)
+    new_scope = workspace.Scope(project=new_slug, deliverable=None)
 
     if dry_run:
         log = OpLog()
@@ -62,7 +64,7 @@ def cmd_rename(
         yes=yes,
     )
 
-    m = load_project_manifest(workspace.manifest_path(old))
+    m = load_project_manifest(old_scope.manifest_path)
 
     # Move worktrees with git_ops.move_worktree (preserves linkage)
     branch_renames: list[tuple[str, str]] = []
@@ -107,7 +109,7 @@ def cmd_rename(
         ),
         repos=new_repos,
     )
-    save_project_manifest(workspace.manifest_path(new_slug), new_manifest)
+    save_project_manifest(new_scope.manifest_path, new_manifest)
 
     out.result(
         {"old": old, "new": new_slug, "branch_renames": branch_renames},
