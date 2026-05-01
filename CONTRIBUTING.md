@@ -87,6 +87,7 @@ explains the *why*.
 ```
 src/keel/
 ├── app.py                  # Typer top-level app + global flags
+├── api.py                  # public stable surface; what plugins import from
 ├── manifest.py             # Pydantic models + TOML I/O
 ├── workspace.py            # paths + CWD scope detection
 ├── markdown_edit.py        # AST-aware markdown section editing
@@ -95,6 +96,13 @@ src/keel/
 ├── dryrun.py               # OpLog for --dry-run
 ├── prompts.py              # TTY-aware prompts (questionary)
 ├── git_ops.py              # subprocess wrapper for git
+├── lifecycle.py            # PHASES, MILESTONE_STATES, TASK_STATES, transition validators
+├── errors.py               # ErrorCode StrEnum and HINT_* constants
+├── milestones.py           # pure-graph DAG helpers (validate_dag, ready_tasks, blocked_tasks, topological_sort)
+├── util.py                 # slugify and other tiny helpers
+├── ticketing/              # TicketProvider Protocol + MockProvider + entry-point registry
+├── testing/                # pytest fixtures (projects, make_project, make_deliverable, source_repo, mock_ticket_provider)
+├── _templates/             # Jinja2 templates (internal; overriding requires forking)
 └── commands/               # one module per subcommand
 
 tests/
@@ -130,6 +138,26 @@ Use the [bug report issue template](.github/ISSUE_TEMPLATE/bug.md). Include:
 
 See [SECURITY.md](SECURITY.md). Please do not file public issues for
 suspected vulnerabilities.
+
+## Adding a new command
+
+For a top-level command (e.g. `keel foo`):
+
+1. Create `src/keel/commands/foo.py` exposing `cmd_foo(ctx: typer.Context, ...)`.
+2. Register in `src/keel/app.py` after the existing `from keel.commands.X import cmd_X` block:
+   ```python
+   from keel.commands.foo import cmd_foo  # noqa: E402
+   app.command(name="foo")(cmd_foo)
+   ```
+3. Add tests in `tests/commands/test_foo.py` using the `projects` and `make_project` fixtures from `keel.testing`.
+
+For a command group (e.g. `keel bar add` / `keel bar list`):
+
+1. Create `src/keel/commands/bar/__init__.py` with a Typer subapp and per-command imports (mirror `commands/decision/__init__.py`).
+2. Create one file per subcommand (`add.py`, `list.py`, etc.).
+3. Register the subapp in `app.py` via `app.add_typer(bar_app, name="bar")`.
+
+For a third-party plugin: register via the `keel.commands` entry-point group in your plugin's `pyproject.toml`. See the docstring at `src/keel/app.py` for the contract.
 
 ## License
 
