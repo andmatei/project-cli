@@ -47,10 +47,7 @@ own scope (opt-in), phase, and decisions — parallel to the project level.
 - Distributing the tool beyond personal/local use.
 - Single-binary distribution. Python via `uv tool install --editable .` is fine.
 - Replacing the slash commands or any Claude-driven workflow.
-- Implementing milestones (per-deliverable/per-project) — parked for a future
-  iteration.
-- Jira/Confluence integration in the CLI itself — links live in design docs
-  and tickets, not as CLI-managed metadata.
+- Bundled ticketing providers — see Plan 5 and the plugin model decision for rationale.
 - Semantic design-vs-code drift detection — that remains the
   `/design-sync` slash command's job (Claude-driven).
 
@@ -89,8 +86,15 @@ own scope (opt-in), phase, and decisions — parallel to the project level.
 - `project --help` is self-documenting; `project completion zsh` produces a
   working completion script.
 
+## Status as of Plan 5.2
+
+- **Milestones + tasks (Plan 5)** — shipped. See `keel milestone` and `keel task` commands.
+- **Ticketing plugin protocol (Plan 5)** — shipped. No bundled providers; see `design/decisions/2026-04-29-plan-5-plugin-model.md` for rationale.
+- **Migration from Bash CLI (Plan 4)** — complete. Bash CLI archived; `keel migrate` handles legacy projects.
+- **Rename to `keel` (Plan 3-4)** — complete. Public repo at https://github.com/andmatei/keel.
+
 ## References
 
-- Current Bash CLI: `~/projects/bin/project` and `~/projects/bin/{commands,lib}/`
-- Workspace conventions: `~/projects/CLAUDE.md`
+- Previous Bash CLI: archived as part of Plan 4 migration.
+- Workspace conventions: documented in `design/CLAUDE.md`.
 - Brainstorm session that produced this scope: 2026-04-27 (this design dir)
