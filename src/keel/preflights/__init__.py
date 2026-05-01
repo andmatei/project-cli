@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from keel.preflights.base import PhasePreflight, PreflightResult
+from keel.preflights.builtin import builtin_preflights
 
-# TODO: builtin_preflights and iter_preflights come in Tasks 1.2 and 3.1
+# TODO: iter_preflights comes in Task 3.1
 __all__ = [
     "PhasePreflight",
     "PreflightResult",
+    "builtin_preflights",
 ]
