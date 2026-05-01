@@ -277,3 +277,22 @@ def test_scope_milestones_manifest_path(monkeypatch, tmp_path) -> None:
     s_deliv = Scope(project="foo", deliverable="bar")
     assert s_proj.milestones_manifest_path.name == "milestones.toml"
     assert s_deliv.milestones_manifest_path.name == "milestones.toml"
+
+
+def test_iter_projects_empty(projects) -> None:
+    from keel.workspace import iter_projects
+
+    assert list(iter_projects()) == []
+
+
+def test_iter_projects_yields_each(projects, make_project) -> None:
+    from keel.workspace import iter_projects
+
+    make_project("alpha")
+    make_project("beta")
+    items = list(iter_projects())
+    names = {name for name, _, _ in items}
+    assert names == {"alpha", "beta"}
+    for _, manifest, phase in items:
+        assert manifest.project.name in names
+        assert phase == "scoping"  # default for fresh projects

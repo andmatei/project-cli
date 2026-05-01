@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from keel.manifest import ProjectManifest
     from keel.output import Output
 
 
@@ -171,6 +173,31 @@ def read_phase(design_dir: Path) -> str:
     if not lines:
         return DEFAULT_PHASE
     return lines[0].strip() or DEFAULT_PHASE
+
+
+def iter_projects() -> Iterator[tuple[str, ProjectManifest, str]]:
+    """Yield (project_name, manifest, current_phase) for each project in PROJECTS_DIR.
+
+    Skips entries that don't have a `design/project.toml`. Useful for cross-project
+    tooling (status dashboards, exports, plugins).
+    """
+    pdir = projects_dir()
+    if not pdir.is_dir():
+        return
+    for entry in sorted(pdir.iterdir()):
+        if not entry.is_dir():
+            continue
+        manifest_path = entry / "design" / "project.toml"
+        if not manifest_path.is_file():
+            continue
+        try:
+            from keel.manifest import load_project_manifest
+
+            manifest = load_project_manifest(manifest_path)
+        except Exception:
+            continue
+        phase = read_phase(entry / "design")
+        yield (entry.name, manifest, phase)
 
 
 def decisions_dir(project: str, deliverable: str | None = None) -> Path:
