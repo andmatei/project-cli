@@ -18,11 +18,27 @@ uv run --extra dev pytest
 # Install the CLI for end-to-end testing
 uv tool install --editable .
 keel --help
+
+# Install pre-commit hooks (runs ruff check + format on every commit)
+uv tool install pre-commit
+pre-commit install
 ```
 
 Tests are isolated via a `PROJECTS_DIR` environment override and `pytest`'s
 `tmp_path` fixture; they don't touch your real `~/projects/`. Git operations
 in tests use real `git init`'d repos in `tmp_path` (no mocks).
+
+## Linting and formatting
+
+`ruff check` and `ruff format` both run in CI. Local pre-commit hooks
+(installed via the step above) run them on every commit, so you generally
+won't need to run them by hand. To run on demand:
+
+```bash
+uv run --extra dev ruff check src tests
+uv run --extra dev ruff format src tests   # rewrites; use --check to dry-run
+pre-commit run --all-files                 # runs everything the hooks would
+```
 
 ## Conventions
 
