@@ -51,12 +51,11 @@ def cmd_rm(
 
     dependents = [t.id for t in manifest.tasks if id in t.depends_on]
     if dependents and not force:
-        out.error(
+        out.fail(
             f"cannot remove task '{id}'; depended on by: {', '.join(dependents)} "
             "(use --force to remove anyway)",
             code=ErrorCode.INVALID_STATE,
         )
-        raise typer.Exit(code=1)
 
     if dry_run:
         log = OpLog()

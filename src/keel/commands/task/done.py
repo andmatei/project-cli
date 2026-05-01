@@ -46,11 +46,10 @@ def cmd_done(
         task = get_task(manifest, id, out=out)
 
         if task.status != "active":
-            out.error(
+            out.fail(
                 f"cannot mark task done from status '{task.status}' (must be 'active')",
                 code=ErrorCode.INVALID_STATE,
             )
-            raise typer.Exit(code=1)
 
         task.status = "done"
 

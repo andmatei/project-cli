@@ -54,11 +54,10 @@ def cmd_done(
     milestone = get_milestone(manifest, id, out=out)
 
     if milestone.status != "active":
-        out.error(
+        out.fail(
             f"cannot mark milestone done from status '{milestone.status}' (must be 'active')",
             code=ErrorCode.INVALID_STATE,
         )
-        raise typer.Exit(code=1)
 
     # Fan-out validation: every fan-out deliverable's matching sub-milestone must be done.
     if milestone.fan_out and not force:
@@ -72,13 +71,12 @@ def cmd_done(
             elif sub.status != "done":
                 unfinished.append(f"{sub_name}/{sub.id} (status: {sub.status})")
         if unfinished:
-            out.error(
+            out.fail(
                 "cannot mark fan-out milestone done; sub-milestones not complete: "
                 + ", ".join(unfinished)
                 + " (use --force to override)",
                 code=ErrorCode.INVALID_STATE,
             )
-            raise typer.Exit(code=1)
 
     if dry_run:
         log = OpLog()

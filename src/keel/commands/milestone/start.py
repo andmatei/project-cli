@@ -38,11 +38,10 @@ def cmd_start(
         if milestone.status == "planned" or (milestone.status == "done" and reopen):
             milestone.status = "active"
         else:
-            out.error(
+            out.fail(
                 f"cannot start milestone in status '{milestone.status}' "
                 f"(use --reopen to re-open a done milestone)",
                 code=ErrorCode.INVALID_STATE,
             )
-            raise typer.Exit(code=1)
 
     out.result(milestone.model_dump(), human_text=f"Milestone started: {id}")

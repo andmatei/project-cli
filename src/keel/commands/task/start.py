@@ -42,11 +42,10 @@ def cmd_start(
         task = get_task(manifest, id, out=out)
 
         if task.status != "planned":
-            out.error(
+            out.fail(
                 f"cannot start task in status '{task.status}' (must be 'planned')",
                 code=ErrorCode.INVALID_STATE,
             )
-            raise typer.Exit(code=1)
 
         user = os.environ.get("USER", "user")
         task.branch = branch or _default_branch(user, scope.project, task.milestone, task.id)

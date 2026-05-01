@@ -39,11 +39,11 @@ def cmd_list(
     out = Output.from_context(ctx, json_mode=json_mode)
 
     if ready and blocked:
-        out.error(
+        out.fail(
             "--ready and --blocked are mutually exclusive",
             code=ErrorCode.CONFLICTING_FLAGS,
+            exit_code=2,
         )
-        raise typer.Exit(code=2)
 
     scope = resolve_cli_scope(project, deliverable, out=out)
     manifest = load_milestones_manifest(scope.milestones_manifest_path)

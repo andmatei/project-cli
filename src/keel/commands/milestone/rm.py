@@ -52,21 +52,19 @@ def cmd_rm(
     milestone = get_milestone(manifest, id, out=out)
 
     if milestone.status != "cancelled" and not force:
-        out.error(
+        out.fail(
             f"cannot remove milestone in status '{milestone.status}' "
             f"(only 'cancelled' allowed; use --force to override)",
             code=ErrorCode.INVALID_STATE,
         )
-        raise typer.Exit(code=1)
 
     referencing = [t.id for t in manifest.tasks if t.milestone == id]
     if referencing and not force:
-        out.error(
+        out.fail(
             f"cannot remove milestone '{id}'; tasks reference it: {', '.join(referencing)} "
             "(use --force to remove anyway)",
             code=ErrorCode.INVALID_STATE,
         )
-        raise typer.Exit(code=1)
 
     if dry_run:
         log = OpLog()
