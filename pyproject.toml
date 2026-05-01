@@ -30,7 +30,7 @@ keel = "keel.app:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/keel"]
-include = ["src/keel/_templates/*.j2"]
+include = ["src/keel/_templates/*.j2", "src/keel/lifecycles/defaults/*.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

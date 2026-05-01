@@ -1,0 +1,32 @@
+name = "default"
+description = "keel's default 6-phase lifecycle for code-adjacent projects."
+initial = "scoping"
+terminal = ["done", "cancelled"]
+
+[states.scoping]
+description = "Defining boundaries and success criteria."
+
+[states.designing]
+description = "Producing the technical design."
+
+[states.poc]
+description = "Building a proof-of-concept to validate the design."
+
+[states.implementing]
+description = "Production implementation."
+
+[states.shipping]
+description = "Releasing to users."
+
+[states.done]
+description = "Delivered. No further work planned."
+
+[states.cancelled]
+description = "Cancelled before completion."
+
+[transitions]
+scoping = ["designing"]
+designing = ["poc"]
+poc = ["implementing"]
+implementing = ["shipping"]
+shipping = ["done"]
