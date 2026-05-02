@@ -55,6 +55,7 @@ class ProjectMeta(BaseModel):
     name: str = Field(min_length=1)
     description: str = Field(min_length=1)
     created: _date
+    lifecycle: str = Field(default="default", description="Name of the phase lifecycle.")
 
 
 class ProjectManifest(BaseModel):

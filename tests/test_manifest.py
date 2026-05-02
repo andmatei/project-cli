@@ -304,3 +304,43 @@ def test_milestones_manifest_load_missing_file_returns_empty(tmp_path) -> None:
     m = load_milestones_manifest(path)
     assert m.milestones == []
     assert m.tasks == []
+
+
+def test_project_meta_lifecycle_defaults_to_default() -> None:
+    """ProjectMeta picks 'default' when the lifecycle field is omitted."""
+    m = ProjectMeta(name="foo", description="x", created=date(2026, 5, 1))
+    assert m.lifecycle == "default"
+
+
+def test_project_meta_lifecycle_custom_value() -> None:
+    m = ProjectMeta(name="foo", description="x", created=date(2026, 5, 1), lifecycle="research")
+    assert m.lifecycle == "research"
+
+
+def test_project_manifest_lifecycle_round_trip(tmp_path) -> None:
+    """The lifecycle field round-trips through the TOML save/load cycle."""
+    path = tmp_path / "project.toml"
+    original = ProjectManifest(
+        project=ProjectMeta(
+            name="foo", description="x", created=date(2026, 5, 1), lifecycle="research"
+        ),
+        repos=[],
+    )
+    save_project_manifest(path, original)
+    loaded = load_project_manifest(path)
+    assert loaded.project.lifecycle == "research"
+
+
+def test_project_manifest_pre_v1_no_lifecycle_field(tmp_path) -> None:
+    """An existing TOML without [project] lifecycle = ... still loads (defaults to 'default')."""
+    path = tmp_path / "project.toml"
+    path.write_text(
+        """
+[project]
+name = "foo"
+description = "x"
+created = 2026-05-01
+""".strip()
+    )
+    m = load_project_manifest(path)
+    assert m.project.lifecycle == "default"
