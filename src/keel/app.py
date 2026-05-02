@@ -149,5 +149,9 @@ from keel.commands.manifest_cli import app as manifest_app  # noqa: E402
 
 app.add_typer(manifest_app, name="manifest")
 
+from keel.commands.lifecycle import app as lifecycle_app  # noqa: E402
+
+app.add_typer(lifecycle_app, name="lifecycle")
+
 # Load any third-party plugins last so they can extend existing groups.
 _load_plugin_commands()
