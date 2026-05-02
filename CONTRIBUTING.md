@@ -225,6 +225,43 @@ def on_transition(scope, from_phase, to_phase):
     print(f"transitioned {from_phase} -> {to_phase}")
 ```
 
+## Authoring a custom lifecycle
+
+Custom workflows live as TOML files under
+`~/projects/.keel/lifecycles/<name>.toml`. They override built-ins of the
+same name. Schema fields:
+
+- `name` (string, required): must match the filename stem.
+- `description` (string, optional).
+- `initial` (string, required): starting state for new projects.
+- `terminal` (list[string], required): one or more states marking completion.
+- `[states.<name>]` (one per state): supports `description` and
+  `cancellable` (default `true`).
+- `[transitions]` (table): `<from> = ["<to1>", "<to2>", ...]`.
+
+An example minimal lifecycle:
+
+```toml
+name = "research"
+description = "Research project lifecycle."
+initial = "proposing"
+terminal = ["published", "cancelled"]
+
+[states.proposing]
+[states.reviewing]
+[states.executing]
+[states.published]
+[states.cancelled]
+
+[transitions]
+proposing = ["reviewing"]
+reviewing = ["executing", "proposing"]
+executing = ["published"]
+```
+
+Run `keel lifecycle validate <path>` to lint a TOML; `keel lifecycle init
+<name>` scaffolds a placeholder.
+
 ### Testing your plugin
 
 `pip install --extra dev keel-cli`, then in your `tests/conftest.py`:

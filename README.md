@@ -209,6 +209,35 @@ and configures it in `project.toml` under `[extensions.ticketing]`.
 See [`design/decisions/2026-04-29-plan-5-plugin-model.md`](design/decisions/2026-04-29-plan-5-plugin-model.md)
 for the plugin model rationale.
 
+## Customizable phase lifecycles
+
+By default, projects use a 6-phase lifecycle:
+`scoping → designing → poc → implementing → shipping → done`. You can define
+custom lifecycles as TOML files under `~/projects/.keel/lifecycles/<name>.toml`
+and pick one at project creation:
+
+```bash
+keel lifecycle init research        # scaffold a starter TOML
+$EDITOR ~/projects/.keel/lifecycles/research.toml
+keel lifecycle validate ~/projects/.keel/lifecycles/research.toml
+keel new my-paper -d "Q3 paper" --lifecycle research
+keel phase --list-next               # follows the FSM you defined
+```
+
+Inspect what's available:
+
+```bash
+keel lifecycle list
+keel lifecycle show default
+```
+
+A lifecycle is modelled as a finite-state machine: a set of named states,
+allowed transitions between them, an initial state for new projects, and
+terminal states. If a `cancelled` state is declared, every state with
+`cancellable = true` (the default) gets an implicit `<state> → cancelled`
+edge; lifecycles without a `cancelled` state simply don't support
+cancellation.
+
 ## Roadmap
 
 Plans 1–5.2 have all shipped:
