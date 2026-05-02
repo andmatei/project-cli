@@ -95,7 +95,7 @@ def test_phase_next_at_end_of_lifecycle(projects, make_project, monkeypatch) -> 
     monkeypatch.chdir(proj / "design")
     result = runner.invoke(app, ["phase", "--next"])
     assert result.exit_code == 1
-    assert "no phase after" in result.stderr.lower()
+    assert "no forward transition" in result.stderr.lower() or "terminal" in result.stderr.lower()
 
 
 def test_phase_does_not_print_duplicate_messages(projects, make_project, monkeypatch) -> None:
@@ -171,14 +171,105 @@ def test_phase_list_next_default(projects, make_project, monkeypatch) -> None:
     result = runner.invoke(app, ["phase", "--list-next", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
-    assert data == {"current": "scoping", "next": ["designing"]}
+    # Default lifecycle includes implicit cancelled edge
+    assert data["current"] == "scoping"
+    assert set(data["next"]) == {"designing", "cancelled"}
 
 
 def test_phase_list_next_at_end(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
     monkeypatch.chdir(proj / "design")
-    runner.invoke(app, ["phase", "done", "--force"])
+    # Write done to the phase file directly (bypass transition validation)
+    (proj / "design" / ".phase").write_text("done\n")
     result = runner.invoke(app, ["phase", "--list-next", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
-    assert data == {"current": "done", "next": []}
+    # Terminal state "done" still has implicit edge to "cancelled"
+    assert data == {"current": "done", "next": ["cancelled"]}
+
+
+# ---------------------------------------------------------------------------
+# Task 5.1: FSM-based transitions using project's lifecycle
+# ---------------------------------------------------------------------------
+
+
+def test_phase_uses_project_lifecycle_for_transitions(projects, make_project, monkeypatch) -> None:
+    """When the project picks a custom lifecycle, transitions follow that FSM."""
+    lib = projects / ".keel" / "lifecycles"
+    lib.mkdir(parents=True)
+    (lib / "research.toml").write_text(
+        """
+name = "research"
+initial = "proposing"
+terminal = ["published", "cancelled"]
+[states.proposing]
+[states.reviewing]
+[states.published]
+[states.cancelled]
+[transitions]
+proposing = ["reviewing"]
+reviewing = ["published", "proposing"]
+""".strip()
+    )
+    monkeypatch.chdir(projects)
+    runner.invoke(
+        app, ["new", "alpha", "-d", "x", "--no-worktree", "-y", "--lifecycle", "research"]
+    )
+    monkeypatch.chdir(projects / "alpha" / "design")
+
+    # Initial phase should be 'proposing'
+    result = runner.invoke(app, ["phase", "--list-next", "--json"])
+    data = json.loads(result.stdout)
+    assert data["current"] == "proposing"
+    # Cancelled is implicit (cancellable=true by default)
+    assert set(data["next"]) == {"reviewing", "cancelled"}
+
+
+def test_phase_list_next_branching(projects, make_project, monkeypatch) -> None:
+    """A branching state shows multiple successors."""
+    lib = projects / ".keel" / "lifecycles"
+    lib.mkdir(parents=True)
+    (lib / "branchy.toml").write_text(
+        """
+name = "branchy"
+initial = "a"
+terminal = ["c"]
+[states.a]
+[states.b]
+[states.c]
+[transitions]
+a = ["b", "c"]
+""".strip()
+    )
+    monkeypatch.chdir(projects)
+    runner.invoke(app, ["new", "alpha", "-d", "x", "--no-worktree", "-y", "--lifecycle", "branchy"])
+    monkeypatch.chdir(projects / "alpha" / "design")
+    result = runner.invoke(app, ["phase", "--list-next", "--json"])
+    data = json.loads(result.stdout)
+    assert data["current"] == "a"
+    assert set(data["next"]) == {"b", "c"}
+
+
+def test_phase_rejects_invalid_target(projects, make_project, monkeypatch) -> None:
+    """Trying to advance to a state not reachable from current fails."""
+    lib = projects / ".keel" / "lifecycles"
+    lib.mkdir(parents=True)
+    (lib / "linear.toml").write_text(
+        """
+name = "linear"
+initial = "a"
+terminal = ["c"]
+[states.a]
+[states.b]
+[states.c]
+[transitions]
+a = ["b"]
+b = ["c"]
+""".strip()
+    )
+    monkeypatch.chdir(projects)
+    runner.invoke(app, ["new", "alpha", "-d", "x", "--no-worktree", "-y", "--lifecycle", "linear"])
+    monkeypatch.chdir(projects / "alpha" / "design")
+    # 'a' has no edge to 'c' — should fail
+    result = runner.invoke(app, ["phase", "c", "--force"])
+    assert result.exit_code != 0

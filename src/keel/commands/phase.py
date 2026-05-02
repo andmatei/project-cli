@@ -8,11 +8,19 @@ from pathlib import Path
 import typer
 
 from keel import templates, workspace
-from keel.api import ErrorCode, OpLog, Output, confirm_destructive, resolve_cli_scope
-from keel.lifecycle import PHASES
-from keel.lifecycle import next_phase as _next_phase
+from keel.api import (
+    ErrorCode,
+    LifecycleNotFoundError,
+    OpLog,
+    Output,
+    confirm_destructive,
+    load_lifecycle,
+    load_project_manifest,
+    resolve_cli_scope,
+)
 from keel.phase_events import fire_phase_transition
 from keel.preflights import iter_preflights
+from keel.workspace import project_dir
 
 
 def _read_phase(path: Path) -> tuple[str, list[str]]:
@@ -65,10 +73,20 @@ def cmd_phase(
     path = scope.phase_file
     current, history = _read_phase(path)
 
+    # Load the project's lifecycle (deliverables inherit from their parent project)
+    try:
+        project_manifest_path = project_dir(scope.project) / "design" / "project.toml"
+        manifest = load_project_manifest(project_manifest_path)
+        lc = load_lifecycle(manifest.project.lifecycle)
+    except LifecycleNotFoundError as e:
+        out.fail(
+            f"lifecycle not found: {e}",
+            code=ErrorCode.NOT_FOUND,
+        )
+
     # --list-next mode: show valid next transitions and exit
     if list_next:
-        next_p = _next_phase(current)
-        nexts = [next_p] if next_p is not None else []
+        nexts = lc.successors(current) if current in lc.states else []
         if json_mode:
             out.result({"current": current, "next": nexts})
         else:
@@ -103,30 +121,34 @@ def cmd_phase(
     # Determine target phase
     target = phase
     if next_phase:
-        if current not in PHASES:
+        if current not in lc.states:
             out.fail(f"invalid current phase: {current}", code=ErrorCode.INVALID_PHASE)
-        nxt = _next_phase(current)
-        if nxt is None:
-            out.fail(f"no phase after {current}", code=ErrorCode.END_OF_LIFECYCLE)
-        target = nxt
+        explicit_successors = [s for s in lc.successors(current) if s != "cancelled"]
+        if not explicit_successors:
+            out.fail(
+                f"no forward transition from '{current}' (state is terminal or has no non-cancel edges)",
+                code=ErrorCode.END_OF_LIFECYCLE,
+            )
+        target = explicit_successors[0]
 
-    if target not in PHASES:
+    # Validate target state is known
+    if target not in lc.states:
         out.fail(
-            f"invalid phase: {target}. Valid phases: {', '.join(PHASES)}",
+            f"unknown phase '{target}' for lifecycle '{lc.name}'",
             code=ErrorCode.INVALID_PHASE,
-            exit_code=2,
+        )
+
+    # Validate transition is allowed (unless it's a no-op)
+    if target != current and target not in lc.successors(current):
+        out.fail(
+            f"cannot transition from '{current}' to '{target}' "
+            f"(allowed: {', '.join(lc.successors(current)) or 'none'})",
+            code=ErrorCode.INVALID_STATE,
         )
 
     if target == current:
         out.info(f"already in phase: {current}")
         return
-
-    # Backwards transition warning
-    if PHASES.index(target) < PHASES.index(current):
-        confirm_destructive(
-            f"Backwards phase transition: {current} → {target}. Continue?",
-            yes=yes,
-        )
 
     # Run preflights
     if not force and current != target:  # skip when forcing or no-op
