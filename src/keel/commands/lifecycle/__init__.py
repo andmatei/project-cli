@@ -17,3 +17,7 @@ app.command(name="list")(cmd_list)
 from keel.commands.lifecycle.show import cmd_show  # noqa: E402
 
 app.command(name="show")(cmd_show)
+
+from keel.commands.lifecycle.validate import cmd_validate  # noqa: E402
+
+app.command(name="validate")(cmd_validate)
