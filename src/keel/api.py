@@ -30,6 +30,13 @@ from keel.lifecycle import (
     is_valid_task_state,
     next_phase,
 )
+from keel.lifecycles import (
+    Lifecycle,
+    LifecycleNotFoundError,
+    LifecycleState,
+    iter_lifecycles,
+    load_lifecycle,
+)
 from keel.manifest import (
     DeliverableManifest,
     DeliverableMeta,
@@ -103,6 +110,12 @@ __all__ = [
     "is_valid_phase",
     "is_valid_task_state",
     "next_phase",
+    # Lifecycles (FSM)
+    "Lifecycle",
+    "LifecycleNotFoundError",
+    "LifecycleState",
+    "iter_lifecycles",
+    "load_lifecycle",
     # Manifest
     "DeliverableManifest",
     "DeliverableMeta",
