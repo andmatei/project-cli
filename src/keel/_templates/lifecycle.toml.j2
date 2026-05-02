@@ -1,0 +1,21 @@
+name = "{{ name }}"
+description = "TODO: describe this lifecycle."
+initial = "draft"
+terminal = ["done", "cancelled"]
+
+[states.draft]
+description = "Initial state for new projects."
+
+[states.in-progress]
+description = "Active work."
+
+[states.done]
+description = "Completed."
+
+[states.cancelled]
+description = "Cancelled before completion."
+
+[transitions]
+draft = ["in-progress"]
+in-progress = ["done"]
+# Implicit: any state -> "cancelled" (the cancelled state is declared).

@@ -14,9 +14,7 @@ from keel.lifecycles.models import Lifecycle
 def cmd_validate(
     ctx: typer.Context,
     path: Path = typer.Argument(..., help="Path to a lifecycle TOML."),
-    json_mode: bool = typer.Option(
-        False, "--json", help="Emit machine-readable JSON to stdout."
-    ),
+    json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Validate a lifecycle TOML against the Lifecycle schema."""
     out = Output.from_context(ctx, json_mode=json_mode)

@@ -21,3 +21,7 @@ app.command(name="show")(cmd_show)
 from keel.commands.lifecycle.validate import cmd_validate  # noqa: E402
 
 app.command(name="validate")(cmd_validate)
+
+from keel.commands.lifecycle.init import cmd_init  # noqa: E402
+
+app.command(name="init")(cmd_init)
