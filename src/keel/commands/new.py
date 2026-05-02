@@ -19,6 +19,7 @@ from keel.api import (
     save_project_manifest,
     slugify,
 )
+from keel.lifecycles import LifecycleNotFoundError, load_lifecycle
 
 
 def cmd_new(
@@ -45,6 +46,11 @@ def cmd_new(
     yes: bool = typer.Option(
         False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."
     ),
+    lifecycle: str = typer.Option(
+        "default",
+        "--lifecycle",
+        help="Phase lifecycle to use for this project. See 'keel lifecycle list'.",
+    ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new project workspace."""
@@ -59,6 +65,15 @@ def cmd_new(
         out.fail(f"project already exists: {proj}", code=ErrorCode.EXISTS)
 
     description = require_or_fail(description, arg_name="--description", label="Description")
+
+    # Validate and load the lifecycle
+    try:
+        lc = load_lifecycle(lifecycle)
+    except LifecycleNotFoundError:
+        out.fail(
+            f"unknown lifecycle '{lifecycle}' (run 'keel lifecycle list' to see available options)",
+            code=ErrorCode.NOT_FOUND,
+        )
 
     # Resolve and validate repos up front
     repo_paths: list[Path] = []
@@ -112,7 +127,9 @@ def cmd_new(
         )
 
     manifest = ProjectManifest(
-        project=ProjectMeta(name=slug, description=description, created=date.today()),
+        project=ProjectMeta(
+            name=slug, description=description, created=date.today(), lifecycle=lifecycle
+        ),
         repos=repo_specs,
     )
     save_project_manifest(scope.manifest_path, manifest)
@@ -138,7 +155,7 @@ def cmd_new(
     )
 
     # Phase
-    scope.phase_file.write_text("scoping\n")
+    scope.phase_file.write_text(f"{lc.initial}\n")
 
     # Initial decision file
     today = date.today().isoformat()

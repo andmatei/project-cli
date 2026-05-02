@@ -147,3 +147,55 @@ def test_new_does_not_print_duplicate_messages(projects) -> None:
     assert "Created project:" not in result.stderr
     # The result line itself remains:
     assert result.stdout  # non-empty
+
+
+def test_new_records_lifecycle_in_manifest(projects, monkeypatch) -> None:
+    """`keel new <name> --lifecycle <id>` writes the field to project.toml."""
+    monkeypatch.chdir(projects)
+    runner.invoke(
+        app, ["new", "alpha", "-d", "test", "--no-worktree", "-y", "--lifecycle", "default"]
+    )
+    m = load_project_manifest(projects / "alpha" / "design" / "project.toml")
+    assert m.project.lifecycle == "default"
+
+
+def test_new_default_lifecycle_when_omitted(projects, monkeypatch) -> None:
+    """When --lifecycle is omitted, the manifest gets 'default'."""
+    monkeypatch.chdir(projects)
+    runner.invoke(app, ["new", "alpha", "-d", "test", "--no-worktree", "-y"])
+    m = load_project_manifest(projects / "alpha" / "design" / "project.toml")
+    assert m.project.lifecycle == "default"
+
+
+def test_new_unknown_lifecycle_fails(projects, monkeypatch) -> None:
+    """`--lifecycle ghost` exits non-zero with a clear error."""
+    monkeypatch.chdir(projects)
+    result = runner.invoke(
+        app, ["new", "alpha", "-d", "test", "--no-worktree", "-y", "--lifecycle", "ghost"]
+    )
+    assert result.exit_code != 0
+    assert "ghost" in result.stderr.lower() or "lifecycle" in result.stderr.lower()
+
+
+def test_new_uses_lifecycle_initial_phase(projects, make_project, monkeypatch) -> None:
+    """The new project's `.phase` file is set to the lifecycle's initial state."""
+    # Create a custom lifecycle with a non-'scoping' initial state.
+    lib = projects / ".keel" / "lifecycles"
+    lib.mkdir(parents=True)
+    (lib / "research.toml").write_text(
+        """
+name = "research"
+initial = "proposing"
+terminal = ["published"]
+[states.proposing]
+[states.published]
+[transitions]
+proposing = ["published"]
+""".strip()
+    )
+    monkeypatch.chdir(projects)
+    runner.invoke(
+        app, ["new", "alpha", "-d", "test", "--no-worktree", "-y", "--lifecycle", "research"]
+    )
+    phase_text = (projects / "alpha" / "design" / ".phase").read_text().strip()
+    assert phase_text == "proposing"
