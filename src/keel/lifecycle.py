@@ -1,27 +1,55 @@
 """Project lifecycle phases — single source of truth.
 
-Plan 5 may add a customisable lifecycle DSL; for now this module is the only
-place phase names live. Other modules import from here.
+The phase lifecycle is now customizable via `keel.lifecycles`. This module
+provides backward-compatible wrappers around the default lifecycle.
 """
 
 from __future__ import annotations
 
-PHASES: list[str] = ["scoping", "designing", "poc", "implementing", "shipping", "done"]
-DEFAULT_PHASE: str = PHASES[0]
+
+def _default_lifecycle():
+    """Lazy accessor; the loader has its own caching by virtue of being deterministic."""
+    from keel.lifecycles import load_lifecycle
+
+    return load_lifecycle("default")
 
 
-def is_valid_phase(name: str) -> bool:
-    return name in PHASES
+def _default_phases() -> list[str]:
+    """Return the default lifecycle's states in linear `transitions` order.
+
+    Walks `transitions` from `initial` until a state has no successor or the chain
+    revisits a state. Used to produce the legacy `PHASES` list shape.
+    """
+    lc = _default_lifecycle()
+    out: list[str] = []
+    seen: set[str] = set()
+    cur: str | None = lc.initial
+    while cur is not None and cur not in seen:
+        out.append(cur)
+        seen.add(cur)
+        nexts = lc.transitions.get(cur, [])
+        cur = nexts[0] if nexts else None
+    return out
+
+
+# Backward-compatible top-level constants. Computed at import time; if a user
+# tweaks the default lifecycle TOML, restart the process to pick up changes.
+PHASES: list[str] = _default_phases()
+DEFAULT_PHASE: str = _default_lifecycle().initial
 
 
 def next_phase(current: str) -> str | None:
-    """Return the next phase after `current`, or None if `current` is terminal."""
-    if current not in PHASES:
-        raise ValueError(f"unknown phase: {current!r}. Valid: {PHASES}")
-    idx = PHASES.index(current)
-    if idx + 1 >= len(PHASES):
+    """Return the next phase in the default lifecycle, or None at the end."""
+    lc = _default_lifecycle()
+    if current not in lc.states:
         return None
-    return PHASES[idx + 1]
+    nexts = lc.transitions.get(current, [])
+    return nexts[0] if nexts else None
+
+
+def is_valid_phase(name: str) -> bool:
+    """True if `name` is a state in the default lifecycle."""
+    return name in _default_lifecycle().states
 
 
 # Milestone and task state sets — currently identical, but kept as separate
