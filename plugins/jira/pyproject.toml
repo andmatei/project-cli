@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "keel-jira"
+version = "0.1.0"
+description = "Jira Cloud TicketProvider for keel."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Andrei Matei" }]
+keywords = ["keel", "jira", "ticketing", "plugin"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "keel-cli>=0.1",
+    "httpx>=0.27",
+    "pydantic>=2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "respx>=0.21",
+    "ruff>=0.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/andmatei/keel-jira"
+Repository = "https://github.com/andmatei/keel-jira"
+Issues = "https://github.com/andmatei/keel-jira/issues"
+
+[project.entry-points."keel.ticket_providers"]
+jira = "keel_jira.provider:JiraProvider"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/keel_jira"]
+
+# Resolved automatically by the parent uv workspace at the repo root.
+# Published wheels will satisfy keel-cli>=0.1 from PyPI; the workspace
+# declaration only affects local dev within this monorepo.
+[tool.uv.sources]
+keel-cli = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "ANN", "RUF"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "S101"]

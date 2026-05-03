@@ -164,6 +164,20 @@ For a third-party plugin: register via the `keel.commands` entry-point group in 
 keel exposes four entry-point groups that plugins can hook into. Plugin packages
 declare these in their `pyproject.toml` under `[project.entry-points]`.
 
+**Where plugins live.** First-party plugins keel maintains live under
+[`plugins/<name>/`](plugins/) in this monorepo as a [uv workspace](https://docs.astral.sh/uv/concepts/workspaces/);
+each is a separate Python package with its own `pyproject.toml` and PyPI
+release. See [`plugins/jira/`](plugins/jira/) for a worked example.
+
+**Third-party plugins** can live wherever the author wants — your own GitHub
+repo, your own PyPI namespace, no fork or PR required. As long as you publish
+a wheel that registers the right entry point, `pip install your-plugin` will
+make keel discover it. The first-party / third-party split exists for
+maintainer convenience, not as a permission boundary; the public plugin
+contract is the same. The rationale (and migration triggers if the monorepo
+ever becomes the wrong shape) is in
+[`design/decisions/2026-05-04-monorepo-for-first-party-plugins.md`](design/decisions/2026-05-04-monorepo-for-first-party-plugins.md).
+
 ### `keel.commands` — register a CLI command
 
 ```toml

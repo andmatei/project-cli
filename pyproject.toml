@@ -37,11 +37,14 @@ keel = "keel.app:app"
 packages = ["src/keel"]
 include = ["src/keel/_templates/*.j2", "src/keel/lifecycles/defaults/*.toml"]
 
-# Local development: resolve plugin extras against sibling source trees.
-# When publishing to PyPI, this block is irrelevant — sources are only
-# consulted for `uv` workflows in this repo.
+# uv workspace: every package under plugins/ is a co-developed member.
+# Each member ships as its own PyPI wheel (own pyproject.toml, own version),
+# but during local development they resolve each other from the working tree.
+[tool.uv.workspace]
+members = ["plugins/*"]
+
 [tool.uv.sources]
-keel-jira = { path = "../keel-jira", editable = true }
+keel-jira = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

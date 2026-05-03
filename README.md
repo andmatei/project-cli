@@ -202,12 +202,50 @@ keel task graph                         # ASCII tree of the DAG
 keel show my-project                    # shows active tasks + ready-next hints (if milestones.toml exists)
 ```
 
-For ticketing integration, keel ships a `TicketProvider` Protocol and entry-point
-discovery mechanism. Real providers ship as separate packages (`keel-jira`, etc.);
-none exist yet. A user installs a provider with `pip install keel-cli keel-<provider>`
-and configures it in `project.toml` under `[extensions.ticketing]`.
-See [`design/decisions/2026-04-29-plan-5-plugin-model.md`](design/decisions/2026-04-29-plan-5-plugin-model.md)
-for the plugin model rationale.
+For ticketing integration, keel ships a `TicketProvider` Protocol and
+entry-point discovery mechanism. Real providers ship as separate PyPI packages.
+The first one is `keel-jira` (Atlassian Jira Cloud) and lives in this repo at
+[`plugins/jira/`](plugins/jira/). Install it with:
+
+```bash
+pip install "keel-cli[jira]"   # equivalent to: pip install keel-cli keel-jira
+```
+
+…then configure `project.toml`:
+
+```toml
+[extensions.ticketing]
+provider = "jira"
+parent_id = "PROJ-123"
+
+[extensions.ticketing.jira]
+url = "https://your-workspace.atlassian.net"
+project_key = "PROJ"
+```
+
+…and provide credentials via env vars (`KEEL_JIRA_EMAIL`, `KEEL_JIRA_TOKEN`).
+See [`plugins/jira/README.md`](plugins/jira/README.md) for the full setup.
+
+`keel plugin list` shows the registered provider when installed; `keel plugin
+doctor` validates your config end-to-end.
+
+### Where plugins live
+
+First-party plugins keel maintains live under `plugins/<name>/` in this
+monorepo, each as its own Python package with its own `pyproject.toml` and
+its own PyPI release. The repo is set up as a [uv workspace](https://docs.astral.sh/uv/concepts/workspaces/),
+so cross-plugin development works without `pip install -e` shenanigans.
+
+**External plugin authors** don't need to live here. Write `your-name/keel-foo`
+in your own GitHub repo, register a `keel.ticket_providers` (or
+`keel.commands`, `keel.phase_preflights`, `keel.phase_transitions`)
+entry point in your `pyproject.toml`, publish to PyPI, and `pip install
+keel-foo` will plug it in via discovery — no fork or PR to this repo
+required. See [`plugins/jira/`](plugins/jira/) as a working reference
+implementation. The plugin contract is documented in
+[`CONTRIBUTING.md`](CONTRIBUTING.md#authoring-a-plugin) and the rationale
+for this dual layout (first-party in monorepo, third-party anywhere) is in
+[`design/decisions/2026-05-04-monorepo-for-first-party-plugins.md`](design/decisions/2026-05-04-monorepo-for-first-party-plugins.md).
 
 ## Customizable phase lifecycles
 
@@ -240,7 +278,7 @@ cancellation.
 
 ## Roadmap
 
-Plans 1–5.2 have all shipped:
+Plans 1–7 have all shipped, plus the first plugin (`keel-jira`):
 
 - **Plan 1 — Foundation:** core modules + `new`, `list`, `show`
 - **Plan 2 — Deliverable, decision, phase:** `deliverable`, `decision`, `phase`
@@ -251,6 +289,12 @@ Plans 1–5.2 have all shipped:
 - **Plan 5 — Milestones, tasks, ticketing:** `milestone`, `task`, plugin protocol
 - **Plan 5.1 — Simplification:** helpers, `jira_id` → `ticket_id`, dead code removal
 - **Plan 5.2 — API consistency:** `--dry-run`, JSON shapes, help text
+- **Plan 5.3 — Documentation truth:** README/scope/plans cleanup, public-repo readiness
+- **Plan 5.4 — API completion + code health:** `manifest/` package split, `get_milestone`/`get_task`, public-API discipline
+- **Plan 5.5 — Visibility wins:** `keel show` milestone summary, `task next`, `list --active`, `restore`
+- **Plan 6 — Extensibility hardening:** phase preflights, `phase --list-next`, `keel plugin` group
+- **Plan 7 — Customizable phase lifecycles:** FSM-based lifecycles, `keel lifecycle` group
+- **Plugin: keel-jira (`plugins/jira/`)** — first real `TicketProvider`
 
 See [`design/plans/`](design/plans/) for the implementation plan documents and
 [`design/decisions/`](design/decisions/) for the rationale behind major choices.
