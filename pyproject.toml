@@ -24,6 +24,11 @@ dev = [
     "pytest-snapshot>=0.9",
     "ruff>=0.6",
 ]
+# Plugin extras — each pulls a separately-developed, separately-published
+# package on PyPI. `pip install keel-cli[jira]` is shorthand for installing
+# keel-cli alongside the named plugin; entry-point discovery does the rest.
+jira = ["keel-jira>=0.1"]
+all = ["keel-jira>=0.1"]
 
 [project.scripts]
 keel = "keel.app:app"
@@ -31,6 +36,12 @@ keel = "keel.app:app"
 [tool.hatch.build.targets.wheel]
 packages = ["src/keel"]
 include = ["src/keel/_templates/*.j2", "src/keel/lifecycles/defaults/*.toml"]
+
+# Local development: resolve plugin extras against sibling source trees.
+# When publishing to PyPI, this block is irrelevant — sources are only
+# consulted for `uv` workflows in this repo.
+[tool.uv.sources]
+keel-jira = { path = "../keel-jira", editable = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
