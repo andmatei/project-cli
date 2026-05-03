@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "keel-jira"
-version = "0.1.0"
+version = "0.0.1"
 description = "Jira Cloud TicketProvider for keel."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "keel-cli>=0.1",
+    "keel-cli>=0.0.1",
     "httpx>=0.27",
     "pydantic>=2",
 ]

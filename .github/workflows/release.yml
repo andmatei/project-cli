@@ -1,0 +1,79 @@
+name: Release
+
+# Per-package tags route to per-package publish jobs. Drop a new
+# plugins/<name>/ and add a `publish-keel-<name>` job below mirroring the
+# keel-jira one — the matching tag prefix `keel-<name>-v*` triggers it.
+#
+# Trusted publishing via PyPI OIDC: no tokens stored. Each package needs a
+# pending-publisher entry on https://pypi.org/manage/account/publishing/
+# pointing at this repo + workflow file.
+
+on:
+  push:
+    tags:
+      - "keel-cli-v*"
+      - "keel-jira-v*"
+
+# `id-token: write` is required for trusted publishing's OIDC exchange.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-keel-cli:
+    name: Publish keel-cli to PyPI
+    if: startsWith(github.ref, 'refs/tags/keel-cli-v')
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: latest
+
+      - name: Verify tag matches pyproject version
+        run: |
+          tag="${GITHUB_REF#refs/tags/keel-cli-v}"
+          pkg=$(uv run --no-project python -c "import tomllib,sys;print(tomllib.loads(open('pyproject.toml').read())['project']['version'])")
+          if [ "$tag" != "$pkg" ]; then
+            echo "Tag version ($tag) does not match pyproject ($pkg)" >&2
+            exit 1
+          fi
+
+      - name: Build keel-cli
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish --trusted-publishing always
+
+  publish-keel-jira:
+    name: Publish keel-jira to PyPI
+    if: startsWith(github.ref, 'refs/tags/keel-jira-v')
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: latest
+
+      - name: Verify tag matches pyproject version
+        run: |
+          tag="${GITHUB_REF#refs/tags/keel-jira-v}"
+          pkg=$(uv run --no-project python -c "import tomllib,sys;print(tomllib.loads(open('plugins/jira/pyproject.toml').read())['project']['version'])")
+          if [ "$tag" != "$pkg" ]; then
+            echo "Tag version ($tag) does not match pyproject ($pkg)" >&2
+            exit 1
+          fi
+
+      - name: Build keel-jira
+        working-directory: plugins/jira
+        run: uv build --out-dir dist
+
+      - name: Publish to PyPI
+        working-directory: plugins/jira
+        run: uv publish --trusted-publishing always
