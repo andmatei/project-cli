@@ -10,8 +10,41 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Test (Python ${{ matrix.python-version }} / ${{ matrix.os }})
+  # Discover plugin directories so the per-plugin matrix below picks them
+  # up automatically. Drop a new directory under plugins/<name>/ with its
+  # own pyproject.toml + tests/ and CI starts running it without further
+  # workflow edits.
+  discover-plugins:
+    name: Discover plugins
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.find.outputs.plugins }}
+      has-plugins: ${{ steps.find.outputs.has-plugins }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - id: find
+        run: |
+          dirs=()
+          if [ -d plugins ]; then
+            for d in plugins/*/; do
+              [ -d "$d" ] || continue
+              [ -f "$d/pyproject.toml" ] || continue
+              [ -d "$d/tests" ] || continue
+              dirs+=("$(basename "$d")")
+            done
+          fi
+          if [ ${#dirs[@]} -eq 0 ]; then
+            echo "plugins=[]" >> "$GITHUB_OUTPUT"
+            echo "has-plugins=false" >> "$GITHUB_OUTPUT"
+          else
+            json=$(printf '%s\n' "${dirs[@]}" | jq -R . | jq -sc .)
+            echo "plugins=$json" >> "$GITHUB_OUTPUT"
+            echo "has-plugins=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  test-core:
+    name: Test core (Python ${{ matrix.python-version }} / ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -36,12 +69,46 @@ jobs:
           git config --global user.name "CI Test User"
           git config --global init.defaultBranch main
 
-      - name: Run tests
-        run: uv run --extra dev --python ${{ matrix.python-version }} pytest -v
+      - name: Run core tests
+        run: uv run --extra dev --python ${{ matrix.python-version }} pytest tests -v
+
+  test-plugins:
+    name: Test plugin '${{ matrix.plugin }}' (Python ${{ matrix.python-version }})
+    needs: discover-plugins
+    if: needs.discover-plugins.outputs.has-plugins == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+        plugin: ${{ fromJSON(needs.discover-plugins.outputs.plugins) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: latest
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Configure git (some plugin tests touch git)
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "CI Test User"
+          git config --global init.defaultBranch main
+
+      - name: Run plugin tests
+        run: |
+          cd plugins/${{ matrix.plugin }}
+          uv run --extra dev --python ${{ matrix.python-version }} pytest -v
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: discover-plugins
     steps:
       - uses: actions/checkout@v6
 
@@ -54,16 +121,37 @@ jobs:
       - name: Set up Python 3.13
         run: uv python install 3.13
 
+      - name: Compute lint targets
+        id: targets
+        run: |
+          # Always lint core src + tests. Add each plugin's src + tests.
+          targets="src tests"
+          if [ "${{ needs.discover-plugins.outputs.has-plugins }}" = "true" ]; then
+            for d in plugins/*/; do
+              [ -d "$d" ] || continue
+              [ -d "${d}src" ] && targets="$targets ${d}src"
+              [ -d "${d}tests" ] && targets="$targets ${d}tests"
+            done
+          fi
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+
       - name: Ruff check
-        run: uv run --extra dev ruff check src tests
+        run: uv run --extra dev ruff check ${{ steps.targets.outputs.targets }}
 
       - name: Ruff format check
-        run: uv run --extra dev ruff format --check src tests
+        run: uv run --extra dev ruff format --check ${{ steps.targets.outputs.targets }}
 
   build:
     name: Build distribution
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    needs: [test-core, test-plugins, lint]
+    # `if: always()` so that build runs even if test-plugins is skipped (no
+    # plugins yet); `&&` chain ensures we still gate on actual failures.
+    if: |
+      always() &&
+      needs.test-core.result == 'success' &&
+      (needs.test-plugins.result == 'success' || needs.test-plugins.result == 'skipped') &&
+      needs.lint.result == 'success'
     steps:
       - uses: actions/checkout@v6
 
@@ -72,8 +160,19 @@ jobs:
         with:
           version: latest
 
-      - name: Build
+      - name: Build core
         run: uv build
+
+      - name: Build plugins
+        run: |
+          if [ -d plugins ]; then
+            for d in plugins/*/; do
+              [ -d "$d" ] || continue
+              [ -f "$d/pyproject.toml" ] || continue
+              echo "=== Building $d ==="
+              (cd "$d" && uv build --out-dir ../../dist)
+            done
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

@@ -21,7 +21,10 @@ or the modules are useful to others.
 
 ## Install
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). keel is not yet
+on PyPI; install from source.
+
+**Just the CLI:**
 
 ```bash
 git clone https://github.com/andmatei/keel.git
@@ -30,6 +33,31 @@ uv tool install --editable .
 
 keel --help
 ```
+
+**CLI plus a plugin** (`keel-jira` shown; same shape for any other
+`plugins/<name>/`):
+
+```bash
+git clone https://github.com/andmatei/keel.git
+cd keel
+uv tool install --editable . --with-editable ./plugins/jira
+
+keel plugin list   # confirms the jira provider is registered
+```
+
+Or one-shot, no clone:
+
+```bash
+uv tool install \
+  "git+https://github.com/andmatei/keel.git" \
+  --with "git+https://github.com/andmatei/keel.git#subdirectory=plugins/jira"
+```
+
+Once first-party plugins land on PyPI, this becomes
+`pip install "keel-cli[jira]"`. Until then the source-install path above is
+the supported route. Third-party plugins (anyone's `keel-foo` on PyPI)
+already work today via plain `pip install keel-foo` — their wheel registers
+the entry point and keel discovers it.
 
 Optionally install shell completion:
 

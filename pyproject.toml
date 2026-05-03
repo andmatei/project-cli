@@ -24,11 +24,10 @@ dev = [
     "pytest-snapshot>=0.9",
     "ruff>=0.6",
 ]
-# Plugin extras — each pulls a separately-developed, separately-published
-# package on PyPI. `pip install keel-cli[jira]` is shorthand for installing
-# keel-cli alongside the named plugin; entry-point discovery does the rest.
-jira = ["keel-jira>=0.1"]
-all = ["keel-jira>=0.1"]
+# Plugin extras will live here once first-party plugins are published to
+# PyPI (e.g. `jira = ["keel-jira>=0.1"]` for `pip install keel-cli[jira]`).
+# Until then, install plugins directly from the monorepo source — see
+# README "Install" section.
 
 [project.scripts]
 keel = "keel.app:app"
