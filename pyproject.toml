@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "keel-cli"
-version = "0.0.1"
+version = "0.0.2"
 description = "CLI for the projects workspace"
 requires-python = ">=3.11"
 authors = [{ name = "Andrei Matei" }]
@@ -24,10 +24,11 @@ dev = [
     "pytest-snapshot>=0.9",
     "ruff>=0.6",
 ]
-# Plugin extras will live here once first-party plugins are published to
-# PyPI (e.g. `jira = ["keel-jira>=0.1"]` for `pip install keel-cli[jira]`).
-# Until then, install plugins directly from the monorepo source — see
-# README "Install" section.
+# Plugin extras — each pulls a separately-published wheel from PyPI. Add a
+# new line per first-party plugin; `pip install keel-cli[<name>]` becomes
+# the canonical install path for that combination.
+jira = ["keel-jira>=0.0.1"]
+all = ["keel-jira>=0.0.1"]
 
 [project.scripts]
 keel = "keel.app:app"

@@ -138,7 +138,7 @@ wheels = [
 
 [[package]]
 name = "keel-cli"
-version = "0.1.0"
+version = "0.0.2"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
@@ -151,15 +151,23 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+all = [
+    { name = "keel-jira" },
+]
 dev = [
     { name = "pytest" },
     { name = "pytest-snapshot" },
     { name = "ruff" },
 ]
+jira = [
+    { name = "keel-jira" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "jinja2", specifier = ">=3.1" },
+    { name = "keel-jira", marker = "extra == 'all'", editable = "plugins/jira" },
+    { name = "keel-jira", marker = "extra == 'jira'", editable = "plugins/jira" },
     { name = "markdown-it-py", specifier = ">=3" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
@@ -170,11 +178,11 @@ requires-dist = [
     { name = "tomlkit", specifier = ">=0.13" },
     { name = "typer", specifier = ">=0.12" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["dev", "jira", "all"]
 
 [[package]]
 name = "keel-jira"
-version = "0.1.0"
+version = "0.0.1"
 source = { editable = "plugins/jira" }
 dependencies = [
     { name = "httpx" },

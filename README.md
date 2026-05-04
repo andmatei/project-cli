@@ -21,43 +21,38 @@ or the modules are useful to others.
 
 ## Install
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). keel is not yet
-on PyPI; install from source.
+Requires Python 3.11+. Both packages are on PyPI (alpha — versions `0.0.x`,
+expect breakage):
 
 **Just the CLI:**
 
 ```bash
-git clone https://github.com/andmatei/keel.git
-cd keel
-uv tool install --editable .
-
+pip install keel-cli
 keel --help
 ```
 
-**CLI plus a plugin** (`keel-jira` shown; same shape for any other
-`plugins/<name>/`):
+**CLI plus the Jira plugin:**
+
+```bash
+pip install "keel-cli[jira]"   # same as: pip install keel-cli keel-jira
+keel plugin list               # confirms the jira provider is registered
+```
+
+Third-party plugins work the same way:
+
+```bash
+pip install keel-cli some-author-keel-foo
+keel plugin list               # discovers their plugin via entry points
+```
+
+**Develop against the source** (clone + editable install, useful for
+contributing):
 
 ```bash
 git clone https://github.com/andmatei/keel.git
 cd keel
 uv tool install --editable . --with-editable ./plugins/jira
-
-keel plugin list   # confirms the jira provider is registered
 ```
-
-Or one-shot, no clone:
-
-```bash
-uv tool install \
-  "git+https://github.com/andmatei/keel.git" \
-  --with "git+https://github.com/andmatei/keel.git#subdirectory=plugins/jira"
-```
-
-Once first-party plugins land on PyPI, this becomes
-`pip install "keel-cli[jira]"`. Until then the source-install path above is
-the supported route. Third-party plugins (anyone's `keel-foo` on PyPI)
-already work today via plain `pip install keel-foo` — their wheel registers
-the entry point and keel discovers it.
 
 Optionally install shell completion:
 
