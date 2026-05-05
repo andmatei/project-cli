@@ -1,0 +1,20 @@
+# {{ project.name }}
+
+{{ project.description }}
+
+**Lifecycle:** {{ lifecycle.name }} · **Phase:** {{ phase }}
+
+## Design
+
+- [Scope](scope.md) — boundaries and success criteria
+- [Design](design.md) — living technical design
+- [Decisions](decisions/) — one record per non-obvious choice
+{% if has_milestones %}- [Milestones](milestones.toml) — work breakdown
+{% endif %}
+
+## Code
+{% for repo in repos %}
+- `{{ repo.worktree }}/` — `{{ repo.remote }}`
+{% endfor %}{% if not repos %}
+_(No source repos linked yet. Use `keel code add --repo <path>` to attach one.)_
+{% endif %}

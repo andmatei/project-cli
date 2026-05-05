@@ -10,6 +10,7 @@ from __future__ import annotations
 from keel.lifecycles.loader import (
     LifecycleNotFoundError,
     iter_lifecycles,
+    lifecycle_source_path,
     load_lifecycle,
 )
 from keel.lifecycles.models import Lifecycle, LifecycleState
@@ -19,5 +20,6 @@ __all__ = [
     "LifecycleNotFoundError",
     "LifecycleState",
     "iter_lifecycles",
+    "lifecycle_source_path",
     "load_lifecycle",
 ]

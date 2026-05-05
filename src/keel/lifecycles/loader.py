@@ -68,6 +68,17 @@ def load_lifecycle(name: str) -> Lifecycle:
     raise LifecycleNotFoundError(name)
 
 
+def lifecycle_source_path(name: str) -> Path:
+    """Return the file path resolved for `name`. Used by `keel new` to snapshot."""
+    user_path = _user_library_dir() / f"{name}.toml"
+    if user_path.is_file():
+        return user_path
+    builtin = resources.files("keel.lifecycles.defaults").joinpath(f"{name}.toml")
+    if builtin.is_file():
+        return Path(str(builtin))
+    raise LifecycleNotFoundError(name)
+
+
 def iter_lifecycles() -> Iterator[Lifecycle]:
     """Yield every reachable lifecycle. User-library entries override built-ins."""
     seen: set[str] = set()

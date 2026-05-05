@@ -12,7 +12,7 @@ from keel.manifest import load_project_manifest
 runner = CliRunner()
 
 
-def test_new_creates_design_dir(projects) -> None:
+def test_new_creates_unit_layout(projects) -> None:
     result = runner.invoke(
         app,
         ["new", "foo", "-d", "A test project", "--no-worktree", "-y"],
@@ -20,19 +20,17 @@ def test_new_creates_design_dir(projects) -> None:
     )
     assert result.exit_code == 0, (result.stdout, result.stderr)
     proj = projects / "foo"
-    assert (proj / "design" / "CLAUDE.md").is_file()
-    assert (proj / "design" / "scope.md").is_file()
-    assert (proj / "design" / "design.md").is_file()
-    assert (proj / "design" / ".phase").read_text().splitlines()[0] == "scoping"
-    assert (proj / "design" / "project.toml").is_file()
-    decisions = list((proj / "design" / "decisions").glob("*.md"))
-    assert len(decisions) == 1
-    assert "project-setup" in decisions[0].name
+    assert (proj / "scope.md").is_file()
+    assert (proj / "design.md").is_file()
+    assert (proj / "README.md").is_file()
+    assert (proj / "project.toml").is_file()
+    assert (proj / "decisions").is_dir()
+    assert (proj / ".keel" / "phase").read_text().splitlines()[0] == "scoping"
 
 
 def test_new_writes_valid_manifest(projects) -> None:
     runner.invoke(app, ["new", "foo", "-d", "test", "--no-worktree", "-y"])
-    m = load_project_manifest(projects / "foo" / "design" / "project.toml")
+    m = load_project_manifest(projects / "foo" / "project.toml")
     assert m.project.name == "foo"
     assert m.project.description == "test"
     assert m.repos == []
@@ -77,7 +75,7 @@ def test_new_with_one_repo_creates_worktree(projects, source_repo) -> None:
 
 def test_new_with_one_repo_writes_repo_to_manifest(projects, source_repo) -> None:
     runner.invoke(app, ["new", "foo", "-d", "t", "-r", str(source_repo), "-y"])
-    m = load_project_manifest(projects / "foo" / "design" / "project.toml")
+    m = load_project_manifest(projects / "foo" / "project.toml")
     assert len(m.repos) == 1
     assert m.repos[0].worktree == "code"
 
@@ -112,7 +110,7 @@ def test_new_with_two_repos_creates_named_worktrees(projects, tmp_path) -> None:
     assert result.exit_code == 0, result.stderr
     assert (projects / "multi" / "code-src_alpha").is_dir()
     assert (projects / "multi" / "code-src_beta").is_dir()
-    m = load_project_manifest(projects / "multi" / "design" / "project.toml")
+    m = load_project_manifest(projects / "multi" / "project.toml")
     assert len(m.repos) == 2
     worktrees = {r.worktree for r in m.repos}
     assert worktrees == {"code-src_alpha", "code-src_beta"}
@@ -136,7 +134,8 @@ def test_new_dry_run_lists_planned_ops(projects, source_repo) -> None:
     assert "project.toml" in result.stderr
     assert "scope.md" in result.stderr
     assert "design.md" in result.stderr
-    assert "CLAUDE.md" in result.stderr
+    assert "README.md" in result.stderr
+    assert "lifecycle.lock.toml" in result.stderr
     assert "git worktree" in result.stderr.lower()
 
 
@@ -155,7 +154,7 @@ def test_new_records_lifecycle_in_manifest(projects, monkeypatch) -> None:
     runner.invoke(
         app, ["new", "alpha", "-d", "test", "--no-worktree", "-y", "--lifecycle", "default"]
     )
-    m = load_project_manifest(projects / "alpha" / "design" / "project.toml")
+    m = load_project_manifest(projects / "alpha" / "project.toml")
     assert m.project.lifecycle == "default"
 
 
@@ -163,7 +162,7 @@ def test_new_default_lifecycle_when_omitted(projects, monkeypatch) -> None:
     """When --lifecycle is omitted, the manifest gets 'default'."""
     monkeypatch.chdir(projects)
     runner.invoke(app, ["new", "alpha", "-d", "test", "--no-worktree", "-y"])
-    m = load_project_manifest(projects / "alpha" / "design" / "project.toml")
+    m = load_project_manifest(projects / "alpha" / "project.toml")
     assert m.project.lifecycle == "default"
 
 
@@ -178,7 +177,7 @@ def test_new_unknown_lifecycle_fails(projects, monkeypatch) -> None:
 
 
 def test_new_uses_lifecycle_initial_phase(projects, make_project, monkeypatch) -> None:
-    """The new project's `.phase` file is set to the lifecycle's initial state."""
+    """The new project's phase file is set to the lifecycle's initial state."""
     # Create a custom lifecycle with a non-'scoping' initial state.
     lib = projects / ".keel" / "lifecycles"
     lib.mkdir(parents=True)
@@ -197,5 +196,50 @@ proposing = ["published"]
     runner.invoke(
         app, ["new", "alpha", "-d", "test", "--no-worktree", "-y", "--lifecycle", "research"]
     )
-    phase_text = (projects / "alpha" / "design" / ".phase").read_text().strip()
+    phase_text = (projects / "alpha" / ".keel" / "phase").read_text().strip()
     assert phase_text == "proposing"
+
+
+def test_new_writes_project_toml_at_root(projects, monkeypatch) -> None:
+    monkeypatch.chdir(projects)
+    result = runner.invoke(app, ["new", "alpha", "-d", "test", "--no-worktree", "-y"])
+    assert result.exit_code == 0
+    assert (projects / "alpha" / "project.toml").is_file()
+    assert not (projects / "alpha" / "design" / "project.toml").exists()
+
+
+def test_new_writes_phase_under_keel(projects, monkeypatch) -> None:
+    monkeypatch.chdir(projects)
+    runner.invoke(app, ["new", "alpha", "-d", "test", "--no-worktree", "-y"])
+    assert (projects / "alpha" / ".keel" / "phase").read_text().strip() == "scoping"
+
+
+def test_new_writes_lifecycle_lock(projects, monkeypatch) -> None:
+    monkeypatch.chdir(projects)
+    runner.invoke(app, ["new", "alpha", "-d", "test", "--no-worktree", "-y"])
+    lock = projects / "alpha" / ".keel" / "lifecycle.lock.toml"
+    assert lock.is_file()
+    text = lock.read_text()
+    # Verbatim copy of the default lifecycle TOML.
+    assert 'name = "default"' in text
+    assert "[states.scoping]" in text
+
+
+def test_new_writes_readme_with_links(projects, monkeypatch) -> None:
+    monkeypatch.chdir(projects)
+    runner.invoke(app, ["new", "alpha", "-d", "Build a thing", "--no-worktree", "-y"])
+    readme = (projects / "alpha" / "README.md").read_text()
+    assert "alpha" in readme
+    assert "Build a thing" in readme
+    assert "[Scope](scope.md)" in readme
+    assert "[Design](design.md)" in readme
+
+
+def test_new_human_design_files_at_root(projects, monkeypatch) -> None:
+    monkeypatch.chdir(projects)
+    runner.invoke(app, ["new", "alpha", "-d", "test", "--no-worktree", "-y"])
+    assert (projects / "alpha" / "scope.md").is_file()
+    assert (projects / "alpha" / "design.md").is_file()
+    assert (projects / "alpha" / "decisions").is_dir()
+    # design/ subfolder MUST NOT be created in the new layout
+    assert not (projects / "alpha" / "design").exists()
