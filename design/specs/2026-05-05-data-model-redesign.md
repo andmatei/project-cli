@@ -367,6 +367,92 @@ Open questions still pending:
 - **#7 (`fan_out` validation).** Touch in implementation; cheap.
 - **#10 (`description = ""` proliferation).** Cosmetic; defer.
 
+## Future plugin space — `keel-ai` as architecture validation
+
+A useful stress test for the redesigned plugin architecture is to imagine
+a substantially different plugin and check whether it fits naturally.
+`keel-ai` — a future plugin adding AI features scoped per project — is
+the test case. Recording it here both as a parking-lot idea and as a
+sanity-check on the decisions above.
+
+### What `keel-ai` does (sketch)
+
+A plugin that gives each keel project a local agent with full context of
+its design corpus. Concretely:
+
+- **RAG over project markdown.** `keel ai search "<query>"` returns
+  ranked, cited chunks from `scope.md`, `design.md`, `decisions/`, and
+  `plans/`. `keel ai chat` answers questions like "what blocks leaving
+  the designing phase?" or "summarize our ticketing decisions."
+- **Vector index lives per-project.** Embeddings cached under
+  `.keel/ai/index/`, refreshed when files change.
+- **Plugin tools and skills for project management.** The plugin ships
+  a baseline set (search, summarize, draft-decision) and lets other
+  plugins register their own tools that the agent can call (e.g.
+  `keel-jira` exposes `create_ticket` as a tool the agent invokes when
+  the user says "file this as a Jira ticket"). User-customizable via
+  config; replaceable per project.
+- **MCP server, project-scoped.** `keel ai mcp` serves the project's
+  RAG + tools to external agents (Claude Code, Cursor) over MCP.
+
+### Implementation hints (for whoever picks this up)
+
+- **Chunking:** heading-aware markdown splits; respect frontmatter and
+  decision-file structure.
+- **Embeddings:** configurable provider. Default to **Voyage AI**
+  (Anthropic-recommended) with OpenAI / Cohere / local Ollama as
+  alternatives via `[extensions.ai] provider = "..."`.
+- **Storage:** **MongoDB Atlas Local** as the suggested default —
+  free, runs locally via Docker, supports vector search, and lets users
+  graduate to Atlas Cloud without code changes. Other backends pluggable
+  (LanceDB, Chroma, sqlite-vec) via the same selector pattern.
+- **Hybrid ranking:** vector + keyword (BM25), fused with reciprocal
+  rank fusion.
+
+### What `keel-ai` needs from the architecture
+
+| Need | Provided by | Status |
+|---|---|---|
+| Read all markdown in a project | Option-D layout (scope.md, design.md at root; decisions/, plans/ flat) | ✓ One less folder hop than today |
+| Per-project tool state (embedding cache) | `.keel/` directory | ✓ `.keel/ai/index/` is the natural home |
+| Per-project config | `[extensions.ai]` in `project.toml` | ✓ Pattern matches ticketing |
+| Provider selection (Voyage / OpenAI / local) | `[extensions.ai] provider = "..."` | ✓ Same pattern as ticketing |
+| File-change events ("re-embed when scope.md is edited") | None today | ⚠ New `keel.file_events` entry-point group needed |
+| Tools other plugins can register for the agent | None today | ⚠ New `keel.agent_tools` entry-point group needed |
+| MCP server scoped to a project | None today | ⚠ New `keel ai mcp` command; no architectural blocker |
+
+### Architecture changes implied
+
+The current redesign handles most of this. Three additions for whenever
+`keel-ai` is built:
+
+1. **`keel.file_events` entry-point group** — fires when keel writes or
+   modifies project files. Lets re-indexers stay in sync without polling.
+2. **`keel.agent_tools` entry-point group** — lets plugins register
+   functions an agent can call. `keel-jira` could expose `create_ticket`
+   as an agent tool; `keel-ai` consumes whatever's registered. This is
+   plugin-of-plugins: keel-ai is a host for tools other plugins ship.
+3. **`keel.skills` entry-point group** (optional, defer until needed) —
+   higher-level skills (prompt + tools + policy) that wrap tools.
+
+None of these block v0.1.0; they're follow-on work.
+
+### Why noting this matters for the current spec
+
+Stress-testing against `keel-ai` validates two of the four decisions:
+
+- **`.keel/` for tool state** holds up perfectly — embedding caches,
+  vector indexes, future MCP server state all fit. If state had stayed
+  at the project root or flat, every plugin would invent its own
+  convention for multi-megabyte caches.
+- **Per-plugin config schemas + selector pattern** generalize beyond
+  ticketing. AI providers (Voyage / OpenAI / local) follow the same
+  shape as ticketing providers (Jira / GitHub / Linear). One mental
+  model for users and plugin authors alike.
+
+If `keel-ai` were impossible to express against this architecture, that
+would be a sign the design is too ticketing-centric. It's not.
+
 ## Implementation scope (planned in a separate document)
 
 The implementation plan will live at
