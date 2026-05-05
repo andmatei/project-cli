@@ -20,13 +20,9 @@ from pathlib import Path
 
 import pytest
 
-from keel import templates
 from keel.manifest import (
-    DeliverableManifest,
-    DeliverableMeta,
     ProjectManifest,
     ProjectMeta,
-    save_deliverable_manifest,
     save_project_manifest,
 )
 from keel.ticketing.mock import MockProvider
@@ -43,28 +39,39 @@ def projects(tmp_path, monkeypatch) -> Path:
 
 @pytest.fixture
 def make_project(projects) -> Callable[..., Path]:
-    """Factory: create a project with empty design dir, manifest, and rendered templates."""
+    """Factory: create a project with the new (v0.1.0) layout — manifest at root, .keel/ for state."""
 
-    def _make(name: str = "foo", description: str = "test project") -> Path:
+    def _make(
+        name: str = "foo",
+        description: str = "test project",
+        lifecycle: str = "default",
+    ) -> Path:
         proj = projects / name
-        (proj / "design" / "decisions").mkdir(parents=True)
-        m = ProjectManifest(
-            project=ProjectMeta(name=name, description=description, created=date(2026, 4, 29)),
-            repos=[],
+        proj.mkdir(parents=True, exist_ok=True)
+
+        # Manifests at the unit root.
+        (proj / "decisions").mkdir(exist_ok=True)
+        save_project_manifest(
+            proj / "project.toml",
+            ProjectManifest(
+                project=ProjectMeta(
+                    name=name,
+                    description=description,
+                    created=date(2026, 5, 5),
+                    lifecycle=lifecycle,
+                ),
+                repos=[],
+            ),
         )
-        save_project_manifest(proj / "design" / "project.toml", m)
-        (proj / "design" / ".phase").write_text("scoping\n")
-        (proj / "design" / "CLAUDE.md").write_text(
-            templates.render(
-                "claude_md.j2", name=name, description=description, repos=[], deliverables=[]
-            )
-        )
-        (proj / "design" / "design.md").write_text(
-            templates.render("design_md.j2", name=name, description=description)
-        )
-        (proj / "design" / "scope.md").write_text(
-            templates.render("scope_md.j2", name=name, description=description)
-        )
+
+        # Tool state under .keel/.
+        (proj / ".keel").mkdir(exist_ok=True)
+        (proj / ".keel" / "phase").write_text("scoping\n")
+
+        # Minimal human-authored content so design-walking commands have something to read.
+        (proj / "scope.md").write_text(f"# {name}\n\nScope.\n")
+        (proj / "design.md").write_text(f"# {name} — design\n\n")
+
         return proj
 
     return _make
@@ -72,32 +79,50 @@ def make_project(projects) -> Callable[..., Path]:
 
 @pytest.fixture
 def make_deliverable(make_project) -> Callable[..., Path]:
-    """Factory: create a deliverable inside a (possibly new) project."""
+    """Factory: create a deliverable inside a (possibly new) project, using the new layout.
+
+    Per Plan 8, deliverables collapse onto the same `ProjectManifest` schema as projects.
+    The manifest lives at `<deliverable>/project.toml` (NOT `deliverable.toml`).
+    """
 
     def _make(
         project_name: str = "foo",
         name: str = "bar",
         description: str = "test deliverable",
         shared_worktree: bool = False,
+        lifecycle: str = "default",
     ) -> Path:
         from keel import workspace
 
-        if not workspace.project_exists(project_name):
+        if not workspace.project_dir(project_name).is_dir():
             make_project(project_name)
         deliv = workspace.deliverable_dir(project_name, name)
-        (deliv / "design" / "decisions").mkdir(parents=True)
-        m = DeliverableManifest(
-            deliverable=DeliverableMeta(
-                name=name,
-                parent_project=project_name,
-                description=description,
-                created=date(2026, 4, 29),
-                shared_worktree=shared_worktree,
+        deliv.mkdir(parents=True, exist_ok=True)
+
+        # Manifests at the deliverable's unit root.
+        (deliv / "decisions").mkdir(exist_ok=True)
+        save_project_manifest(
+            deliv / "project.toml",
+            ProjectManifest(
+                project=ProjectMeta(
+                    name=name,
+                    description=description,
+                    created=date(2026, 5, 5),
+                    lifecycle=lifecycle,
+                    shared_worktree=shared_worktree,
+                ),
+                repos=[],
             ),
-            repos=[],
         )
-        save_deliverable_manifest(deliv / "design" / "deliverable.toml", m)
-        (deliv / "design" / ".phase").write_text("scoping\n")
+
+        # Tool state under .keel/.
+        (deliv / ".keel").mkdir(exist_ok=True)
+        (deliv / ".keel" / "phase").write_text("scoping\n")
+
+        # Minimal human-authored content.
+        (deliv / "scope.md").write_text(f"# {name}\n\nScope.\n")
+        (deliv / "design.md").write_text(f"# {name} — design\n\n")
+
         return deliv
 
     return _make
