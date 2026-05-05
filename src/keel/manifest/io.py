@@ -9,6 +9,7 @@ from keel.manifest.models import (
     DeliverableManifest,
     MilestonesManifest,
     ProjectManifest,
+    _deprecated_deliverable_warning,
 )
 
 
@@ -40,6 +41,7 @@ def save_project_manifest(path: Path, manifest: ProjectManifest) -> None:
 
 def load_deliverable_manifest(path: Path) -> DeliverableManifest:
     """Read and validate a `deliverable.toml`."""
+    _deprecated_deliverable_warning()
     with path.open("rb") as f:
         raw = tomllib.load(f)
     return DeliverableManifest.model_validate(raw)
@@ -47,6 +49,7 @@ def load_deliverable_manifest(path: Path) -> DeliverableManifest:
 
 def save_deliverable_manifest(path: Path, manifest: DeliverableManifest) -> None:
     """Write a `deliverable.toml`. Uses tomlkit so future edits preserve comments."""
+    _deprecated_deliverable_warning()
     doc = tomlkit.document()
     doc["deliverable"] = _dict_no_none(manifest.deliverable.model_dump())
     if manifest.repos:

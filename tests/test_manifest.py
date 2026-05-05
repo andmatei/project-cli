@@ -351,6 +351,7 @@ def test_project_meta_gains_shared_worktree() -> None:
     from datetime import date
 
     from keel.manifest import ProjectMeta
+
     m = ProjectMeta(name="x", description="d", created=date(2026, 5, 5), shared_worktree=True)
     assert m.shared_worktree is True
 
@@ -359,6 +360,7 @@ def test_project_meta_shared_worktree_default_false() -> None:
     from datetime import date
 
     from keel.manifest import ProjectMeta
+
     m = ProjectMeta(name="x", description="d", created=date(2026, 5, 5))
     assert m.shared_worktree is False
 
@@ -371,8 +373,52 @@ def test_project_manifest_shared_worktree_excludes_repos(tmp_path) -> None:
     from pydantic import ValidationError
 
     from keel.manifest import ProjectManifest, ProjectMeta, RepoSpec
+
     with pytest.raises(ValidationError):
         ProjectManifest(
-            project=ProjectMeta(name="x", description="d", created=date(2026, 5, 5), shared_worktree=True),
+            project=ProjectMeta(
+                name="x", description="d", created=date(2026, 5, 5), shared_worktree=True
+            ),
             repos=[RepoSpec(remote="r", worktree="w")],
         )
+
+
+def test_load_deliverable_manifest_emits_deprecation_warning(tmp_path) -> None:
+    """Reading a v0.0.x deliverable.toml should warn callers that the schema is deprecated."""
+    import warnings as _w
+
+    p = tmp_path / "deliverable.toml"
+    p.write_text(
+        "[deliverable]\n"
+        'name = "x"\n'
+        'parent_project = "parent"\n'
+        'description = "d"\n'
+        "created = 2026-05-05\n"
+    )
+    with _w.catch_warnings(record=True) as caught:
+        _w.simplefilter("always")
+        load_deliverable_manifest(p)
+    assert any(issubclass(w.category, DeprecationWarning) for w in caught), (
+        "expected DeprecationWarning"
+    )
+
+
+def test_save_deliverable_manifest_emits_deprecation_warning(tmp_path) -> None:
+    """Writing a v0.0.x deliverable.toml should warn callers that the schema is deprecated."""
+    import warnings as _w
+
+    p = tmp_path / "deliverable.toml"
+    manifest = DeliverableManifest(
+        deliverable=DeliverableMeta(
+            name="x",
+            parent_project="parent",
+            description="d",
+            created=date(2026, 5, 5),
+        ),
+    )
+    with _w.catch_warnings(record=True) as caught:
+        _w.simplefilter("always")
+        save_deliverable_manifest(p, manifest)
+    assert any(issubclass(w.category, DeprecationWarning) for w in caught), (
+        "expected DeprecationWarning"
+    )
