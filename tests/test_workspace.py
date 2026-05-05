@@ -154,31 +154,30 @@ def test_decisions_dir_project(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import decisions_dir
 
-    assert decisions_dir("foo") == tmp_path / "foo" / "design" / "decisions"
+    assert decisions_dir("foo") == tmp_path / "foo" / "decisions"
 
 
 def test_decisions_dir_deliverable(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import decisions_dir
 
-    assert (
-        decisions_dir("foo", "bar")
-        == tmp_path / "foo" / "deliverables" / "bar" / "design" / "decisions"
-    )
+    assert decisions_dir("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "decisions"
 
 
 def test_design_dir_project(monkeypatch, tmp_path) -> None:
+    """Backward-compat shim: design_dir() now returns the unit_dir."""
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import design_dir
 
-    assert design_dir("foo") == tmp_path / "foo" / "design"
+    assert design_dir("foo") == tmp_path / "foo"
 
 
 def test_design_dir_deliverable(monkeypatch, tmp_path) -> None:
+    """Backward-compat shim: design_dir() now returns the unit_dir."""
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import design_dir
 
-    assert design_dir("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "design"
+    assert design_dir("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar"
 
 
 def test_manifest_path_project(monkeypatch, tmp_path) -> None:
@@ -189,20 +188,21 @@ def test_manifest_path_project(monkeypatch, tmp_path) -> None:
 
 
 def test_manifest_path_deliverable(monkeypatch, tmp_path) -> None:
+    """In the new layout, deliverables also use project.toml at the unit root."""
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import manifest_path
 
-    assert manifest_path("foo", "bar").name == "deliverable.toml"
+    assert manifest_path("foo", "bar").name == "project.toml"
+    assert manifest_path("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "project.toml"
 
 
 def test_phase_file(monkeypatch, tmp_path) -> None:
+    """phase_file() is a deprecated alias that now returns the .keel/phase path."""
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import phase_file
 
-    assert phase_file("foo") == tmp_path / "foo" / "design" / ".phase"
-    assert (
-        phase_file("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / "design" / ".phase"
-    )
+    assert phase_file("foo") == tmp_path / "foo" / ".keel" / "phase"
+    assert phase_file("foo", "bar") == tmp_path / "foo" / "deliverables" / "bar" / ".keel" / "phase"
 
 
 def test_scope_unit_dir_project(monkeypatch, tmp_path) -> None:
@@ -222,29 +222,32 @@ def test_scope_unit_dir_deliverable(monkeypatch, tmp_path) -> None:
 
 
 def test_scope_design_dir(monkeypatch, tmp_path) -> None:
+    """Backward-compat shim: design_dir now equals the unit_dir."""
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import Scope
 
     s = Scope(project="foo", deliverable="bar")
-    assert s.design_dir == tmp_path / "foo" / "deliverables" / "bar" / "design"
+    assert s.design_dir == tmp_path / "foo" / "deliverables" / "bar"
 
 
 def test_scope_manifest_path(monkeypatch, tmp_path) -> None:
+    """In the new layout, both projects and deliverables use project.toml."""
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import Scope
 
     s_proj = Scope(project="foo", deliverable=None)
     s_deliv = Scope(project="foo", deliverable="bar")
     assert s_proj.manifest_path.name == "project.toml"
-    assert s_deliv.manifest_path.name == "deliverable.toml"
+    assert s_deliv.manifest_path.name == "project.toml"
 
 
-def test_scope_phase_file(monkeypatch, tmp_path) -> None:
+def test_scope_phase_path(monkeypatch, tmp_path) -> None:
+    """Renamed from .phase_file → .phase_path; lives under .keel/."""
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     from keel.workspace import Scope
 
     s = Scope(project="foo", deliverable=None)
-    assert s.phase_file == tmp_path / "foo" / "design" / ".phase"
+    assert s.phase_path == tmp_path / "foo" / ".keel" / "phase"
 
 
 def test_scope_decisions_dir(monkeypatch, tmp_path) -> None:
@@ -252,7 +255,7 @@ def test_scope_decisions_dir(monkeypatch, tmp_path) -> None:
     from keel.workspace import Scope
 
     s = Scope(project="foo", deliverable="bar")
-    assert s.decisions_dir == tmp_path / "foo" / "deliverables" / "bar" / "design" / "decisions"
+    assert s.decisions_dir == tmp_path / "foo" / "deliverables" / "bar" / "decisions"
 
 
 def test_milestones_manifest_path_project(monkeypatch, tmp_path) -> None:
@@ -296,3 +299,57 @@ def test_iter_projects_yields_each(projects, make_project) -> None:
     for _, manifest, phase in items:
         assert manifest.project.name in names
         assert phase == "scoping"  # default for fresh projects
+
+
+# === New layout (Plan 8 / 0.1.0): manifests at root, .keel/ for state ===
+
+
+def projects_scope(name: str):
+    """Helper: build a Scope for a project name (no fixture import jiggling)."""
+    from keel.workspace import Scope
+
+    return Scope(project=name)
+
+
+def test_scope_manifest_path_at_root(projects, make_project) -> None:
+    """In the new layout, project.toml lives at <project>/project.toml."""
+    proj = make_project("foo")
+    scope = projects_scope("foo")
+    assert scope.manifest_path == proj / "project.toml"
+
+
+def test_scope_phase_path_in_keel_dir(projects, make_project) -> None:
+    proj = make_project("foo")
+    scope = projects_scope("foo")
+    assert scope.phase_path == proj / ".keel" / "phase"
+
+
+def test_scope_lifecycle_lock_path(projects, make_project) -> None:
+    proj = make_project("foo")
+    scope = projects_scope("foo")
+    assert scope.lifecycle_lock_path == proj / ".keel" / "lifecycle.lock.toml"
+
+
+def test_scope_keel_dir(projects, make_project) -> None:
+    proj = make_project("foo")
+    scope = projects_scope("foo")
+    assert scope.keel_dir == proj / ".keel"
+
+
+def test_scope_milestones_manifest_path_at_root(projects, make_project) -> None:
+    proj = make_project("foo")
+    scope = projects_scope("foo")
+    assert scope.milestones_manifest_path == proj / "milestones.toml"
+
+
+def test_scope_decisions_dir_at_root(projects, make_project) -> None:
+    proj = make_project("foo")
+    scope = projects_scope("foo")
+    assert scope.decisions_dir == proj / "decisions"
+
+
+def test_scope_human_design_files_at_root(projects, make_project) -> None:
+    proj = make_project("foo")
+    scope = projects_scope("foo")
+    assert scope.scope_md_path == proj / "scope.md"
+    assert scope.design_md_path == proj / "design.md"

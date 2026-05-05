@@ -32,7 +32,7 @@ def deliverable_dir(project_name: str, deliverable_name: str) -> Path:
 @dataclass(frozen=True)
 class Scope:
     project: str | None
-    deliverable: str | None
+    deliverable: str | None = None
 
     @property
     def unit_dir(self) -> Path:
@@ -42,27 +42,62 @@ class Scope:
             return deliverable_dir(self.project, self.deliverable)
         return project_dir(self.project)
 
-    @property
-    def design_dir(self) -> Path:
-        return self.unit_dir / "design"
+    # === Manifests at the unit root (was: under design/) ===
 
     @property
     def manifest_path(self) -> Path:
-        if self.deliverable:
-            return self.design_dir / "deliverable.toml"
-        return self.design_dir / "project.toml"
-
-    @property
-    def phase_file(self) -> Path:
-        return self.design_dir / ".phase"
-
-    @property
-    def decisions_dir(self) -> Path:
-        return self.design_dir / "decisions"
+        return self.unit_dir / "project.toml"
 
     @property
     def milestones_manifest_path(self) -> Path:
-        return self.design_dir / "milestones.toml"
+        return self.unit_dir / "milestones.toml"
+
+    # === Human-authored content at the unit root ===
+
+    @property
+    def scope_md_path(self) -> Path:
+        return self.unit_dir / "scope.md"
+
+    @property
+    def design_md_path(self) -> Path:
+        return self.unit_dir / "design.md"
+
+    @property
+    def readme_path(self) -> Path:
+        return self.unit_dir / "README.md"
+
+    @property
+    def decisions_dir(self) -> Path:
+        return self.unit_dir / "decisions"
+
+    @property
+    def plans_dir(self) -> Path:
+        return self.unit_dir / "plans"
+
+    @property
+    def specs_dir(self) -> Path:
+        return self.unit_dir / "specs"
+
+    # === Tool state under .keel/ ===
+
+    @property
+    def keel_dir(self) -> Path:
+        return self.unit_dir / ".keel"
+
+    @property
+    def phase_path(self) -> Path:
+        return self.keel_dir / "phase"
+
+    @property
+    def lifecycle_lock_path(self) -> Path:
+        return self.keel_dir / "lifecycle.lock.toml"
+
+    # === Backward-compat shim — still serves callers that haven't migrated yet.
+    # Removed in 0.2.0. Returns the unit_dir, NOT the obsolete design/ subdir.
+
+    @property
+    def design_dir(self) -> Path:
+        return self.unit_dir
 
 
 def detect_scope(cwd: Path | None = None) -> Scope:
@@ -88,6 +123,7 @@ def detect_scope(cwd: Path | None = None) -> Scope:
 
 def deliverable_exists(project_name: str, deliverable_name: str) -> bool:
     """Check whether a deliverable's manifest exists on disk."""
+    # TODO(plan8-task4.1): switch to the new layout once migration command lands.
     return (
         deliverable_dir(project_name, deliverable_name) / "design" / "deliverable.toml"
     ).is_file()
@@ -95,6 +131,7 @@ def deliverable_exists(project_name: str, deliverable_name: str) -> bool:
 
 def project_exists(project_name: str) -> bool:
     """Check whether a project's manifest exists on disk."""
+    # TODO(plan8-task4.1): switch to the new layout once migration command lands.
     return (project_dir(project_name) / "design" / "project.toml").is_file()
 
 
@@ -162,17 +199,22 @@ def resolve_cli_scope(
     return Scope(project=project, deliverable=deliverable)
 
 
-def read_phase(design_dir: Path) -> str:
-    """Read the current phase from `<design_dir>/.phase`. Returns DEFAULT_PHASE if the file is missing or empty."""
+def read_phase(unit_or_design_dir: Path) -> str:
+    """Read the current phase. Tolerates both new and legacy layouts.
+
+    New layout: `<unit_dir>/.keel/phase`.
+    Legacy (pre-0.1.0): `<dir>/.phase` — supports both `<unit>/design/.phase`
+    and `<unit>/.phase` callers.
+    """
     from keel.lifecycle import DEFAULT_PHASE
 
-    phase_file_path = design_dir / ".phase"
-    if not phase_file_path.is_file():
-        return DEFAULT_PHASE
-    lines = phase_file_path.read_text().splitlines()
-    if not lines:
-        return DEFAULT_PHASE
-    return lines[0].strip() or DEFAULT_PHASE
+    new_path = unit_or_design_dir / ".keel" / "phase"
+    legacy_path = unit_or_design_dir / ".phase"  # pre-0.1.0
+    for p in (new_path, legacy_path):
+        if p.is_file():
+            text = p.read_text().strip()
+            return text.splitlines()[0].strip() if text else DEFAULT_PHASE
+    return DEFAULT_PHASE
 
 
 def iter_projects() -> Iterator[tuple[str, ProjectManifest, str]]:
@@ -181,6 +223,7 @@ def iter_projects() -> Iterator[tuple[str, ProjectManifest, str]]:
     Skips entries that don't have a `design/project.toml`. Useful for cross-project
     tooling (status dashboards, exports, plugins).
     """
+    # TODO(plan8-task4.1): detect new-layout projects (manifest at root) too.
     pdir = projects_dir()
     if not pdir.is_dir():
         return
@@ -202,30 +245,24 @@ def iter_projects() -> Iterator[tuple[str, ProjectManifest, str]]:
 
 def decisions_dir(project: str, deliverable: str | None = None) -> Path:
     """Path to the decisions/ directory for the given scope."""
-    if deliverable:
-        return deliverable_dir(project, deliverable) / "design" / "decisions"
-    return project_dir(project) / "design" / "decisions"
+    return Scope(project=project, deliverable=deliverable).decisions_dir
 
 
 def design_dir(project: str, deliverable: str | None = None) -> Path:
-    """Path to the design/ directory for the given scope."""
-    if deliverable:
-        return deliverable_dir(project, deliverable) / "design"
-    return project_dir(project) / "design"
+    """Deprecated. Returns the unit dir for backward compatibility."""
+    return Scope(project=project, deliverable=deliverable).unit_dir
 
 
 def manifest_path(project: str, deliverable: str | None = None) -> Path:
     """Path to the manifest TOML file for the given scope."""
-    if deliverable:
-        return design_dir(project, deliverable) / "deliverable.toml"
-    return design_dir(project) / "project.toml"
+    return Scope(project=project, deliverable=deliverable).manifest_path
 
 
 def phase_file(project: str, deliverable: str | None = None) -> Path:
-    """Path to the .phase file for the given scope."""
-    return design_dir(project, deliverable) / ".phase"
+    """Deprecated alias for the new phase_path."""
+    return Scope(project=project, deliverable=deliverable).phase_path
 
 
 def milestones_manifest_path(project: str, deliverable: str | None = None) -> Path:
     """Path to the milestones.toml file for the given scope."""
-    return design_dir(project, deliverable) / "milestones.toml"
+    return Scope(project=project, deliverable=deliverable).milestones_manifest_path
