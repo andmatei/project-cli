@@ -260,12 +260,12 @@ milestone_description = "{{ milestone.description }}"
 Defaults are plugin-specific. `keel-jira` ships sensible defaults that
 work without any config beyond `url` + `project_key`.
 
-**Optional shared utility.** `keel-cli` ships
-`keel.ticketing.template_helper` — a small Jinja2-based renderer with a
-pre-built default context (`task`, `milestone`, `project`, `deliverable`).
-Plugins MAY use it for consistency; nothing forces them to. A plugin that
-wants its own engine (str.format, JSON-Schema-driven, Handlebars-via-
-JavaScript) is free to skip it.
+**No shared rendering utility in keel-cli.** Each plugin picks its own
+templating engine (Jinja2 / str.format / Handlebars / whatever) and
+builds its context from the typed `Milestone`/`Task`/`Project`/`Scope`
+objects the protocol already passes in. If two future plugins end up
+writing identical Jinja boilerplate, that's the signal to extract a
+shared helper — speculative shared utilities in core are out of scope.
 
 **Extension points each plugin gets** (all optional, all default to no-op):
 
@@ -493,12 +493,12 @@ Rough order of work:
 7. Drop `deliverable.toml`, treat `keel deliverable add` as scaffolding
    sugar for nested project.
 8. New `TicketProvider` protocol (typed objects, no `parent_id` parameter).
-9. `keel.ticketing.template_helper` utility.
-10. keel-jira v0.1.0 — refactor to the new protocol, add per-plugin
-    templates with sensible defaults.
-11. CONTRIBUTING.md — document `[extensions]` conventions, plugin
+9. keel-jira v0.1.0 — refactor to the new protocol, add per-plugin
+    templates with sensible defaults. (Plugin picks its own templating
+    engine; no shared helper in keel-cli core.)
+10. CONTRIBUTING.md — document `[extensions]` conventions, plugin
     extension points, migration notes.
-12. README + design.md — refresh to reflect the new layout.
+11. README + design.md — refresh to reflect the new layout.
 
 Estimated size: comparable to Plan 7 (customizable lifecycles), maybe
 slightly larger because the migration touches every command. ~15-20
