@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings as _warnings
 from datetime import date as _date
 from pathlib import Path
 from typing import Any
@@ -56,6 +57,10 @@ class ProjectMeta(BaseModel):
     description: str = Field(min_length=1)
     created: _date
     lifecycle: str = Field(default="default", description="Name of the phase lifecycle.")
+    shared_worktree: bool = Field(
+        default=False,
+        description="If true, this project does not have its own [[repos]] — it shares a worktree with its parent.",
+    )
 
 
 class ProjectManifest(BaseModel):
@@ -69,6 +74,14 @@ class ProjectManifest(BaseModel):
         default_factory=dict,
         description="Plugin-namespaced config. Plugins read keys under their own namespace, e.g. extensions['ticketing']['jira'].",
     )
+
+    @field_validator("repos")
+    @classmethod
+    def _shared_excludes_repos(cls, v: list[RepoSpec], info) -> list[RepoSpec]:
+        meta = info.data.get("project")
+        if meta is not None and meta.shared_worktree and v:
+            raise ValueError("shared_worktree=true is mutually exclusive with [[repos]]")
+        return v
 
 
 class DeliverableMeta(BaseModel):
@@ -164,3 +177,14 @@ class MilestonesManifest(BaseModel):
 
     milestones: list[Milestone] = Field(default_factory=list)
     tasks: list[Task] = Field(default_factory=list)
+
+
+# Deprecated since 0.1.0 — kept temporarily so the v0.0.x → v0.1.0 migration
+# command can still read old `deliverable.toml` files. Removed in 0.2.0.
+def _deprecated_deliverable_warning() -> None:
+    _warnings.warn(
+        "DeliverableManifest / DeliverableMeta are deprecated in keel 0.1.0; "
+        "deliverables now use ProjectManifest. Schedule for removal in 0.2.0.",
+        DeprecationWarning,
+        stacklevel=3,
+    )

@@ -344,3 +344,35 @@ created = 2026-05-01
     )
     m = load_project_manifest(path)
     assert m.project.lifecycle == "default"
+
+
+def test_project_meta_gains_shared_worktree() -> None:
+    """ProjectMeta gains the field previously on DeliverableMeta."""
+    from datetime import date
+
+    from keel.manifest import ProjectMeta
+    m = ProjectMeta(name="x", description="d", created=date(2026, 5, 5), shared_worktree=True)
+    assert m.shared_worktree is True
+
+
+def test_project_meta_shared_worktree_default_false() -> None:
+    from datetime import date
+
+    from keel.manifest import ProjectMeta
+    m = ProjectMeta(name="x", description="d", created=date(2026, 5, 5))
+    assert m.shared_worktree is False
+
+
+def test_project_manifest_shared_worktree_excludes_repos(tmp_path) -> None:
+    """If shared_worktree=True, repos must be empty (rule moved from DeliverableManifest)."""
+    from datetime import date
+
+    import pytest
+    from pydantic import ValidationError
+
+    from keel.manifest import ProjectManifest, ProjectMeta, RepoSpec
+    with pytest.raises(ValidationError):
+        ProjectManifest(
+            project=ProjectMeta(name="x", description="d", created=date(2026, 5, 5), shared_worktree=True),
+            repos=[RepoSpec(remote="r", worktree="w")],
+        )
