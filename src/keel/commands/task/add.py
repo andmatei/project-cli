@@ -12,7 +12,6 @@ from keel.api import (
     Output,
     Task,
     edit_milestones,
-    find_milestone,
     find_task,
     load_milestones_manifest,
     resolve_cli_scope,
@@ -123,17 +122,9 @@ def cmd_add(
 
     provider = with_provider(scope, no_push=no_push)
     if provider is not None:
-        # Parent: the milestone's ticket_id (set when milestone was pushed)
-        with edit_milestones(scope) as manifest:
-            parent_milestone = find_milestone(manifest, target_milestone_id)
-            parent_id = (
-                parent_milestone.ticket_id
-                if parent_milestone and parent_milestone.ticket_id
-                else ""
-            )
 
         def _push():
-            ticket = provider.create_task(parent_id, new_task.title, new_task.description)
+            ticket = provider.create_task(new_task, scope)
             with edit_milestones(scope) as manifest:
                 saved = find_task(manifest, id)
                 if saved is not None:

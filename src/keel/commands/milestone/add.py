@@ -62,16 +62,9 @@ def cmd_add(
     # If ticketing is configured and --no-push wasn't passed, push to the provider.
     provider = with_provider(scope, no_push=no_push)
     if provider is not None:
-        from keel.manifest import load_project_manifest
-        from keel.workspace import manifest_path as proj_mp
-
-        proj_manifest = load_project_manifest(proj_mp(scope.project))
-        parent_id = proj_manifest.extensions.get("ticketing", {}).get("parent_id", "")
 
         def _push():
-            ticket = provider.create_milestone(
-                parent_id, new_milestone.title, new_milestone.description
-            )
+            ticket = provider.create_milestone(new_milestone, scope)
             with edit_milestones(scope) as manifest:
                 saved = find_milestone(manifest, new_milestone.id)
                 if saved is not None:
