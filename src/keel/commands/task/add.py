@@ -7,6 +7,7 @@ import typer
 from keel.api import (
     ErrorCode,
     GraphError,
+    Milestone,
     OpLog,
     Output,
     Task,
@@ -24,8 +25,13 @@ from keel.api import (
 def cmd_add(
     ctx: typer.Context,
     id: str = typer.Argument(..., help="Task identifier (e.g., 't1', 'set-up')."),
-    milestone: str = typer.Option(..., "--milestone", "-m", help="The owning milestone's id."),
     title: str = typer.Option(..., "--title", help="Human-readable task title."),
+    milestone: str | None = typer.Option(
+        None,
+        "--milestone",
+        "-m",
+        help="Milestone id. If omitted, an implicit 'default' milestone is auto-created.",
+    ),
     description: str = typer.Option("", "--description", help="Optional description."),
     depends_on: str = typer.Option(
         "",
@@ -46,14 +52,19 @@ def cmd_add(
     ),
     json_mode: bool = typer.Option(False, "--json", help="Emit JSON to stdout."),
 ) -> None:
-    """Add a new task under an existing milestone."""
+    """Add a new task under a milestone (auto-creates 'default' if omitted)."""
     out = Output.from_context(ctx, json_mode=json_mode)
 
     scope = resolve_cli_scope(project, deliverable, out=out)
 
+    target_milestone_id = milestone or "default"
+
     # Pre-load manifest to validate before write
     manifest = load_milestones_manifest(scope.milestones_manifest_path)
-    if not any(m.id == milestone for m in manifest.milestones):
+
+    # If --milestone was passed and it doesn't exist, fail (existing behavior).
+    # If --milestone was omitted, the 'default' milestone is auto-created below.
+    if milestone is not None and not any(m.id == milestone for m in manifest.milestones):
         out.fail(
             f"unknown milestone '{milestone}' (use 'keel milestone list' to see existing)",
             code=ErrorCode.NOT_FOUND,
@@ -76,14 +87,21 @@ def cmd_add(
 
     new_task = Task(
         id=id,
-        milestone=milestone,
+        milestone=target_milestone_id,
         title=title,
         description=description,
         depends_on=deps_list,
     )
-    # Validate the would-be DAG
+    # Validate the would-be DAG. If we're auto-creating the implicit 'default'
+    # milestone, include it in the candidate so the DAG check doesn't reject the
+    # new task for referencing an unknown milestone.
+    candidate_milestones = list(manifest.milestones)
+    if target_milestone_id == "default" and not any(
+        m.id == "default" for m in candidate_milestones
+    ):
+        candidate_milestones.append(Milestone(id="default", title="Tasks"))
     candidate_manifest = type(manifest)(
-        milestones=manifest.milestones, tasks=manifest.tasks + [new_task]
+        milestones=candidate_milestones, tasks=manifest.tasks + [new_task]
     )
     try:
         validate_dag(candidate_manifest)
@@ -97,13 +115,17 @@ def cmd_add(
         return
 
     with edit_milestones(scope) as manifest:
+        if target_milestone_id == "default" and not any(
+            m.id == "default" for m in manifest.milestones
+        ):
+            manifest.milestones.append(Milestone(id="default", title="Tasks"))
         manifest.tasks.append(new_task)
 
     provider = with_provider(scope, no_push=no_push)
     if provider is not None:
         # Parent: the milestone's ticket_id (set when milestone was pushed)
         with edit_milestones(scope) as manifest:
-            parent_milestone = find_milestone(manifest, milestone)
+            parent_milestone = find_milestone(manifest, target_milestone_id)
             parent_id = (
                 parent_milestone.ticket_id
                 if parent_milestone and parent_milestone.ticket_id

@@ -185,3 +185,44 @@ def test_add_dry_run_writes_nothing(projects, make_project, monkeypatch) -> None
     # Confirm state unchanged
     post_text = mp.read_text() if mp.exists() else None
     assert pre_text == post_text
+
+
+def test_task_add_without_milestone_creates_default(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    result = runner.invoke(app, ["task", "add", "t1", "--title", "Set up"], catch_exceptions=False)
+    assert result.exit_code == 0
+    from keel.api import load_milestones_manifest
+
+    m = load_milestones_manifest(proj / "milestones.toml")
+    assert any(ms.id == "default" for ms in m.milestones)
+    t1 = next(t for t in m.tasks if t.id == "t1")
+    assert t1.milestone == "default"
+
+
+def test_task_add_default_milestone_singleton(projects, make_project, monkeypatch) -> None:
+    """Multiple --milestone-less adds reuse the same default milestone."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    runner.invoke(app, ["task", "add", "t1", "--title", "First"])
+    runner.invoke(app, ["task", "add", "t2", "--title", "Second"])
+    from keel.api import load_milestones_manifest
+
+    m = load_milestones_manifest(proj / "milestones.toml")
+    defaults = [ms for ms in m.milestones if ms.id == "default"]
+    assert len(defaults) == 1
+
+
+def test_task_add_with_milestone_does_not_create_default(
+    projects, make_project, monkeypatch
+) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation"])
+    runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "Set up"])
+    from keel.api import load_milestones_manifest
+
+    m = load_milestones_manifest(proj / "milestones.toml")
+    ids = {ms.id for ms in m.milestones}
+    assert "default" not in ids
+    assert "m1" in ids
