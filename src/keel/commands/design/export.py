@@ -10,7 +10,7 @@ from pathlib import Path
 import typer
 
 from keel import workspace
-from keel.api import Output, load_deliverable_manifest, load_project_manifest
+from keel.api import Output, load_project_manifest
 
 _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?", re.DOTALL)
 
@@ -121,8 +121,8 @@ def cmd_export(
     appendix: list[_Decision] = []
 
     if deliverable:
-        m = load_deliverable_manifest(scope.manifest_path)
-        title = m.deliverable.name
+        m = load_project_manifest(scope.manifest_path)
+        title = m.project.name
         sections.append(f"# {title}\n")
         if include_scope:
             scope_path = scope.scope_md_path

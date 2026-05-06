@@ -8,12 +8,10 @@ import typer
 
 from keel import git_ops
 from keel.api import (
-    DeliverableManifest,
     ErrorCode,
     Output,
     ProjectManifest,
     get_task,
-    load_deliverable_manifest,
     load_milestones_manifest,
     load_project_manifest,
     resolve_cli_scope,
@@ -58,13 +56,9 @@ def cmd_worktree(
         )
 
     # Locate the project (or deliverable) manifest to get repos.
-    if scope.deliverable:
-        proj_manifest_path = scope.manifest_path
-        deliv_m: DeliverableManifest = load_deliverable_manifest(proj_manifest_path)
-        repos = deliv_m.repos
-    else:
-        proj_m: ProjectManifest = load_project_manifest(scope.manifest_path)
-        repos = proj_m.repos
+    # Note: deliverables now also use ProjectManifest per the redesign.
+    proj_m: ProjectManifest = load_project_manifest(scope.manifest_path)
+    repos = proj_m.repos
 
     if not repos:
         out.fail(
