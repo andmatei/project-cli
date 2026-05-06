@@ -8,7 +8,11 @@ in keel.ticketing.mock for tests.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from keel.manifest import Milestone, Task
+    from keel.workspace import Scope
 
 
 @dataclass(frozen=True)
@@ -29,11 +33,16 @@ class Ticket:
 
 @runtime_checkable
 class TicketProvider(Protocol):
-    """Protocol for ticketing plugins.
+    """Ticketing plugin protocol — typed-object based, no pre-rendered strings.
 
     A plugin package registers a TicketProvider via the `keel.ticket_providers`
     entry-point group. keel core uses this protocol; it never imports the
     plugin's internals.
+
+    Plugins receive the keel domain objects directly and render their own
+    payloads. keel-cli ships no shared template helper. To find the parent
+    project ticket id, walk `scope.manifest_path` and read your plugin's
+    config from `[extensions.ticketing.<name>]`.
 
     The neutral status names are: planned, active, done, cancelled.
     Each provider is responsible for mapping these to its native states
@@ -55,11 +64,12 @@ class TicketProvider(Protocol):
         """
         ...
 
-    def create_milestone(self, parent_id: str, title: str, description: str) -> Ticket:
-        """Create a ticket representing a milestone.
+    def create_milestone(self, milestone: Milestone, scope: Scope) -> Ticket:
+        """Create a ticket for the milestone.
 
-        `parent_id` is the project-level ticket id (e.g. an Epic key for Jira) sourced from
-        `[extensions.ticketing.parent_id]` in `project.toml`. Empty string if not configured.
+        The plugin reads its own per-project config from
+        `[extensions.ticketing.<name>]` via the scope's manifest, renders
+        templates, and submits.
 
         Returns a `Ticket` with at minimum `id` and `url` populated. `title` and `status`
         are recommended but optional.
@@ -69,10 +79,11 @@ class TicketProvider(Protocol):
         """
         ...
 
-    def create_task(self, parent_milestone_id: str, title: str, description: str) -> Ticket:
-        """Create a ticket representing a task.
+    def create_task(self, task: Task, scope: Scope) -> Ticket:
+        """Create a ticket for the task.
 
-        `parent_milestone_id` is the id of the milestone ticket created by this provider.
+        Same shape as `create_milestone`. To find the milestone's parent ticket id,
+        walk `scope.manifest` → milestones → find_by_id(task.milestone) → ticket_id.
 
         Returns a `Ticket` with at minimum `id` and `url` populated. `title` and `status`
         are recommended but optional.

@@ -38,10 +38,10 @@ def test_ticket_provider_is_protocol() -> None:
         def configure(self, config: dict) -> None:  # noqa: ARG002
             ...
 
-        def create_milestone(self, parent_id, title, description) -> None:  # noqa: ARG002
+        def create_milestone(self, milestone, scope) -> None:  # noqa: ANN001, ARG002
             ...
 
-        def create_task(self, parent_milestone_id, title, description) -> None:  # noqa: ARG002
+        def create_task(self, task, scope) -> None:  # noqa: ANN001, ARG002
             ...
 
         def transition(self, ticket_id, target_state) -> None:  # noqa: ARG002
@@ -89,10 +89,10 @@ def test_load_provider_finds_registered() -> None:
         def configure(self, config) -> None:  # noqa: ANN001, ARG002
             pass
 
-        def create_milestone(self, parent_id, title, description) -> None:  # noqa: ANN001, ARG002
+        def create_milestone(self, milestone, scope) -> None:  # noqa: ANN001, ARG002
             pass
 
-        def create_task(self, parent_milestone_id, title, description) -> None:  # noqa: ANN001, ARG002
+        def create_task(self, task, scope) -> None:  # noqa: ANN001, ARG002
             pass
 
         def transition(self, ticket_id, target_state) -> None:  # noqa: ANN001, ARG002
@@ -139,38 +139,44 @@ def test_mock_provider_satisfies_protocol() -> None:
 
 
 def test_mock_provider_records_create_milestone() -> None:
+    from keel.api import Milestone, Scope
     from keel.ticketing.mock import MockProvider
 
     p = MockProvider()
-    t = p.create_milestone("EPIC-1", "Foundation", "")
+    m = Milestone(id="m1", title="Foundation", status="planned")
+    t = p.create_milestone(m, Scope(project="foo"))
     assert t.id.startswith("MOCK-")
-    assert ("create_milestone", "EPIC-1", "Foundation", "") in p.calls
+    assert ("create_milestone", "m1", "Foundation") in p.calls
 
 
 def test_mock_provider_records_create_task() -> None:
+    from keel.api import Scope, Task
     from keel.ticketing.mock import MockProvider
 
     p = MockProvider()
-    t = p.create_task("STORY-1", "Set up", "Initial config")
+    task = Task(id="t1", milestone="m1", title="Set up", description="Initial config")
+    t = p.create_task(task, Scope(project="foo"))
     assert t.id.startswith("MOCK-")
-    assert ("create_task", "STORY-1", "Set up", "Initial config") in p.calls
+    assert ("create_task", "t1", "Set up", "m1") in p.calls
 
 
 def test_mock_provider_transition_recorded() -> None:
+    from keel.api import Milestone, Scope
     from keel.ticketing.mock import MockProvider
 
     p = MockProvider()
-    p.create_milestone("E-1", "x", "")
+    p.create_milestone(Milestone(id="m1", title="x"), Scope(project="foo"))
     ticket_id = "MOCK-1"
     p.transition(ticket_id, "active")
     assert ("transition", ticket_id, "active") in p.calls
 
 
 def test_mock_provider_fetch_returns_recorded_ticket() -> None:
+    from keel.api import Milestone, Scope
     from keel.ticketing.mock import MockProvider
 
     p = MockProvider()
-    t = p.create_milestone("E-1", "x", "")
+    t = p.create_milestone(Milestone(id="m1", title="x"), Scope(project="foo"))
     fetched = p.fetch(t.id)
     assert fetched.id == t.id
 

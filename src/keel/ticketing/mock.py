@@ -6,17 +6,24 @@ Tickets are assigned sequential `MOCK-N` ids.
 Example:
 
     from keel.ticketing.mock import MockProvider
+    from keel.api import Milestone, Scope
+
     p = MockProvider()
-    t = p.create_milestone("EPIC-1", "Foundation", "")
-    assert ("create_milestone", "EPIC-1", "Foundation", "") in p.calls
+    m = Milestone(id="m1", title="Foundation")
+    t = p.create_milestone(m, Scope(project="foo"))
+    assert ("create_milestone", "m1", "Foundation") in p.calls
     assert t.id.startswith("MOCK-")
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from keel.ticketing.base import Ticket
+
+if TYPE_CHECKING:
+    from keel.manifest import Milestone, Task
+    from keel.workspace import Scope
 
 
 class MockProvider:
@@ -38,17 +45,17 @@ class MockProvider:
         self.calls.append(("configure", config))
         self._config = dict(config)
 
-    def create_milestone(self, parent_id: str, title: str, description: str) -> Ticket:
-        self.calls.append(("create_milestone", parent_id, title, description))
+    def create_milestone(self, milestone: Milestone, scope: Scope) -> Ticket:  # noqa: ARG002
+        self.calls.append(("create_milestone", milestone.id, milestone.title))
         tid = self._next_id()
-        t = Ticket(id=tid, url=self.link_url(tid), title=title, status="planned")
+        t = Ticket(id=tid, url=self.link_url(tid), title=milestone.title, status="planned")
         self._tickets[tid] = t
         return t
 
-    def create_task(self, parent_milestone_id: str, title: str, description: str) -> Ticket:
-        self.calls.append(("create_task", parent_milestone_id, title, description))
+    def create_task(self, task: Task, scope: Scope) -> Ticket:  # noqa: ARG002
+        self.calls.append(("create_task", task.id, task.title, task.milestone))
         tid = self._next_id()
-        t = Ticket(id=tid, url=self.link_url(tid), title=title, status="planned")
+        t = Ticket(id=tid, url=self.link_url(tid), title=task.title, status="planned")
         self._tickets[tid] = t
         return t
 
