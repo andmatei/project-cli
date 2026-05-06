@@ -66,6 +66,16 @@ def cmd_rm(
     confirm_destructive(f"Remove task {id}?", yes=yes)
 
     with edit_milestones(scope) as manifest:
+        # Capture the task's milestone before removal
+        task_being_removed = next(t for t in manifest.tasks if t.id == id)
+        old_milestone_id = task_being_removed.milestone
+
         manifest.tasks = [t for t in manifest.tasks if t.id != id]
+
+        # If the old milestone was the implicit default and now empty, drop it.
+        if old_milestone_id == "default" and not any(
+            t.milestone == "default" for t in manifest.tasks
+        ):
+            manifest.milestones = [ms for ms in manifest.milestones if ms.id != "default"]
 
     out.result({"removed": id}, human_text=f"Task removed: {id}")

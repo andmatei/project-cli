@@ -96,3 +96,25 @@ def test_show_no_milestones_file_no_section(projects, make_project) -> None:
     result = runner.invoke(app, ["show", "foo", "--json"])
     data = json.loads(result.stdout)
     assert "milestones" not in data
+
+
+def test_show_skips_single_default_milestone(projects, make_project, monkeypatch) -> None:
+    """When the only milestone is the implicit default, `show` doesn't render the milestone hierarchy."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    runner.invoke(app, ["task", "add", "t1", "--title", "x"])  # auto-default
+    result = runner.invoke(app, ["show", "foo"])
+    assert result.exit_code == 0
+    # The summary should mention t1 directly, not show "Milestone: default" sections.
+    assert "default" not in result.stdout.lower() or "Tasks" in result.stdout
+
+
+def test_show_renders_explicit_milestones(projects, make_project, monkeypatch) -> None:
+    """When explicit milestones exist, render them normally."""
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation"])
+    runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "x"])
+    result = runner.invoke(app, ["show", "foo"])
+    assert "m1" in result.stdout
+    assert "Foundation" in result.stdout

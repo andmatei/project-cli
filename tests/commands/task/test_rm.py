@@ -67,3 +67,15 @@ def test_rm_dry_run_writes_nothing(projects, make_project, monkeypatch) -> None:
     assert pre_text == post_text
     m = load_milestones_manifest(mp)
     assert any(t.id == "t2" for t in m.tasks)
+
+
+def test_rm_emptying_default_removes_it(projects, make_project, monkeypatch) -> None:
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    runner.invoke(app, ["task", "add", "t1", "--title", "x"])  # creates default
+    result = runner.invoke(app, ["task", "rm", "t1", "-y"])
+    assert result.exit_code == 0
+    from keel.api import load_milestones_manifest
+
+    m = load_milestones_manifest(proj / "milestones.toml")
+    assert m.milestones == []

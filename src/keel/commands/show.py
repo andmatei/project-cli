@@ -8,12 +8,17 @@ from rich.table import Table
 
 from keel import workspace
 from keel.api import (
+    MilestonesManifest,
     Output,
     load_milestones_manifest,
     load_project_manifest,
     ready_tasks,
     resolve_cli_scope,
 )
+
+
+def _has_only_implicit_default(manifest: MilestonesManifest) -> bool:
+    return len(manifest.milestones) == 1 and manifest.milestones[0].id == "default"
 
 
 def cmd_show(
@@ -48,6 +53,7 @@ def cmd_show(
 
     # Load milestones if not in brief mode
     milestones_data: dict | None = None
+    milestones_manifest: MilestonesManifest | None = None
     if not brief:
         milestones_manifest = load_milestones_manifest(scope.milestones_manifest_path)
         if milestones_manifest.milestones or milestones_manifest.tasks:
@@ -116,23 +122,53 @@ def cmd_show(
         table.add_row("Deliverables", "\n".join(f"{n}  [{p}]" for n, p in deliverables))
 
     # Add milestones section if data is available
-    if milestones_data is not None:
-        by_status = milestones_data["by_status"]
-        status_line = "  ".join(f"{k}={v}" for k, v in by_status.items())
-        table.add_row("Milestones", status_line)
+    if milestones_data is not None and milestones_manifest is not None:
+        single_default = _has_only_implicit_default(milestones_manifest)
+
+        if single_default:
+            # Render task-level status counts directly; the milestone is implicit.
+            task_status_counts = {
+                "planned": 0,
+                "active": 0,
+                "done": 0,
+                "cancelled": 0,
+            }
+            for t in milestones_manifest.tasks:
+                task_status_counts[t.status] += 1
+            status_line = "  ".join(f"{k}={v}" for k, v in task_status_counts.items())
+            table.add_row("Tasks", status_line)
+        else:
+            by_status = milestones_data["by_status"]
+            status_line = "  ".join(f"{k}={v}" for k, v in by_status.items())
+            # Include milestone titles so explicit milestones surface their names.
+            milestone_lines = [f"  - {ms.id}: {ms.title}" for ms in milestones_manifest.milestones]
+            milestones_text = status_line
+            if milestone_lines:
+                milestones_text += "\n" + "\n".join(milestone_lines)
+            table.add_row("Milestones", milestones_text)
 
         if milestones_data["active_tasks"]:
-            active_text = "\n".join(
-                f"  - {t['id']} ({t['milestone']}) — {t['title']}"
-                for t in milestones_data["active_tasks"]
-            )
+            if single_default:
+                active_text = "\n".join(
+                    f"  - {t['id']} — {t['title']}" for t in milestones_data["active_tasks"]
+                )
+            else:
+                active_text = "\n".join(
+                    f"  - {t['id']} ({t['milestone']}) — {t['title']}"
+                    for t in milestones_data["active_tasks"]
+                )
             table.add_row("Active tasks", active_text)
 
         if milestones_data["ready_next"]:
-            ready_text = "\n".join(
-                f"  - {t['id']} ({t['milestone']}) — {t['title']}"
-                for t in milestones_data["ready_next"]
-            )
+            if single_default:
+                ready_text = "\n".join(
+                    f"  - {t['id']} — {t['title']}" for t in milestones_data["ready_next"]
+                )
+            else:
+                ready_text = "\n".join(
+                    f"  - {t['id']} ({t['milestone']}) — {t['title']}"
+                    for t in milestones_data["ready_next"]
+                )
             table.add_row("Ready next", ready_text)
 
     out.print_rich(Panel(table, title=f"Project: {m.project.name}", border_style="blue"))
