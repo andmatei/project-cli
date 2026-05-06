@@ -18,17 +18,16 @@ def test_rm_removes_design_dir(projects, make_project, make_deliverable) -> None
     assert not deliv.exists()
 
 
-def test_rm_cleans_parent_claude_md(projects, make_project) -> None:
-    """After deliverable rm, the parent's CLAUDE.md no longer mentions it."""
-    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign; rework once T9.2 lands.
+def test_rm_cleans_parent_design_md(projects, make_project) -> None:
+    """After deliverable rm, the parent's design.md no longer mentions it."""
     make_project("foo")
     runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo"])
-    parent_claude = (projects / "foo" / "CLAUDE.md").read_text()
-    assert "bar" in parent_claude  # Sanity: it's there before rm
+    parent_design = (projects / "foo" / "design.md").read_text()
+    assert "**bar**" in parent_design  # Sanity: it's there before rm
     runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo"])
-    parent_claude_after = (projects / "foo" / "CLAUDE.md").read_text()
+    parent_design_after = (projects / "foo" / "design.md").read_text()
     # The deliverable line is removed (not the heading itself necessarily):
-    assert "**bar**" not in parent_claude_after
+    assert "**bar**" not in parent_design_after
 
 
 def test_rm_fails_for_unknown_deliverable(projects, make_project) -> None:

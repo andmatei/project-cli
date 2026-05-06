@@ -95,20 +95,9 @@ def cmd_rename(
     )
     save_project_manifest(manifest_path, new_manifest)
 
-    # 3. Update parent CLAUDE.md and design.md references
-    # TODO(plan8-task9.2): CLAUDE.md links are dead post-redesign.
+    # 3. Update parent design.md references (the source of truth post-0.0.3).
     description = m.project.description
     parent_scope = workspace.Scope(project=project, deliverable=None)
-    parent_claude = parent_scope.unit_dir / "CLAUDE.md"
-    if parent_claude.is_file():
-        text = remove_bullet_under_heading(
-            parent_claude.read_text(), "Deliverables", f"- **{old}**:"
-        )
-        text = insert_under_heading(
-            text, "Deliverables", f"- **{new}**: ../deliverables/{new}/ -- {description}\n"
-        )
-        parent_claude.write_text(text)
-
     parent_design = parent_scope.design_md_path
     if parent_design.is_file():
         text = remove_bullet_under_heading(
@@ -117,28 +106,11 @@ def cmd_rename(
         text = insert_under_heading(
             text,
             "Deliverables",
-            f"- **{new}**: {description}. See [design](../deliverables/{new}/design.md).\n",
+            f"- **{new}**: {description}. See [design](deliverables/{new}/design.md).\n",
         )
         parent_design.write_text(text)
 
-    # 4. Update sibling deliverable CLAUDE.md files
-    # TODO(plan8-task9.2): sibling CLAUDE.md is dead post-redesign.
-    siblings_dir = workspace.project_dir(project) / "deliverables"
-    if siblings_dir.is_dir():
-        for sibling in siblings_dir.iterdir():
-            if not sibling.is_dir() or sibling.name == new:
-                continue
-            sibling_claude = sibling / "CLAUDE.md"
-            if sibling_claude.is_file():
-                text = remove_bullet_under_heading(
-                    sibling_claude.read_text(), "Sibling deliverables", f"- {old}:"
-                )
-                text = insert_under_heading(
-                    text, "Sibling deliverables", f"- {new}: ../{new}/ -- {description}\n"
-                )
-                sibling_claude.write_text(text)
-
-    # 5. (Optional) branch rename
+    # 4. (Optional) branch rename
     code_dir = new_path / "code"
     if code_dir.is_dir() and rename_branch and m.repos:
         old_branch = m.repos[0].branch_prefix

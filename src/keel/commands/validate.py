@@ -110,13 +110,15 @@ def _check_worktrees(unit_dir: Path, repos, label: str) -> list[_Finding]:
 
 
 def _check_deliverable_references(scope: workspace.Scope) -> list[_Finding]:
+    """Detect orphan deliverables: a unit dir with `project.toml` that the parent's
+    `design.md` doesn't mention under `## Deliverables`.
+    """
     findings: list[_Finding] = []
     deliv_dir = scope.unit_dir / "deliverables"
     if not deliv_dir.is_dir():
         return findings
-    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign; this check is mostly historical.
-    parent_claude = scope.unit_dir / "CLAUDE.md"
-    parent_text = parent_claude.read_text() if parent_claude.is_file() else ""
+    parent_design = scope.design_md_path
+    parent_text = parent_design.read_text() if parent_design.is_file() else ""
     for d in sorted(deliv_dir.iterdir()):
         if not d.is_dir() or not (d / "project.toml").is_file():
             continue
@@ -125,8 +127,8 @@ def _check_deliverable_references(scope: workspace.Scope) -> list[_Finding]:
                 _Finding(
                     "refs",
                     "warn",
-                    f"deliverable '{d.name}' exists on disk but not mentioned in parent CLAUDE.md",
-                    str(parent_claude),
+                    f"deliverable '{d.name}' exists on disk but not mentioned in parent design.md",
+                    str(parent_design),
                 )
             )
     return findings

@@ -62,10 +62,6 @@ def cmd_rm(
         if not keep_design:
             log.delete_file(deliv)
         log.modify_file(
-            scope.unit_dir / "CLAUDE.md",
-            diff=f"- - **{name}**: ...",
-        )
-        log.modify_file(
             scope.design_md_path,
             diff=f"- - **{name}**: ...",
         )
@@ -105,35 +101,12 @@ def cmd_rm(
     except OSError:
         pass  # best-effort
 
-    # Clean up parent CLAUDE.md
-    # TODO(plan8-task9.2): CLAUDE.md links are dead post-redesign.
-    parent_claude = scope.unit_dir / "CLAUDE.md"
-    if parent_claude.is_file():
-        parent_claude.write_text(
-            remove_bullet_under_heading(parent_claude.read_text(), "Deliverables", f"- **{name}**:")
-        )
-
-    # Clean up parent design.md
+    # Clean up parent design.md (the AST edit is idempotent).
     parent_design = scope.design_md_path
     if parent_design.is_file():
         parent_design.write_text(
             remove_bullet_under_heading(parent_design.read_text(), "Deliverables", f"- **{name}**:")
         )
-
-    # Clean up sibling deliverable CLAUDE.md files
-    # TODO(plan8-task9.2): sibling CLAUDE.md is dead post-redesign.
-    siblings_dir = workspace.project_dir(project) / "deliverables"
-    if siblings_dir.is_dir():
-        for sibling in siblings_dir.iterdir():
-            if not sibling.is_dir():
-                continue
-            sibling_claude = sibling / "CLAUDE.md"
-            if sibling_claude.is_file():
-                sibling_claude.write_text(
-                    remove_bullet_under_heading(
-                        sibling_claude.read_text(), "Sibling deliverables", f"- {name}:"
-                    )
-                )
 
     out.result(
         {"removed": name, "path": str(deliv)},

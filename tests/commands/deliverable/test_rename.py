@@ -39,13 +39,13 @@ def test_rename_fails_if_target_exists(projects, make_project, make_deliverable)
 
 
 def test_rename_updates_parent_references(projects, make_project) -> None:
-    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign; rework once T9.2 lands.
+    """After rename, the parent's design.md mentions the new name and not the old."""
     make_project("foo")
     runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo"])
     runner.invoke(app, ["deliverable", "rename", "bar", "baz", "-y", "--project", "foo"])
-    parent_claude = (projects / "foo" / "CLAUDE.md").read_text()
-    assert "**bar**" not in parent_claude
-    assert "**baz**" in parent_claude
+    parent_design = (projects / "foo" / "design.md").read_text()
+    assert "**bar**" not in parent_design
+    assert "**baz**" in parent_design
 
 
 def test_rename_uses_git_worktree_move_when_code_present(

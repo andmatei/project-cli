@@ -33,20 +33,21 @@ def test_validate_missing_phase_warns(projects, make_project) -> None:
 
 
 def test_validate_orphan_deliverable_dir_warns(projects, make_project, make_deliverable) -> None:
-    """A deliverable on disk but not mentioned in parent CLAUDE.md should warn."""
-    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign. make_deliverable no longer
-    # creates a parent CLAUDE.md, so this test's setup will fail. Rework when CLAUDE.md
-    # validation is removed in T9.2.
+    """A deliverable dir with project.toml but not mentioned in parent design.md should warn."""
     make_deliverable(project_name="foo", name="bar", description="d")
-    # Deliberately strip the parent's mention of this deliverable
-    parent_claude = projects / "foo" / "CLAUDE.md"
-    text = parent_claude.read_text()
-    parent_claude.write_text(text.replace("- **bar**:", "- **REMOVED**:"))
+    # The fixture's parent design.md does not auto-list deliverables, so the orphan
+    # warning fires by default. Sanity-check the precondition then assert.
+    parent_design = (projects / "foo" / "design.md").read_text()
+    assert "**bar**" not in parent_design
     result = runner.invoke(app, ["validate", "foo", "--json"])
     payload = json.loads(result.stdout)
     findings = payload["findings"]
-    msgs = [f["message"] for f in findings]
-    assert any("bar" in m or "missing" in m.lower() for m in msgs)
+    refs_warns = [
+        f
+        for f in findings
+        if f["check"] == "refs" and f["level"] == "warn" and "bar" in f["message"]
+    ]
+    assert refs_warns, f"expected an orphan-deliverable warning, got: {findings}"
 
 
 def test_validate_summary_on_stdout_with_table(projects, make_project) -> None:

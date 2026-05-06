@@ -6,6 +6,15 @@ Initial design from 2026-04-27 brainstorm. Living source of truth — update as
 implementation reveals new constraints. See `scope.md` for what's in/out and
 why; see `decisions/` for rationale on choices made.
 
+The 0.0.3 redesign (Plan 8) reshapes the on-disk layout: manifests now live
+at each unit's root rather than under a `design/` subdir, tool state moves
+under `.keel/`, the `CLAUDE.md` artifact is replaced by an auto-generated
+`README.md`, and deliverables collapse onto the same `ProjectManifest`
+schema as projects (no more `deliverable.toml`). See
+`decisions/2026-05-05-data-model-redesign.md` for rationale and
+`plans/2026-05-05-plan-8-data-model-redesign.md` for the rollout plan.
+The structural sections below describe the post-0.0.3 layout.
+
 ---
 
 ## 1. Summary
@@ -15,9 +24,11 @@ markdown-it-py + Jinja2 + tomlkit + questionary + pytest), with three core
 structural changes versus the current Bash version:
 
 1. **Per-unit TOML manifest** is the source of truth for code linkage —
-   CLAUDE.md text is generated from it, not the other way around.
-2. **Deliverables are mini-projects** — their `design/` directory has parallel
-   artifacts (scope.md opt-in, design.md, decisions/, .phase) to a project's.
+   the auto-generated `README.md` is rendered from it, not the other way
+   around.
+2. **Deliverables are mini-projects** — their unit root has parallel artifacts
+   (scope.md opt-in, design.md, decisions/, `.keel/phase`) to a project's,
+   and they share the same `ProjectManifest` schema.
 3. **Consistent surface** — every command auto-detects scope from CWD, supports
    the same global flags (`--json`, `--dry-run`, `-y`, `-q/-v`), and uses
    AST-aware markdown editing for cross-file mutations (no more `sed`).
@@ -89,12 +100,13 @@ structural changes versus the current Bash version:
 - `--dry-run` prints a structured op list and exits 0. Example:
   ```
   [dry-run] Would create:
-    ~/projects/foo/design/CLAUDE.md         (1.2 KB)
-    ~/projects/foo/design/scope.md          (340 B)
+    ~/projects/foo/README.md                (1.2 KB)
+    ~/projects/foo/scope.md                 (340 B)
+    ~/projects/foo/.keel/phase
   [dry-run] Would modify:
-    ~/projects/parent/design/CLAUDE.md
+    ~/projects/parent/design.md
       + ## Deliverables
-      + - foo: ../deliverables/foo/design/ -- desc
+      + - **foo**: desc. See [design](deliverables/foo/design.md).
   [dry-run] Would create git worktree:
     ~/projects/foo/code  (from ~/repo, branch andrei/foo-base)
   ```
@@ -109,10 +121,9 @@ structural changes versus the current Bash version:
   in place and print recovery hints. No auto-rollback — manual recovery is
   fine for a personal tool.
 - **Cross-file mutations** (e.g., `deliverable add` updating parent
-  `CLAUDE.md` / `design.md`) use **markdown-it-py AST editing**, not regex/
-  sed. AST edits target named sections (insert under `## Deliverables`
-  heading; create the heading if missing). Idempotent — re-running doesn't
-  duplicate.
+  `design.md`) use **markdown-it-py AST editing**, not regex/sed. AST edits
+  target named sections (insert under `## Deliverables` heading; create the
+  heading if missing). Idempotent — re-running doesn't duplicate.
 
 ---
 
@@ -121,24 +132,27 @@ structural changes versus the current Bash version:
 ```
 ~/projects/
 ├── <project-name>/
-│   ├── design/
-│   │   ├── CLAUDE.md           # Generated; human-narrative + manifest summary
-│   │   ├── project.toml        # Manifest: source of truth for code linkage
-│   │   ├── scope.md            # Always present at project level
-│   │   ├── design.md           # Always present at project level
-│   │   ├── .phase              # Phase tracker (current line + history)
-│   │   └── decisions/
-│   │       └── YYYY-MM-DD-slug.md
+│   ├── README.md               # Auto-generated from project.toml + lifecycle
+│   ├── project.toml            # Manifest: source of truth for code linkage
+│   ├── scope.md                # Always present at project level
+│   ├── design.md               # Always present at project level
+│   ├── decisions/
+│   │   └── YYYY-MM-DD-slug.md
+│   ├── plans/                  # Optional; implementation plans
+│   ├── specs/                  # Optional; design specs
+│   ├── .keel/                  # Tool state (managed by keel)
+│   │   ├── phase               # Current phase + history
+│   │   └── lifecycle.lock.toml # Snapshot of the resolved lifecycle FSM
 │   ├── code/                   # Worktree #1 (or code-<repo>/ if multiple)
 │   └── deliverables/
 │       └── <deliverable>/
-│           ├── design/
-│           │   ├── CLAUDE.md
-│           │   ├── deliverable.toml   # Manifest
-│           │   ├── scope.md           # OPT-IN — only when distinct from parent
-│           │   ├── design.md
-│           │   ├── .phase             # Independent phase tracker
-│           │   └── decisions/
+│           ├── README.md              # Auto-generated
+│           ├── project.toml           # Same schema as parent project
+│           ├── scope.md               # OPT-IN — only when distinct from parent
+│           ├── design.md
+│           ├── decisions/
+│           ├── .keel/
+│           │   └── phase              # Independent phase tracker
 │           └── code/                  # Worktree (or shared with parent)
 └── .archive/                   # Soft-deleted projects
     └── <project-name>-<date>/
@@ -148,13 +162,13 @@ structural changes versus the current Bash version:
 
 | Artifact | Project | Deliverable |
 |---|---|---|
-| `CLAUDE.md` | yes | yes |
-| Manifest | `project.toml` | `deliverable.toml` |
+| `README.md` (generated) | yes | yes |
+| Manifest | `project.toml` | `project.toml` (same schema) |
 | `scope.md` | always created | **opt-in** (use `/write-scope` from inside the dir) |
 | `design.md` | always created | always created |
 | `decisions/` | yes | yes (independent) |
-| `.phase` (lifecycle) | yes | yes (**independent** — different deliverables can be at different phases) |
-| Worktree(s) | optional, declared in manifest | optional, declared in manifest, may be `shared = true` |
+| Phase (`.keel/phase`) | yes | yes (**independent** — different deliverables can be at different phases) |
+| Worktree(s) | optional, declared in manifest | optional, declared in manifest, may be `shared_worktree = true` |
 
 **Rationale (recorded in `decisions/`):**
 - Deliverable scope is opt-in because scope is usually derived top-down from
@@ -188,14 +202,17 @@ worktree = "code"                          # subdir under project for the worktr
 branch_prefix = "andrei/api-ai-agents"     # prefix for branches in this worktree
 ```
 
-### 5.2 `deliverable.toml`
+### 5.2 Deliverable manifest
+
+Deliverables use the same `ProjectManifest` schema as projects (Plan 8 /
+0.0.3 redesign). The file is `<deliverable>/project.toml`:
 
 ```toml
-[deliverable]
+[project]
 name = "ipa-skills"
-parent_project = "api-ai-agents"
 description = "Interface for IPA validation skills"
 created = "2026-04-20"
+lifecycle = "default"
 shared_worktree = false   # true means uses parent's worktree, no own [[repos]]
 
 [[repos]]
@@ -204,6 +221,10 @@ local_hint = "~/ipa"
 worktree = "code"
 branch_prefix = "andrei/api-ai-agents-ipa-skills"
 ```
+
+The legacy `[deliverable]` block (in `deliverable.toml`) is recognized for
+read-only conversion via `keel migrate` and slated for removal in a future
+0.0.x release.
 
 ### 5.3 Schema rules
 
@@ -216,12 +237,13 @@ branch_prefix = "andrei/api-ai-agents-ipa-skills"
 - `validate` checks: TOML parses, schema matches, declared worktrees exist on
   disk, branches start with the declared `branch_prefix`.
 
-### 5.4 CLAUDE.md regeneration
+### 5.4 README regeneration
 
-The "## Code" and "## Deliverables" sections in `CLAUDE.md` are
-**generated from the manifest**. AST-aware regen replaces those sections
-without disturbing human-written sections. Hand-edited code/deliverable
-sections are overwritten on regen — the manifest wins.
+The unit's `README.md` is **rendered from the manifest** (`readme_md.j2`).
+It is a derived cache — safe to delete and regenerate, never the source
+of truth. AST-aware editing of `design.md` (rather than `README.md`) is
+how cross-file mutations propagate, e.g. `deliverable add` inserts a
+bullet under `## Deliverables` in the parent's `design.md`.
 
 ---
 
@@ -275,7 +297,7 @@ project code rm [name] --repo URL
 |---|---|
 | Args | positional `<name>` (slugified), `-d/--description TEXT` (required, prompted on TTY if missing), `-r/--repo PATH` (repeatable), `--no-worktree`, `--dry-run`, `-y/--yes` |
 | Auto-detect | n/a (creates new project) |
-| Side effects | mkdir `~/projects/<name>/{design,design/decisions}`; write `project.toml`, `CLAUDE.md`, `scope.md`, `design.md`, initial `decisions/<date>-project-setup.md`; `.phase` set to `scoping`; for each `--repo`: append `[[repos]]` to manifest, then `code init` materializes worktrees |
+| Side effects | mkdir `~/projects/<name>/{decisions,.keel}`; write `project.toml`, `README.md` (generated), `scope.md`, `design.md`; `.keel/phase` set to lifecycle's initial state; `.keel/lifecycle.lock.toml` snapshot; for each `--repo`: append `[[repos]]` to manifest, then `code init` materializes worktrees |
 | Conflict | hard fail if `~/projects/<name>` exists. No `--force` here (too risky for `new`) |
 | Output | created paths + next-steps hints; `--json`: `{"path": "...", "design": "...", "worktrees": [...]}` |
 | Errors | invalid name, description missing in non-TTY, repo not a git dir, worktree creation fails (file ops kept; recovery hint printed) |
@@ -286,7 +308,7 @@ project code rm [name] --repo URL
 |---|---|
 | Args | positional `<name>`, `-d/--description TEXT` (required), `-r/--repo PATH` (single), `--shared` (use parent's worktree), `--dry-run`, `-y/--yes` |
 | Auto-detect | parent project from CWD; `--project NAME` overrides; fail loud if not detected and not provided |
-| Side effects | mkdir deliverable design dir; write `deliverable.toml`, `CLAUDE.md`, `design.md`, initial decision; **no `scope.md`** (opt-in); `.phase` set to `scoping`; AST-edit parent `CLAUDE.md` + `design.md` to add deliverable to `## Deliverables` (idempotent); AST-edit sibling deliverables' `CLAUDE.md` to list new sibling; create worktree if `--repo` (or shared if `--shared`) |
+| Side effects | mkdir deliverable unit root; write `project.toml`, generated `README.md`, `design.md`, initial `decisions/`; `scope.md` is also scaffolded (kept for parity); `.keel/phase` set to the lifecycle's initial state (lifecycle inherited from parent); AST-edit parent `design.md` to add deliverable under `## Deliverables` (idempotent); create worktree if `--repo` (or shared if `--shared`) |
 | Conflict | hard fail if deliverable already exists |
 | Output | created paths + parent files modified + next-steps; `--json`: `{"deliverable_path": "...", "modified_files": [...]}` |
 
@@ -297,7 +319,7 @@ project code rm [name] --repo URL
 | Args | positional `<name>`, `--keep-code`, `--keep-design`, `--force` (allow even if worktree dirty), `-y/--yes`, `--dry-run` |
 | Auto-detect | parent project from CWD |
 | Confirm | always prompts unless `-y`; lists paths to delete + parent files to modify |
-| Side effects | `git worktree remove` (fail if dirty without `--force`); rmtree deliverable design dir; AST-edit parent `CLAUDE.md` + `design.md` to remove the deliverable line; AST-edit sibling `CLAUDE.md` files |
+| Side effects | `git worktree remove` (fail if dirty without `--force`); rmtree deliverable unit root; AST-edit parent `design.md` to remove the deliverable line |
 | Errors | dirty worktree without `--force`, deliverable not found, non-TTY without `-y` |
 
 ### 7.4 `project deliverable rename <old> <new>`
@@ -306,7 +328,7 @@ project code rm [name] --repo URL
 |---|---|
 | Args | positional `<old> <new>`, `--rename-branch / --no-rename-branch` (default rename), `-y`, `--dry-run` |
 | Auto-detect | parent project from CWD |
-| Side effects | `git worktree move` (proper git op); rename design dir; update manifest's `[deliverable]` block; AST-edit parent files; AST-edit sibling files; `git branch -m old new` if `--rename-branch` |
+| Side effects | `git worktree move` (proper git op); rename deliverable unit dir; update manifest's `[project]` block; AST-edit parent `design.md`; `git branch -m old new` if `--rename-branch` |
 | Conflict | new name exists → hard fail; dirty worktree → warn but allow |
 
 ### 7.5 `project deliverable list`
@@ -390,7 +412,7 @@ project code rm [name] --repo URL
 | Aspect | Spec |
 |---|---|
 | Args | positional `[name]` (auto-detected), `--strict` (warnings → failures), `--check FILTER` (e.g., `--check manifest,refs`), `--content` (opt-in content checks), `--json` |
-| Structural checks (always) | manifest is valid TOML & matches schema; required design files exist (`CLAUDE.md`, `design.md`, `.phase`); declared worktrees exist; worktree branches match `branch_prefix`; parent CLAUDE.md/design.md mention all on-disk deliverables; sibling CLAUDE.md files reference each other consistently |
+| Structural checks (always) | manifest is valid TOML & matches schema; required files exist (`design.md`, `.keel/phase`); declared worktrees exist; worktree branches match `branch_prefix`; on-disk deliverables (those with a `project.toml`) are mentioned in parent `design.md` |
 | Content checks (`--content`) | decision frontmatter parses; design.md has expected sections |
 | Default output | per-check PASS/WARN/FAIL list + summary |
 | `--json` | `{"findings": [...], "summary": {"pass": N, "warn": N, "fail": N}}` |
@@ -409,7 +431,7 @@ project code rm [name] --repo URL
 | Aspect | Spec |
 |---|---|
 | Args | positional `<old> <new>`, `--rename-branches / --no-rename-branches` (default rename), `-y`, `--dry-run` |
-| Side effects | rename project dir; for each worktree: `git worktree move`, `git branch -m`; update manifest's `branch_prefix`; AST-edit any deliverable CLAUDE.md mentioning old name |
+| Side effects | rename project dir; for each worktree: `git worktree move`, `git branch -m`; update manifest's `branch_prefix`; AST-edit any deliverable `design.md` mentioning old name |
 | Output | summary of dirs renamed + branches renamed + files updated |
 
 ### 7.16 `project design export`
@@ -451,7 +473,7 @@ project code rm [name] --repo URL
 | Aspect | Spec |
 |---|---|
 | Args | positional `[name]` (auto-detected), `--repo PATH` (required), `--worktree NAME` (default: `code-<reponame>`), `--branch-prefix PREFIX` (default: `<gituser>/<project>[-<deliverable>]`), `--dry-run`, `-y` |
-| Side effects | append `[[repos]]` entry to manifest; create worktree per the new entry; regen CLAUDE.md "## Code" section |
+| Side effects | append `[[repos]]` entry to manifest; create worktree per the new entry; regen `README.md` |
 | Conflict | repo already declared → hard fail unless `--force` |
 
 ### 7.21 `project code rm [name] --repo URL`
@@ -460,7 +482,7 @@ project code rm [name] --repo URL
 |---|---|
 | Args | positional `[name]` (auto-detected), `--repo URL` (required), `-y/--yes`, `--dry-run`, `--force` (dirty worktree) |
 | Confirm | prompts unless `-y` |
-| Side effects | `git worktree remove` (fail if dirty without `--force`); remove `[[repos]]` entry; regen CLAUDE.md |
+| Side effects | `git worktree remove` (fail if dirty without `--force`); remove `[[repos]]` entry; regen `README.md` |
 
 ### 7.22 `project completion {bash|zsh|fish}`
 
@@ -476,23 +498,26 @@ Reads version from `pyproject.toml` via `importlib.metadata`.
 
 ## 8. Migration plan
 
-Existing projects under `~/projects/` need a one-time migration:
+Existing projects under `~/projects/` may need migration in two phases (the
+`keel migrate` command runs both as needed; idempotent on already-migrated
+units):
 
-1. **Synthesize manifests from CLAUDE.md text**: a `project migrate [name]`
-   subcommand (one-shot, removed after migration completes) reads the existing
-   `## Code` and `## Deliverables` sections of each project's `CLAUDE.md`,
-   the `[code]` paragraphs in deliverable `CLAUDE.md` files, and the existing
-   git worktrees, and writes equivalent `project.toml` /
-   `deliverable.toml` files.
-2. **Initialize `.phase` for deliverables**: any deliverable without a
-   `.phase` file gets one initialized to `scoping`.
-3. **Verify**: `project validate --strict` must pass on every project after
+1. **Bash CLI → manifest** (legacy detection via `design/CLAUDE.md`): the
+   migrator reads the legacy `## Code` and `## Deliverables` sections,
+   plus on-disk worktrees, and writes equivalent `project.toml` files.
+2. **Legacy layout → new layout** (Plan 8 / 0.0.3): manifests move from
+   `<unit>/design/project.toml` to `<unit>/project.toml`; phase moves from
+   `<unit>/design/.phase` to `<unit>/.keel/phase`; `.keel/lifecycle.lock.toml`
+   is created; `decisions/`/`plans/`/`specs/` (and `scope.md`/`design.md`)
+   move up out of `design/`; `<unit>/README.md` is generated; the old
+   `design/` subdir is removed.
+3. **Verify**: `keel validate --strict` should pass on every project after
    migration. Fixups (e.g., orphaned worktree references) handled manually.
 
-Migration is **dry-run by default**: `project migrate` prints what it would
-write; `project migrate --apply` actually writes. The migration command is
-removed after the migration succeeds across all existing projects (or kept as
-a hidden `--legacy` command in case new old-style projects ever appear).
+Migration is **dry-run by default**: `keel migrate` prints what it would
+write; `keel migrate --apply` actually writes. The Bash-CLI detection path
+is kept indefinitely so a workspace abandoned at v0.0.x can still be
+brought forward.
 
 ---
 
@@ -509,7 +534,7 @@ a hidden `--legacy` command in case new old-style projects ever appear).
   - `archive` + restore round-trip
   - `rename` (project-level)
 - **Snapshot tests** on dry-run output and rendered files: changes to
-  generated artifacts (CLAUDE.md, design.md mutations) require updating
+  generated artifacts (`README.md`, `design.md` mutations) require updating
   snapshots, making cross-file mutations easy to review.
 - Each command has a smoke test for `--json` shape (Pydantic models).
 

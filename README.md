@@ -106,7 +106,7 @@ See `keel <cmd> --help` for the full flag surface (dry-run, --json, --yes, etc.)
 
 ### Deliverables
 
-Mini-projects nested under a parent project; each gets its own `design/`, decisions, and code linkage.
+Mini-projects nested under a parent project; each gets its own design, decisions, and code linkage. Deliverables are structurally identical to top-level projects.
 
 | Command | Purpose | Example |
 |---|---|---|
@@ -117,7 +117,7 @@ Mini-projects nested under a parent project; each gets its own `design/`, decisi
 
 ### Decisions
 
-One file per decision, stored under `design/decisions/` at the project or deliverable scope.
+One file per decision, stored under `decisions/` at the project or deliverable scope.
 
 | Command | Purpose | Example |
 |---|---|---|
@@ -173,24 +173,31 @@ The CLI manages directories under `$PROJECTS_DIR` (default: `~/projects`).
 ```
 ~/projects/
 └── <project-name>/
-    ├── design/
-    │   ├── CLAUDE.md           # human-narrative + manifest summary (generated)
-    │   ├── project.toml        # manifest: source of truth for code linkage
-    │   ├── scope.md
-    │   ├── design.md
-    │   ├── .phase              # current phase + history
-    │   └── decisions/
-    │       └── YYYY-MM-DD-slug.md
-    ├── code/                   # git worktree (or code-<repo>/ if multiple)
-    └── deliverables/           # mini-projects nested under the parent
+    ├── README.md           # auto-generated from project.toml + lifecycle
+    ├── project.toml        # manifest: source of truth for code linkage
+    ├── scope.md
+    ├── design.md
+    ├── decisions/
+    │   └── YYYY-MM-DD-slug.md
+    ├── plans/              # implementation plans (optional)
+    ├── specs/              # design specs (optional)
+    ├── .keel/              # tool state (managed by keel)
+    │   ├── phase           # current phase + history
+    │   └── lifecycle.lock.toml  # snapshot of the resolved lifecycle
+    ├── code/               # git worktree (or code-<repo>/ if multiple)
+    └── deliverables/       # mini-projects nested under the parent
         └── <name>/
-            ├── design/
-            │   └── ...
+            ├── README.md
+            ├── project.toml
+            ├── scope.md
+            ├── design.md
+            ├── decisions/
+            ├── .keel/
             └── code/
 ```
 
 `project.toml` is the manifest source of truth for code linkage and deliverable
-references. `CLAUDE.md` is generated from it and kept in sync by `keel`.
+references. `README.md` is auto-generated from it.
 
 ## Migrating an existing Bash-CLI workspace
 
@@ -207,6 +214,21 @@ keel migrate my-project --apply
 # Migrate every legacy project at once
 keel migrate --all --apply
 ```
+
+### Migrating from the legacy layout
+
+If you used keel before 0.0.3 (which kept everything under `<project>/design/`),
+run:
+
+```bash
+keel migrate <project-name> --apply
+# or for every project at once:
+keel migrate --all --apply
+```
+
+The migrate command moves manifests to the unit root, creates `.keel/`, and
+generates a `README.md`. It's idempotent — already-migrated projects are
+left alone.
 
 ## Milestones, tasks, and ticketing
 

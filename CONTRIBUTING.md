@@ -239,6 +239,55 @@ def on_transition(scope, from_phase, to_phase):
     print(f"transitioned {from_phase} -> {to_phase}")
 ```
 
+### Plugin configuration: the selector pattern
+
+Plugins read their own configuration from `project.toml`'s `[extensions]`
+table. keel core stays out of plugin schemas — each plugin owns its block
+and decides what fields are valid.
+
+The convention: a top-level group block with a `provider` selector, plus a
+nested `[extensions.<group>.<name>]` block holding the per-plugin config:
+
+```toml
+[extensions.ticketing]
+provider = "jira"
+parent_id = "PROJ-123"
+
+[extensions.ticketing.jira]
+url = "https://your-workspace.atlassian.net"
+project_key = "PROJ"
+```
+
+The `provider` field tells keel which registered plugin to dispatch to;
+the nested block belongs entirely to that plugin. Switching providers is
+a one-line change to `provider = "..."`. Different plugins for the same
+group keep their own sub-blocks alongside without conflict.
+
+In code, a plugin reads its own block off the manifest's `extensions` dict
+(plain `dict[str, Any]` — keel does not validate plugin schemas) and
+applies whatever schema it likes. See `plugins/jira/src/keel_jira/config.py`
+for a worked example.
+
+### The five-categories rule (where state lives)
+
+When extending keel, place new state under the right category at the unit
+root. The categories — and their on-disk locations — are:
+
+| Category | Location | Examples |
+|---|---|---|
+| **Declared identity** (who/what this unit is) | `project.toml` | `name`, `description`, `lifecycle`, `[[repos]]` |
+| **Declared work** (intent: what's planned) | unit root | `scope.md`, `design.md`, `decisions/`, `milestones.toml`, `plans/`, `specs/` |
+| **Current state** (where the unit is right now) | `.keel/` | `phase`, milestone/task status |
+| **Locked snapshots** (frozen reference data) | `.keel/*.lock.toml` | `lifecycle.lock.toml` (resolved lifecycle FSM at creation time) |
+| **Derived caches** (regenerable; safe to delete) | `README.md`, plugin caches | the auto-generated `README.md`, ticket-id caches |
+
+The split is load-bearing: anything in the first three categories goes in
+git; lock files freeze references that would otherwise drift; derived
+caches can be regenerated from the first four. New plugin state should
+slot into the same scheme — declared config in the manifest, runtime
+state under `.keel/`, frozen references with `.lock.toml` suffix, and
+caches anywhere clearly disposable.
+
 ## Authoring a custom lifecycle
 
 Custom workflows live as TOML files under
