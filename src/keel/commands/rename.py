@@ -66,13 +66,15 @@ def cmd_rename(
 
     m = load_project_manifest(old_scope.manifest_path)
 
+    # Ensure target dir exists before moving any children.
+    new_path.mkdir(parents=True, exist_ok=True)
+
     # Move worktrees with git_ops.move_worktree (preserves linkage)
     branch_renames: list[tuple[str, str]] = []
     new_repos = []
     for r in m.repos:
         old_wt = old_path / r.worktree
         new_wt = new_path / r.worktree
-        new_path.mkdir(parents=True, exist_ok=True)
         if old_wt.is_dir():
             git_ops.move_worktree(old_wt, new_wt)
             if rename_branches and r.branch_prefix and old in r.branch_prefix:
