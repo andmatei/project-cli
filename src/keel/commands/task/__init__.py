@@ -47,3 +47,7 @@ app.command(name="worktree")(cmd_worktree)
 from keel.commands.task.next import cmd_next  # noqa: E402
 
 app.command(name="next")(cmd_next)
+
+from keel.commands.task.move import cmd_move  # noqa: E402
+
+app.command(name="move")(cmd_move)
