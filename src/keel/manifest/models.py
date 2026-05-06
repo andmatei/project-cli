@@ -179,12 +179,14 @@ class MilestonesManifest(BaseModel):
     tasks: list[Task] = Field(default_factory=list)
 
 
-# Deprecated since 0.1.0 — kept temporarily so the v0.0.x → v0.1.0 migration
-# command can still read old `deliverable.toml` files. Removed in 0.2.0.
+# Deprecated since 0.0.3 — kept temporarily so the legacy-layout migration
+# command can still read old `deliverable.toml` files. Removed in a future
+# 0.0.x once active workspaces are migrated.
 def _deprecated_deliverable_warning() -> None:
     _warnings.warn(
-        "DeliverableManifest / DeliverableMeta are deprecated in keel 0.1.0; "
-        "deliverables now use ProjectManifest. Schedule for removal in 0.2.0.",
+        "DeliverableManifest / DeliverableMeta are deprecated in keel 0.0.3; "
+        "deliverables now use ProjectManifest. Schedule for removal in a "
+        "future 0.0.x once workspaces are migrated.",
         DeprecationWarning,
         stacklevel=3,
     )

@@ -1,10 +1,12 @@
-# Plan 8: Data-model + project-layout redesign (0.0.x → 0.1.0) Implementation Plan
+# Plan 8: Data-model + project-layout redesign (0.0.2 → 0.0.3) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Migrate keel from the v0.0.x layout (`design/{project.toml,milestones.toml,.phase,…}` + separate `deliverable.toml` schema) to the v0.1.0 layout (manifests at project root, `.keel/` for tool state, identical schema for projects and deliverables, implicit-default milestone, per-plugin ticketing templates).
+**Goal:** Migrate keel from the old layout (`design/{project.toml,milestones.toml,.phase,…}` + separate `deliverable.toml` schema) to the new layout (manifests at project root, `.keel/` for tool state, identical schema for projects and deliverables, implicit-default milestone, per-plugin ticketing templates).
 
-**Architecture:** The redesign is one big interlocking change. Implementation order: foundations first (`Scope` API, manifest models), then the `.keel/` directory and lifecycle snapshot, then the migration command, then the hierarchy refactor (implicit-default milestone), then the deliverable consolidation, then the new `TicketProvider` protocol + keel-jira refactor, finally docs and version bumps. Both wheels jump to 0.1.0 on completion.
+**Versioning note:** Both wheels stay on 0.0.x — `keel-cli` 0.0.2 → 0.0.3 and `keel-jira` 0.0.1 → 0.0.2. Pre-1.0 every release is "in development"; staying on 0.0.x signals "still freely changing things, no compatibility promises yet." A future 0.1.0 will mark the convergence point.
+
+**Architecture:** The redesign is one big interlocking change. Implementation order: foundations first (`Scope` API, manifest models), then the `.keel/` directory and lifecycle snapshot, then the migration command, then the hierarchy refactor (implicit-default milestone), then the deliverable consolidation, then the new `TicketProvider` protocol + keel-jira refactor, finally docs and version bumps.
 
 **Tech Stack:** Same as Plan 7. Pydantic v2, Typer, tomlkit/tomllib, Jinja2, httpx, respx. No new dependencies.
 
@@ -32,7 +34,7 @@ src/keel/
 ├── workspace.py               # MODIFY — Scope API points at new layout (project root, .keel/)
 ├── commands/
 │   ├── new.py                 # MODIFY — write project.toml at root, .keel/phase, .keel/lifecycle.lock.toml, README.md
-│   ├── migrate.py             # MODIFY — add v0.0.x → v0.1.0 migration step
+│   ├── migrate.py             # MODIFY — add old → new layout migration step
 │   ├── deliverable/add.py     # MODIFY — sugar over the same scaffold path used by keel new
 │   ├── deliverable/rm.py      # MODIFY — paths
 │   ├── deliverable/list.py    # MODIFY — paths
@@ -57,7 +59,7 @@ plugins/jira/
 │   ├── config.py              # MODIFY — gain templates sub-block + Jinja env
 │   └── templates.py           # NEW — Jinja env + default templates
 ├── tests/                     # MODIFY — match new protocol signature
-└── pyproject.toml             # MODIFY — bump to 0.1.0
+└── pyproject.toml             # MODIFY — bump to 0.0.3
 
 tests/                         # MODIFY — many file path updates; some new tests for new behaviors
 
@@ -168,15 +170,15 @@ cd /Users/andrei.matei/projects/keel && uv run --extra dev pytest tests/test_man
 Append at the bottom of `manifest/models.py` (after `DeliverableManifest` if still present):
 
 ```python
-# Deprecated since 0.1.0 — kept temporarily so the v0.0.x → v0.1.0 migration
-# command can still read old `deliverable.toml` files. Removed in 0.2.0.
+# Deprecated since 0.0.3 — kept temporarily so the old → new layout migration
+# command can still read old `deliverable.toml` files. Removed in a future 0.0.x.
 import warnings as _warnings
 
 
 def _deprecated_deliverable_warning() -> None:
     _warnings.warn(
-        "DeliverableManifest / DeliverableMeta are deprecated in keel 0.1.0; "
-        "deliverables now use ProjectManifest. Schedule for removal in 0.2.0.",
+        "DeliverableManifest / DeliverableMeta are deprecated in keel 0.0.3; "
+        "deliverables now use ProjectManifest. Schedule for removal in a future 0.0.x.",
         DeprecationWarning,
         stacklevel=3,
     )
@@ -340,7 +342,7 @@ class Scope:
         return self.keel_dir / "lifecycle.lock.toml"
 
     # === Backward-compat shim — still serves callers that haven't migrated yet.
-    # Removed in 0.2.0. Returns the unit_dir, NOT the obsolete design/ subdir.
+    # Removed in a future 0.0.x. Returns the unit_dir, NOT the obsolete design/ subdir.
 
     @property
     def design_dir(self) -> Path:
@@ -374,7 +376,7 @@ def decisions_dir(project: str, deliverable: str | None = None) -> Path:
 def read_phase(unit_or_design_dir: Path) -> str:
     """Read the current phase. Tolerates both new and legacy layouts."""
     new_path = unit_or_design_dir / ".keel" / "phase"
-    legacy_path = unit_or_design_dir / ".phase"  # pre-0.1.0
+    legacy_path = unit_or_design_dir / ".phase"  # pre-redesign
     for p in (new_path, legacy_path):
         if p.is_file():
             text = p.read_text().strip()
@@ -466,7 +468,7 @@ git -C ~/projects commit -m "feat(keel)!: keel.testing fixtures scaffold with ne
 
 ---
 
-## Section 3: New `keel new` writes the v0.1.0 layout
+## Section 3: New `keel new` writes the new layout
 
 ### Task 3.1: `keel new` writes manifests at root + `.keel/` + lifecycle snapshot
 
@@ -635,7 +637,7 @@ Expected: most other commands still fail (they read paths via the old `design/` 
 
 ```bash
 git -C ~/projects add keel/src/keel/_templates/readme_md.j2 keel/src/keel/commands/new.py keel/src/keel/lifecycles/loader.py keel/tests/commands/test_new.py
-git -C ~/projects commit -m "feat(keel)!: keel new writes v0.1.0 layout (.keel/, lifecycle.lock.toml, README, root manifests)"
+git -C ~/projects commit -m "feat(keel)!: keel new writes new layout (.keel/, lifecycle.lock.toml, README, root manifests)"
 ```
 
 ---
@@ -730,7 +732,7 @@ Expected: most tests now pass. Failures isolated to known-broken commands (deliv
 
 ```bash
 git -C ~/projects add keel/tests/ keel/plugins/jira/tests/
-git -C ~/projects commit -m "test(keel): update path assertions for v0.1.0 layout"
+git -C ~/projects commit -m "test(keel): update path assertions for new layout"
 ```
 
 ---
@@ -1177,7 +1179,7 @@ Once the migration command (Section 7) reads old `deliverable.toml` files via th
 def load_deliverable_manifest(path: Path) -> ProjectManifest:
     """DEPRECATED — reads a v0.0.x deliverable.toml and returns a ProjectManifest.
 
-    Used only by `keel migrate`. Removed in 0.2.0.
+    Used only by `keel migrate`. Removed in a future 0.0.x.
     """
     with path.open("rb") as f:
         raw = tomllib.load(f)
@@ -1200,7 +1202,7 @@ def save_deliverable_manifest(path: Path, manifest: ProjectManifest) -> None:
     """DEPRECATED — writes a ProjectManifest as a deliverable.toml.
 
     Should not be called in new code; only kept for backward compat.
-    Removed in 0.2.0.
+    Removed in a future 0.0.x.
     """
     raise NotImplementedError(
         "save_deliverable_manifest is deprecated. Use save_project_manifest instead."
@@ -1226,24 +1228,24 @@ git -C ~/projects commit -m "feat(keel)!: drop DeliverableManifest/DeliverableMe
 
 ---
 
-## Section 7: Migration command — v0.0.x → v0.1.0
+## Section 7: Migration command — old → new layout
 
-### Task 7.1: `keel migrate` v0.0.x → v0.1.0 step
+### Task 7.1: `keel migrate` old → new layout step
 
 **Files:**
 - Modify: `src/keel/commands/migrate.py`
 - Modify: `tests/commands/test_migrate.py`
 
-The existing `keel migrate` handles the legacy Bash → keel cutover. Add a v0.0.x → v0.1.0 step that detects old layout and rewrites it.
+The existing `keel migrate` handles the legacy Bash → keel cutover. Add a old → new layout step that detects old layout and rewrites it.
 
 - [ ] **Step 1: Tests**
 
 Append to `tests/commands/test_migrate.py`:
 
 ```python
-def test_migrate_v0_0_x_layout(projects, monkeypatch) -> None:
-    """An existing v0.0.x project has its layout rewritten to v0.1.0."""
-    # Hand-build a v0.0.x layout
+def test_migrate_legacy_layout(projects, monkeypatch) -> None:
+    """An existing legacy-layout project has its layout rewritten to the new layout."""
+    # Hand-build a legacy layout
     proj = projects / "old"
     (proj / "design" / "decisions").mkdir(parents=True)
     (proj / "design" / "project.toml").write_text(
@@ -1317,11 +1319,11 @@ def test_migrate_v0_0_x_deliverable(projects, monkeypatch) -> None:
 
 - [ ] **Step 3: Add the migration step**
 
-In `src/keel/commands/migrate.py`, add a `_migrate_v0_0_x_to_v0_1_0(unit_dir, lifecycle_name)` function:
+In `src/keel/commands/migrate.py`, add a `_migrate_legacy_layout(unit_dir, lifecycle_name)` function:
 
 ```python
-def _migrate_v0_0_x_to_v0_1_0(unit_dir: Path, lifecycle_name: str = "default") -> bool:
-    """Rewrite a unit's layout from v0.0.x to v0.1.0.
+def _migrate_legacy_layout(unit_dir: Path, lifecycle_name: str = "default") -> bool:
+    """Rewrite a unit's layout from the legacy `design/` layout to the new layout.
 
     Returns True if any change was made; False if already migrated.
     """
@@ -1408,7 +1410,7 @@ Wire into the `cmd_migrate` body so that when `--all` is specified or a project 
 
 ```bash
 git -C ~/projects add keel/src/keel/commands/migrate.py keel/tests/commands/test_migrate.py
-git -C ~/projects commit -m "feat(keel): keel migrate adds v0.0.x → v0.1.0 layout migration"
+git -C ~/projects commit -m "feat(keel): keel migrate adds old → new layout layout migration"
 ```
 
 ---
@@ -1567,7 +1569,7 @@ git -C ~/projects commit -m "refactor(keel): commands pass typed objects to Tick
 
 ---
 
-### Task 8.3: keel-jira plugin v0.1.0 — refactor to new protocol with internal templates
+### Task 8.3: keel-jira plugin v0.0.2 — refactor to new protocol with internal templates
 
 **Files:**
 - Modify: `plugins/jira/src/keel_jira/provider.py`
@@ -1576,7 +1578,7 @@ git -C ~/projects commit -m "refactor(keel): commands pass typed objects to Tick
 - Modify: `plugins/jira/tests/test_provider.py`
 - Modify: `plugins/jira/pyproject.toml`
 
-`keel-jira` 0.0.1 used the string-based protocol. 0.1.0 takes typed objects, owns its own Jinja templating, and exposes per-project template overrides via `[extensions.ticketing.jira.templates]`.
+`keel-jira` 0.0.1 used the string-based protocol. 0.0.2 takes typed objects, owns its own Jinja templating, and exposes per-project template overrides via `[extensions.ticketing.jira.templates]`.
 
 - [ ] **Step 1: Add templating module**
 
@@ -1802,15 +1804,15 @@ def test_user_template_overrides_default(jira_env, projects, make_project) -> No
     assert payload["fields"]["summary"] == "[m1] Foundation"
 ```
 
-- [ ] **Step 5: Bump keel-jira to 0.1.0**
+- [ ] **Step 5: Bump keel-jira to 0.0.2**
 
 In `plugins/jira/pyproject.toml`:
 
 ```toml
-version = "0.1.0"
+version = "0.0.2"
 
 dependencies = [
-    "keel-cli>=0.1.0",
+    "keel-cli>=0.0.3",
     "httpx>=0.27",
     "pydantic>=2",
     "jinja2>=3.1",
@@ -1823,7 +1825,7 @@ dependencies = [
 cd /Users/andrei.matei/projects/keel/plugins/jira && uv run --extra dev pytest --tb=short
 cd /Users/andrei.matei/projects/keel && uv run --extra dev pytest --tb=short
 git -C ~/projects add keel/plugins/jira/
-git -C ~/projects commit -m "feat(keel-jira)!: 0.1.0 — typed-object protocol, internal Jinja templates"
+git -C ~/projects commit -m "feat(keel-jira)!: 0.0.2 — typed-object protocol, internal Jinja templates"
 ```
 
 ---
@@ -1838,11 +1840,11 @@ git -C ~/projects commit -m "feat(keel-jira)!: 0.1.0 — typed-object protocol, 
 ```markdown
 ---
 date: 2026-05-05
-title: Data-model + project-layout redesign for 0.1.0
+title: Data-model + project-layout redesign for 0.0.3
 status: accepted
 ---
 
-# Data-model + project-layout redesign for 0.1.0
+# Data-model + project-layout redesign for 0.0.3
 
 ## Question
 
@@ -1853,7 +1855,7 @@ protocol before users accumulate on the v0.0.x model?
 
 Yes. The redesign is captured in `design/specs/2026-05-05-data-model-redesign.md`.
 Implemented in Plan 8 (`design/plans/2026-05-05-plan-8-data-model-redesign.md`).
-Both wheels jump to 0.1.0 on completion.
+Both wheels bump on completion: `keel-cli` 0.0.2 → 0.0.3 and `keel-jira` 0.0.1 → 0.0.2.
 
 The four locked decisions:
 
@@ -1867,20 +1869,21 @@ The four locked decisions:
 4. **Ticketing templates:** entirely per-plugin, no core renderer; plugins
    receive typed `Milestone`/`Task`/`Scope` objects.
 
-Migration via `keel migrate` (existing command, extended with v0.0.x →
-v0.1.0 step). Backward-compat reads of `deliverable.toml` removed in 0.2.0.
+Migration via `keel migrate` (existing command, extended with the
+legacy-layout step). Backward-compat reads of `deliverable.toml` removed
+in a future 0.0.x once active workspaces are migrated.
 ```
 
 - [ ] **Commit**
 
 ```bash
 git -C ~/projects add keel/design/decisions/2026-05-05-data-model-redesign.md
-git -C ~/projects commit -m "docs(keel): record decision — 0.1.0 data-model + layout redesign"
+git -C ~/projects commit -m "docs(keel): record decision — 0.0.3 data-model + layout redesign"
 ```
 
 ---
 
-### Task 9.2: Bump keel-cli to 0.1.0; refresh README + design.md
+### Task 9.2: Bump keel-cli to 0.0.3; refresh README + design.md + CONTRIBUTING
 
 **Files:**
 - Modify: `pyproject.toml` (root)
@@ -1890,13 +1893,13 @@ git -C ~/projects commit -m "docs(keel): record decision — 0.1.0 data-model + 
 
 - [ ] **Step 1: Bump version**
 
-In `pyproject.toml` root: `version = "0.1.0"`.
+In `pyproject.toml` root: `version = "0.0.3"`.
 
-In `[project.optional-dependencies]`, update the `jira` and `all` extras to require `keel-jira>=0.1.0`:
+In `[project.optional-dependencies]`, update the `jira` and `all` extras to require `keel-jira>=0.0.2`:
 
 ```toml
-jira = ["keel-jira>=0.1.0"]
-all = ["keel-jira>=0.1.0"]
+jira = ["keel-jira>=0.0.2"]
+all = ["keel-jira>=0.0.2"]
 ```
 
 - [ ] **Step 2: Update README + design.md**
@@ -1914,7 +1917,7 @@ Add a section documenting:
 
 ```bash
 git -C ~/projects add keel/pyproject.toml keel/README.md keel/design/design.md keel/CONTRIBUTING.md
-git -C ~/projects commit -m "chore(keel): bump to 0.1.0; refresh README, design.md, CONTRIBUTING"
+git -C ~/projects commit -m "chore(keel): bump keel-cli to 0.0.3; refresh README, design.md, CONTRIBUTING"
 ```
 
 ---
@@ -1934,7 +1937,7 @@ cd /Users/andrei.matei/projects/keel && uv run --extra dev ruff format --check s
 ```bash
 SMOKE_DIR=$(mktemp -d -t keel-p8-smoke-XXXXXX)
 
-# Create a v0.1.0-shaped project
+# Create a new-layout project
 PROJECTS_DIR=$SMOKE_DIR uv run --extra dev keel new alpha -d "test" --no-worktree -y
 ls $SMOKE_DIR/alpha
 # Expected: project.toml, README.md, scope.md, design.md, decisions/, .keel/
@@ -1977,21 +1980,21 @@ uv run --extra dev pytest --tb=short
 ```bash
 cd /tmp/project-cli-publish
 git tag keel-plan-8
-git tag keel-cli-v0.1.0
+git tag keel-cli-v0.0.3
 git push origin main
 git push origin keel-plan-8
 ```
 
 - [ ] **Step 6: Trigger PyPI publishes**
 
-`keel-cli-v0.1.0` tag triggers the existing release workflow.
+`keel-cli-v0.0.3` tag triggers the existing release workflow.
 
-After keel-cli 0.1.0 lands on PyPI, push the keel-jira tag:
+After keel-cli 0.0.3 lands on PyPI, push the keel-jira tag:
 
 ```bash
 cd /tmp/project-cli-publish
-git tag keel-jira-v0.1.0
-git push origin keel-jira-v0.1.0
+git tag keel-jira-v0.0.2
+git push origin keel-jira-v0.0.2
 ```
 
 Verify both packages:
@@ -2001,7 +2004,7 @@ curl -fsS https://pypi.org/pypi/keel-cli/json | python3 -c "import sys,json; pri
 curl -fsS https://pypi.org/pypi/keel-jira/json | python3 -c "import sys,json; print(json.load(sys.stdin)['info']['version'])"
 ```
 
-Expected: `0.1.0` for both.
+Expected: `0.0.3` for `keel-cli`, `0.0.2` for `keel-jira`.
 
 ---
 
@@ -2013,7 +2016,7 @@ Expected: `0.1.0` for both.
 | Hierarchy — implicit default milestone | T5.1, T5.2, T5.3 |
 | Deliverables — same schema, drop deliverable.toml | T1.1, T6.1, T6.2 |
 | Ticketing — typed objects, per-plugin templates | T8.1, T8.2, T8.3 |
-| Migration v0.0.x → v0.1.0 | T7.1 |
+| Migration old → new layout | T7.1 |
 | Five-categories state model | Documented in CONTRIBUTING (T9.2) |
 | `.keel/lifecycle.lock.toml` snapshot | T3.1 + lifecycle_source_path helper |
 | README auto-generation | T3.1 (template + write); T9.2 (refresh root) |
