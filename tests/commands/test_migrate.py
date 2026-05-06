@@ -26,7 +26,11 @@ def test_migrate_dry_run_default(projects) -> None:
     )
     result = runner.invoke(app, ["migrate", "legacy"])
     assert result.exit_code == 0
+    # Neither legacy nor new-layout manifest written.
     assert not (projects / "legacy" / "design" / "project.toml").exists()
+    assert not (projects / "legacy" / "project.toml").exists()
+    # Legacy layout untouched.
+    assert (projects / "legacy" / "design" / "CLAUDE.md").is_file()
 
 
 def test_migrate_unknown_project(projects) -> None:
@@ -122,7 +126,7 @@ def test_migrate_apply_writes_project_manifest(projects, source_repo) -> None:
     assert result.exit_code == 0, result.stderr
     from keel.manifest import load_project_manifest
 
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     assert m.project.name == "legacy"
     assert len(m.repos) == 1
     assert m.repos[0].worktree == "code"
@@ -142,12 +146,12 @@ def test_migrate_apply_design_only_project(projects) -> None:
     assert result.exit_code == 0
     from keel.manifest import load_project_manifest
 
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     assert m.repos == []
 
 
 def test_migrate_writes_deliverable_manifests(projects) -> None:
-    """Each deliverable on disk gets a deliverable.toml after migration."""
+    """Each deliverable on disk is migrated to project.toml at its unit root."""
     proj = projects / "legacy"
     (proj / "design" / "decisions").mkdir(parents=True)
     (proj / "design" / "CLAUDE.md").write_text("# legacy\n\nold.\n\n## Workflow\n")
@@ -167,19 +171,20 @@ def test_migrate_writes_deliverable_manifests(projects) -> None:
 
     result = runner.invoke(app, ["migrate", "legacy", "--apply"])
     assert result.exit_code == 0, result.stderr
-    from keel.manifest import load_deliverable_manifest
+    from keel.manifest import load_project_manifest
 
-    m = load_deliverable_manifest(deliv / "design" / "deliverable.toml")
-    assert m.deliverable.name == "alpha"
-    assert m.deliverable.parent_project == "legacy"
-    assert m.deliverable.shared_worktree is True
+    m = load_project_manifest(deliv / "project.toml")
+    assert m.project.name == "alpha"
+    assert m.project.shared_worktree is True
     assert m.repos == []
-    # .phase was created
-    assert (deliv / "design" / ".phase").read_text().splitlines()[0] == "scoping"
+    # phase moved into .keel/ on the new layout
+    assert (deliv / ".keel" / "phase").read_text().splitlines()[0] == "scoping"
 
 
 def test_migrate_skips_already_migrated_deliverable(projects) -> None:
-    """A deliverable that already has deliverable.toml is left alone."""
+    """A deliverable with a legacy `deliverable.toml` is converted to `project.toml`
+    (preserving the existing description) without re-deriving it from CLAUDE.md.
+    """
     proj = projects / "legacy"
     (proj / "design" / "decisions").mkdir(parents=True)
     (proj / "design" / "CLAUDE.md").write_text("# legacy\n\nold.\n\n## Workflow\n")
@@ -205,11 +210,13 @@ def test_migrate_skips_already_migrated_deliverable(projects) -> None:
 
     runner.invoke(app, ["migrate", "legacy", "--apply"])
 
-    # The pre-existing manifest is preserved (not overwritten)
-    from keel.manifest import load_deliverable_manifest
+    # The pre-existing manifest is preserved (description "kept", not the
+    # different description in CLAUDE.md), and converted to the new project.toml.
+    from keel.manifest import load_project_manifest
 
-    m = load_deliverable_manifest(deliv / "design" / "deliverable.toml")
+    m = load_project_manifest(deliv / "project.toml")
     assert m.project.description == "kept"
+    assert m.project.name == "alpha"
 
 
 def test_migrate_all_full_round_trip(projects, source_repo) -> None:
@@ -262,22 +269,22 @@ Source repo: see parent
     result = runner.invoke(app, ["migrate", "--all", "--apply"])
     assert result.exit_code == 0, result.stderr
 
-    # Manifests exist
-    from keel.manifest import load_deliverable_manifest, load_project_manifest
+    # Manifests exist at the new (unit-root) location
+    from keel.manifest import load_project_manifest
 
-    pm = load_project_manifest(proj / "design" / "project.toml")
+    pm = load_project_manifest(proj / "project.toml")
     assert pm.project.name == "legacy"
     assert pm.repos[0].branch_prefix == "me/legacy-base"
-    am = load_deliverable_manifest(proj / "deliverables" / "alpha" / "design" / "deliverable.toml")
-    assert am.deliverable.shared_worktree is True
-    bm = load_deliverable_manifest(proj / "deliverables" / "beta" / "design" / "deliverable.toml")
-    assert bm.deliverable.shared_worktree is True
+    am = load_project_manifest(proj / "deliverables" / "alpha" / "project.toml")
+    assert am.project.shared_worktree is True
+    bm = load_project_manifest(proj / "deliverables" / "beta" / "project.toml")
+    assert bm.project.shared_worktree is True
 
-    # Both deliverables now have .phase
-    assert (proj / "deliverables" / "alpha" / "design" / ".phase").read_text().splitlines()[
+    # Both deliverables now have phase under .keel/
+    assert (proj / "deliverables" / "alpha" / ".keel" / "phase").read_text().splitlines()[
         0
     ] == "scoping"
-    assert (proj / "deliverables" / "beta" / "design" / ".phase").read_text().splitlines()[
+    assert (proj / "deliverables" / "beta" / ".keel" / "phase").read_text().splitlines()[
         0
     ] == "scoping"
 
@@ -287,3 +294,76 @@ Source repo: see parent
     val = runner.invoke(app, ["validate", "legacy", "--json"])
     payload = json.loads(val.stdout)
     assert payload["summary"]["fail"] == 0
+
+
+def test_migrate_legacy_layout(projects, monkeypatch) -> None:
+    """An existing legacy-layout project has its layout rewritten to the new layout."""
+    # Hand-build a legacy layout (manifest exists, just at the old path)
+    proj = projects / "old"
+    (proj / "design" / "decisions").mkdir(parents=True)
+    (proj / "design" / "project.toml").write_text(
+        '[project]\nname = "old"\ndescription = "x"\ncreated = 2026-01-01\n'
+    )
+    (proj / "design" / ".phase").write_text("designing\n")
+    (proj / "design" / "scope.md").write_text("# old\n")
+    (proj / "design" / "design.md").write_text("# old design\n")
+
+    monkeypatch.chdir(projects)
+    result = runner.invoke(app, ["migrate", "--all", "--apply"], catch_exceptions=False)
+    assert result.exit_code == 0
+
+    # New layout
+    assert (proj / "project.toml").is_file()
+    assert (proj / ".keel" / "phase").read_text().strip() == "designing"
+    assert (proj / ".keel" / "lifecycle.lock.toml").is_file()
+    assert (proj / "scope.md").is_file()
+    assert (proj / "design.md").is_file()
+    assert (proj / "decisions").is_dir()
+    assert (proj / "README.md").is_file()
+
+    # Old layout gone
+    assert not (proj / "design" / "project.toml").exists()
+    assert not (proj / "design" / ".phase").exists()
+
+
+def test_migrate_idempotent(projects, monkeypatch) -> None:
+    """Re-running migrate on an already-migrated project is a no-op."""
+    proj = projects / "newproj"
+    (proj / ".keel").mkdir(parents=True)
+    (proj / "project.toml").write_text(
+        '[project]\nname = "newproj"\ndescription = "x"\ncreated = 2026-05-05\nlifecycle = "default"\n'
+    )
+    (proj / ".keel" / "phase").write_text("scoping\n")
+
+    monkeypatch.chdir(projects)
+    result = runner.invoke(app, ["migrate", "--all", "--apply"])
+    assert result.exit_code == 0
+    # No file moved
+    assert (proj / "project.toml").is_file()
+
+
+def test_migrate_legacy_layout_deliverable(projects, monkeypatch) -> None:
+    """deliverable.toml → project.toml conversion."""
+    proj = projects / "parent"
+    deliv = proj / "deliverables" / "bar"
+    (deliv / "design" / "decisions").mkdir(parents=True)
+    (proj / "design" / "decisions").mkdir(parents=True)
+    (proj / "design" / "project.toml").write_text(
+        '[project]\nname = "parent"\ndescription = "x"\ncreated = 2026-01-01\n'
+    )
+    (proj / "design" / ".phase").write_text("scoping\n")
+    (deliv / "design" / "deliverable.toml").write_text(
+        '[deliverable]\nname = "bar"\nparent_project = "parent"\ndescription = "y"\ncreated = 2026-01-02\n'
+    )
+    (deliv / "design" / ".phase").write_text("scoping\n")
+
+    monkeypatch.chdir(projects)
+    runner.invoke(app, ["migrate", "--all", "--apply"])
+
+    # Deliverable converted to project.toml
+    assert (deliv / "project.toml").is_file()
+    assert not (deliv / "deliverable.toml").exists()
+    from keel.api import load_project_manifest
+
+    pm = load_project_manifest(deliv / "project.toml")
+    assert pm.project.name == "bar"
