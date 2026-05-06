@@ -182,10 +182,11 @@ provides-extras = ["dev", "jira", "all"]
 
 [[package]]
 name = "keel-jira"
-version = "0.0.1"
+version = "0.0.2"
 source = { editable = "plugins/jira" }
 dependencies = [
     { name = "httpx" },
+    { name = "jinja2" },
     { name = "keel-cli" },
     { name = "pydantic" },
 ]
@@ -200,6 +201,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
+    { name = "jinja2", specifier = ">=3.1" },
     { name = "keel-cli", editable = "." },
     { name = "pydantic", specifier = ">=2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },

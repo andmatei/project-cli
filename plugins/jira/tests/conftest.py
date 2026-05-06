@@ -2,6 +2,9 @@
 
 import pytest
 
+# Register keel.testing so we get `projects`, `make_project`, etc.
+pytest_plugins = ["keel.testing"]
+
 
 @pytest.fixture
 def jira_env(monkeypatch):

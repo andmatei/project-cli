@@ -1,11 +1,25 @@
-"""JiraProvider — implements `keel.ticketing.base.TicketProvider`."""
+"""JiraProvider — implements `keel.api.TicketProvider`.
+
+The plugin owns its own Jinja templating layer and reads typed
+`Milestone`/`Task` objects + a `Scope` from keel core. The parent
+project epic id is read from `[extensions.ticketing.parent_id]` on
+the project's manifest; per-task parent milestone ticket ids come from
+the milestones manifest's `ticket_id` field.
+"""
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from keel.api import Ticket
 
 from keel_jira.client import JiraAPIError, JiraClient
 from keel_jira.config import JiraConfig, JiraCredentialsMissing
+from keel_jira.templates import DEFAULT_TEMPLATES, make_env, render
+
+if TYPE_CHECKING:
+    from keel.manifest import Milestone, Task
+    from keel.workspace import Scope
 
 
 class JiraProvider:
@@ -21,6 +35,7 @@ class JiraProvider:
     def __init__(self) -> None:
         self._config: JiraConfig | None = None
         self._client: JiraClient | None = None
+        self._env = make_env()
 
     def configure(self, config: dict) -> None:
         """Validate and store the [extensions.ticketing.jira] block.
@@ -35,48 +50,64 @@ class JiraProvider:
         self._config = cfg
         self._client = JiraClient(url=cfg.url, email=cfg.email, token=cfg.token)
 
-    def create_milestone(self, parent_id: str, title: str, description: str) -> Ticket:
-        """Create an issue representing a milestone (typically a Story under an Epic).
-
-        `parent_id` is the project-level Epic key from
-        `[extensions.ticketing.parent_id]`. Empty string means "no parent" —
-        the issue is created at the project level.
-        """
+    def create_milestone(self, milestone: Milestone, scope: Scope) -> Ticket:
+        """Create an issue representing a milestone (typically a Story under an Epic)."""
         cfg, client = self._require_configured()
+        ctx = self._build_context(milestone=milestone, scope=scope)
+        summary = render(self._env, self._resolve_template("milestone_summary"), ctx)
+        description = render(self._env, self._resolve_template("milestone_description"), ctx)
+        labels = cfg.render_field(cfg.labels, ctx)
+        custom_fields = cfg.render_field(cfg.custom_fields, ctx)
+        parent_id = self._read_parent_id(scope)
+
         result = client.create_issue(
             project_key=cfg.project_key,
             issue_type=cfg.issue_type_milestone,
-            summary=title,
+            summary=summary,
             description=description,
             parent_key=parent_id or None,
+            labels=labels,
+            custom_fields=custom_fields,
         )
         key = result["key"]
         return Ticket(
             id=key,
             url=client.link_url(key),
-            title=title,
+            title=summary,
             status=cfg.jira_status_for("planned"),
         )
 
-    def create_task(self, parent_milestone_id: str, title: str, description: str) -> Ticket:
-        """Create an issue representing a task (typically a Subtask under a Story).
-
-        `parent_milestone_id` is the Jira key of the milestone's issue (from
-        a prior `create_milestone` call).
-        """
+    def create_task(self, task: Task, scope: Scope) -> Ticket:
+        """Create an issue representing a task (typically a Sub-task under a Story)."""
         cfg, client = self._require_configured()
+
+        # Find the parent milestone's ticket id from the scope's milestones manifest.
+        from keel.api import find_milestone, load_milestones_manifest
+
+        manifest = load_milestones_manifest(scope.milestones_manifest_path)
+        parent_milestone = find_milestone(manifest, task.milestone)
+        parent_ticket_id = parent_milestone.ticket_id if parent_milestone else None
+
+        ctx = self._build_context(task=task, milestone=parent_milestone, scope=scope)
+        summary = render(self._env, self._resolve_template("task_summary"), ctx)
+        description = render(self._env, self._resolve_template("task_description"), ctx)
+        labels = cfg.render_field(cfg.labels, ctx)
+        custom_fields = cfg.render_field(cfg.custom_fields, ctx)
+
         result = client.create_issue(
             project_key=cfg.project_key,
             issue_type=cfg.issue_type_task,
-            summary=title,
+            summary=summary,
             description=description,
-            parent_key=parent_milestone_id or None,
+            parent_key=parent_ticket_id,
+            labels=labels,
+            custom_fields=custom_fields,
         )
         key = result["key"]
         return Ticket(
             id=key,
             url=client.link_url(key),
-            title=title,
+            title=summary,
             status=cfg.jira_status_for("planned"),
         )
 
@@ -125,6 +156,53 @@ class JiraProvider:
         """Return a clickable URL for the issue. Pure — no network call."""
         _, client = self._require_configured()
         return client.link_url(ticket_id)
+
+    # ------- internals -------
+
+    def _build_context(
+        self,
+        *,
+        milestone: Milestone | None = None,
+        task: Task | None = None,
+        scope: Scope,
+    ) -> dict:
+        """Assemble the Jinja context shared by summary/description/labels/custom_fields."""
+        ctx: dict = {
+            "project": scope.project,
+            "deliverable": scope.deliverable,
+            "scope": scope,
+        }
+        if milestone is not None:
+            ctx["milestone"] = milestone
+            ctx["milestone_id"] = milestone.id
+        if task is not None:
+            ctx["task"] = task
+            ctx["task_id"] = task.id
+        return ctx
+
+    def _resolve_template(self, key: str) -> str:
+        """Return the user override for `key`, or the built-in default."""
+        cfg = self._config
+        if cfg is not None and cfg.templates.get(key):
+            return cfg.templates[key]
+        return DEFAULT_TEMPLATES[key]
+
+    def _read_parent_id(self, scope: Scope) -> str | None:
+        """Read [extensions.ticketing.parent_id] from the project manifest, if present.
+
+        Returns None if the manifest can't be read or the key isn't set.
+        """
+        from keel.api import load_project_manifest
+
+        try:
+            pm = load_project_manifest(scope.manifest_path)
+        except Exception:
+            return None
+        ticketing = pm.extensions.get("ticketing", {}) if pm.extensions else {}
+        if not isinstance(ticketing, dict):
+            return None
+        parent = ticketing.get("parent_id")
+        return parent if isinstance(parent, str) and parent else None
 
     def _require_configured(self) -> tuple[JiraConfig, JiraClient]:
         if self._config is None or self._client is None:

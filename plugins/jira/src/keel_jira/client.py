@@ -67,8 +67,14 @@ class JiraClient:
         summary: str,
         description: str = "",
         parent_key: str | None = None,
+        labels: list[str] | None = None,
+        custom_fields: dict[str, Any] | None = None,
     ) -> dict:
-        """Create an issue. Returns the raw API response (includes `key`, `id`, `self`)."""
+        """Create an issue. Returns the raw API response (includes `key`, `id`, `self`).
+
+        `labels` is added as `fields.labels` only when non-empty.
+        `custom_fields` (e.g. `customfield_12345`) is merged into `fields`.
+        """
         fields: dict[str, Any] = {
             "project": {"key": project_key},
             "issuetype": {"name": issue_type},
@@ -78,6 +84,10 @@ class JiraClient:
             fields["description"] = _to_adf(description)
         if parent_key:
             fields["parent"] = {"key": parent_key}
+        if labels:
+            fields["labels"] = list(labels)
+        if custom_fields:
+            fields.update(custom_fields)
         return self._request("POST", "/rest/api/3/issue", json={"fields": fields})
 
     def get_issue(self, key: str) -> dict:

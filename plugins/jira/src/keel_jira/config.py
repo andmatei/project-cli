@@ -10,7 +10,7 @@ Credentials are intentionally NOT in the manifest — only structural config
 from __future__ import annotations
 
 import os
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -42,6 +42,29 @@ class JiraConfig(BaseModel):
     status_map: dict[str, str] = Field(
         default_factory=lambda: dict(_DEFAULT_STATUS_MAP),
         description="Map from keel's neutral states to Jira's workflow status names.",
+    )
+    templates: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Per-project Jinja overrides for ticket payload fields. Recognized keys: "
+            "milestone_summary, milestone_description, task_summary, task_description. "
+            "Anything not overridden falls back to keel_jira.templates.DEFAULT_TEMPLATES."
+        ),
+    )
+    labels: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Labels to attach to every issue created by this plugin. Each entry is "
+            "rendered through Jinja with the same context as the summary/description templates."
+        ),
+    )
+    custom_fields: dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Custom Jira fields (e.g. 'customfield_12345') merged into the issue's "
+            "`fields` block. String values are rendered through Jinja; non-string "
+            "values pass through unchanged."
+        ),
     )
 
     # Populated from env, not the manifest.
@@ -88,6 +111,27 @@ class JiraConfig(BaseModel):
         Raises KeyError if the state is unknown.
         """
         return self.status_map[neutral_state]
+
+    def render_field(self, value: str | list | dict, context: dict) -> Any:
+        """Render a config value (string / list of strings / dict of strings) through Jinja.
+
+        Used for `labels` and `custom_fields` — keeps templating behavior
+        consistent with summary/description but lives next to the value
+        being rendered. Non-string entries in lists/dicts pass through.
+        """
+        from keel_jira.templates import make_env, render
+
+        env = make_env()
+        if isinstance(value, str):
+            return render(env, value, context)
+        if isinstance(value, list):
+            return [render(env, str(v), context) if isinstance(v, str) else v for v in value]
+        if isinstance(value, dict):
+            return {
+                k: (render(env, str(v), context) if isinstance(v, str) else v)
+                for k, v in value.items()
+            }
+        return value
 
 
 class JiraCredentialsMissingError(RuntimeError):
