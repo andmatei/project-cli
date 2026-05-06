@@ -180,14 +180,6 @@ def test_migrate_writes_deliverable_manifests(projects) -> None:
 
 def test_migrate_skips_already_migrated_deliverable(projects) -> None:
     """A deliverable that already has deliverable.toml is left alone."""
-    from datetime import date as _date
-
-    from keel.manifest import (
-        DeliverableManifest,
-        DeliverableMeta,
-        save_deliverable_manifest,
-    )
-
     proj = projects / "legacy"
     (proj / "design" / "decisions").mkdir(parents=True)
     (proj / "design" / "CLAUDE.md").write_text("# legacy\n\nold.\n\n## Workflow\n")
@@ -197,18 +189,15 @@ def test_migrate_skips_already_migrated_deliverable(projects) -> None:
 
     deliv = proj / "deliverables" / "alpha"
     (deliv / "design" / "decisions").mkdir(parents=True)
-    save_deliverable_manifest(
-        deliv / "design" / "deliverable.toml",
-        DeliverableManifest(
-            deliverable=DeliverableMeta(
-                name="alpha",
-                parent_project="legacy",
-                description="kept",
-                created=_date(2025, 1, 1),
-                shared_worktree=False,
-            ),
-            repos=[],
-        ),
+    # Write a v0.0.x-style deliverable.toml directly so we don't depend on the
+    # deleted DeliverableManifest/DeliverableMeta classes.
+    (deliv / "design" / "deliverable.toml").write_text(
+        "[deliverable]\n"
+        'name = "alpha"\n'
+        'parent_project = "legacy"\n'
+        'description = "kept"\n'
+        "created = 2025-01-01\n"
+        "shared_worktree = false\n"
     )
     (deliv / "design" / "CLAUDE.md").write_text(
         "# alpha\n\nDIFFERENT description.\n\n## Workflow\n"
@@ -220,7 +209,7 @@ def test_migrate_skips_already_migrated_deliverable(projects) -> None:
     from keel.manifest import load_deliverable_manifest
 
     m = load_deliverable_manifest(deliv / "design" / "deliverable.toml")
-    assert m.deliverable.description == "kept"
+    assert m.project.description == "kept"
 
 
 def test_migrate_all_full_round_trip(projects, source_repo) -> None:

@@ -6,9 +6,10 @@ from pathlib import Path
 import tomlkit
 
 from keel.manifest.models import (
-    DeliverableManifest,
     MilestonesManifest,
     ProjectManifest,
+    ProjectMeta,
+    RepoSpec,
     _deprecated_deliverable_warning,
 )
 
@@ -39,27 +40,43 @@ def save_project_manifest(path: Path, manifest: ProjectManifest) -> None:
     path.write_text(tomlkit.dumps(doc))
 
 
-def load_deliverable_manifest(path: Path) -> DeliverableManifest:
-    """Read and validate a `deliverable.toml`."""
+def load_deliverable_manifest(path: Path) -> ProjectManifest:
+    """DEPRECATED — reads a v0.0.x deliverable.toml and returns a ProjectManifest.
+
+    Used only by `keel migrate` and `keel manifest validate`. Removed in a
+    future 0.0.x once active workspaces are migrated.
+
+    The legacy `[deliverable]` table is mapped to `[project]`. The
+    `parent_project` field on the legacy schema is dropped — in the new
+    layout, parent identity is path-derived.
+    """
     _deprecated_deliverable_warning()
     with path.open("rb") as f:
         raw = tomllib.load(f)
-    return DeliverableManifest.model_validate(raw)
+    deliv = raw.get("deliverable", {})
+    project_block = {
+        "name": deliv["name"],
+        "description": deliv["description"],
+        "created": deliv["created"],
+        "lifecycle": deliv.get("lifecycle", "default"),
+        "shared_worktree": deliv.get("shared_worktree", False),
+    }
+    return ProjectManifest(
+        project=ProjectMeta(**project_block),
+        repos=[RepoSpec.model_validate(r) for r in raw.get("repos", [])],
+        extensions=raw.get("extensions", {}),
+    )
 
 
-def save_deliverable_manifest(path: Path, manifest: DeliverableManifest) -> None:
-    """Write a `deliverable.toml`. Uses tomlkit so future edits preserve comments."""
-    _deprecated_deliverable_warning()
-    doc = tomlkit.document()
-    doc["deliverable"] = _dict_no_none(manifest.deliverable.model_dump())
-    if manifest.repos:
-        repos_array = tomlkit.aot()
-        for r in manifest.repos:
-            repos_array.append(tomlkit.item(_dict_no_none(r.model_dump())))
-        doc["repos"] = repos_array
-    if manifest.extensions:
-        doc["extensions"] = tomlkit.item(manifest.extensions)
-    path.write_text(tomlkit.dumps(doc))
+def save_deliverable_manifest(path: Path, manifest) -> None:
+    """DEPRECATED — replaced by `save_project_manifest`. Removed in a future 0.0.x.
+
+    Should not be called in new code. Kept only as a stub so existing imports
+    don't break during the redesign rollout.
+    """
+    raise NotImplementedError(
+        "save_deliverable_manifest is removed. Use save_project_manifest instead."
+    )
 
 
 def load_milestones_manifest(path: Path) -> MilestonesManifest:

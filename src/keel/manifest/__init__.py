@@ -1,7 +1,7 @@
 """Manifest schemas, TOML I/O, and query helpers.
 
 Split into three submodules:
-- `models`: Pydantic schemas (RepoSpec, ProjectManifest, DeliverableManifest, Milestone, Task, MilestonesManifest)
+- `models`: Pydantic schemas (RepoSpec, ProjectManifest, Milestone, Task, MilestonesManifest)
 - `io`: load/save functions
 - `queries`: find_milestone, find_task, edit_milestones context manager
 
@@ -17,8 +17,6 @@ from keel.manifest.io import (
     save_project_manifest,
 )
 from keel.manifest.models import (
-    DeliverableManifest,
-    DeliverableMeta,
     Milestone,
     MilestonesManifest,
     ProjectManifest,
@@ -35,8 +33,6 @@ from keel.manifest.queries import (
 )
 
 __all__ = [
-    "DeliverableManifest",
-    "DeliverableMeta",
     "Milestone",
     "MilestonesManifest",
     "ProjectManifest",

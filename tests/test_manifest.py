@@ -8,8 +8,6 @@ import pytest
 from pydantic import ValidationError
 
 from keel.manifest import (
-    DeliverableManifest,
-    DeliverableMeta,
     Milestone,
     MilestonesManifest,
     ProjectManifest,
@@ -69,46 +67,6 @@ def test_project_manifest_with_repos() -> None:
     assert len(m.repos) == 1
 
 
-def test_deliverable_manifest_shared_excludes_repos() -> None:
-    """shared_worktree=true is mutually exclusive with [[repos]]."""
-    with pytest.raises(ValidationError):
-        DeliverableManifest(
-            deliverable=DeliverableMeta(
-                name="bar",
-                parent_project="foo",
-                description="d",
-                created=date(2026, 4, 27),
-                shared_worktree=True,
-            ),
-            repos=[RepoSpec(remote="git@github.com:org/r.git", worktree="code")],
-        )
-
-
-def test_deliverable_manifest_shared_no_repos_ok() -> None:
-    DeliverableManifest(
-        deliverable=DeliverableMeta(
-            name="bar",
-            parent_project="foo",
-            description="d",
-            created=date(2026, 4, 27),
-            shared_worktree=True,
-        ),
-    )
-
-
-def test_deliverable_manifest_owned_with_repos_ok() -> None:
-    DeliverableManifest(
-        deliverable=DeliverableMeta(
-            name="bar",
-            parent_project="foo",
-            description="d",
-            created=date(2026, 4, 27),
-            shared_worktree=False,
-        ),
-        repos=[RepoSpec(remote="git@github.com:org/r.git", worktree="code")],
-    )
-
-
 def test_project_manifest_roundtrip(tmp_path) -> None:
     path = tmp_path / "project.toml"
     original = ProjectManifest(
@@ -136,22 +94,6 @@ def test_project_manifest_load_rejects_bad_schema(tmp_path) -> None:
     path.write_text('[project]\nname = "foo"\n')  # missing description and created
     with pytest.raises(ValidationError):
         load_project_manifest(path)
-
-
-def test_deliverable_manifest_roundtrip(tmp_path) -> None:
-    path = tmp_path / "deliverable.toml"
-    original = DeliverableManifest(
-        deliverable=DeliverableMeta(
-            name="bar",
-            parent_project="foo",
-            description="d",
-            created=date(2026, 4, 27),
-            shared_worktree=True,
-        ),
-    )
-    save_deliverable_manifest(path, original)
-    loaded = load_deliverable_manifest(path)
-    assert loaded == original
 
 
 def test_repo_spec_rejects_worktree_with_slash() -> None:
@@ -215,23 +157,6 @@ def test_project_manifest_unknown_top_level_still_rejected(tmp_path) -> None:
     )
     with pytest.raises(ValidationError):
         load_project_manifest(path)
-
-
-def test_deliverable_manifest_extensions_round_trip(tmp_path) -> None:
-    path = tmp_path / "deliverable.toml"
-    original = DeliverableManifest(
-        deliverable=DeliverableMeta(
-            name="bar",
-            parent_project="foo",
-            description="d",
-            created=date(2026, 4, 29),
-            shared_worktree=False,
-        ),
-        extensions={"ticketing": {"jira": {"story_id": "FOO-1235"}}},
-    )
-    save_deliverable_manifest(path, original)
-    loaded = load_deliverable_manifest(path)
-    assert loaded.extensions == original.extensions
 
 
 def test_milestone_minimal() -> None:
@@ -383,6 +308,46 @@ def test_project_manifest_shared_worktree_excludes_repos(tmp_path) -> None:
         )
 
 
+def test_load_deliverable_manifest_converts_to_project_manifest(tmp_path) -> None:
+    """Reading a v0.0.x deliverable.toml returns a ProjectManifest (converter)."""
+    p = tmp_path / "deliverable.toml"
+    p.write_text(
+        "[deliverable]\n"
+        'name = "x"\n'
+        'parent_project = "parent"\n'
+        'description = "d"\n'
+        "created = 2026-05-05\n"
+    )
+    m = load_deliverable_manifest(p)
+    assert isinstance(m, ProjectManifest)
+    assert m.project.name == "x"
+    assert m.project.description == "d"
+    assert m.project.shared_worktree is False
+    # parent_project is silently dropped — no longer part of the schema
+    assert m.repos == []
+
+
+def test_load_deliverable_manifest_preserves_repos_and_extensions(tmp_path) -> None:
+    """The converter carries over [[repos]] and [extensions] tables."""
+    p = tmp_path / "deliverable.toml"
+    p.write_text(
+        "[deliverable]\n"
+        'name = "x"\n'
+        'parent_project = "parent"\n'
+        'description = "d"\n'
+        "created = 2026-05-05\n"
+        "[[repos]]\n"
+        'remote = "git@e.com:o/r.git"\n'
+        'worktree = "code"\n'
+        "[extensions.ticketing.jira]\n"
+        'story_id = "FOO-1"\n'
+    )
+    m = load_deliverable_manifest(p)
+    assert len(m.repos) == 1
+    assert m.repos[0].remote == "git@e.com:o/r.git"
+    assert m.extensions["ticketing"]["jira"]["story_id"] == "FOO-1"
+
+
 def test_load_deliverable_manifest_emits_deprecation_warning(tmp_path) -> None:
     """Reading a v0.0.x deliverable.toml should warn callers that the schema is deprecated."""
     import warnings as _w
@@ -403,22 +368,8 @@ def test_load_deliverable_manifest_emits_deprecation_warning(tmp_path) -> None:
     )
 
 
-def test_save_deliverable_manifest_emits_deprecation_warning(tmp_path) -> None:
-    """Writing a v0.0.x deliverable.toml should warn callers that the schema is deprecated."""
-    import warnings as _w
-
+def test_save_deliverable_manifest_raises_not_implemented(tmp_path) -> None:
+    """save_deliverable_manifest is a stub — should raise NotImplementedError."""
     p = tmp_path / "deliverable.toml"
-    manifest = DeliverableManifest(
-        deliverable=DeliverableMeta(
-            name="x",
-            parent_project="parent",
-            description="d",
-            created=date(2026, 5, 5),
-        ),
-    )
-    with _w.catch_warnings(record=True) as caught:
-        _w.simplefilter("always")
-        save_deliverable_manifest(p, manifest)
-    assert any(issubclass(w.category, DeprecationWarning) for w in caught), (
-        "expected DeprecationWarning"
-    )
+    with pytest.raises(NotImplementedError):
+        save_deliverable_manifest(p, None)

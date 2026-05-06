@@ -10,8 +10,6 @@ def test_keel_api_exports() -> None:
 
     expected = {
         # Manifest
-        "DeliverableManifest",
-        "DeliverableMeta",
         "ProjectManifest",
         "ProjectMeta",
         "RepoSpec",

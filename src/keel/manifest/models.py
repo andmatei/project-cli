@@ -84,34 +84,6 @@ class ProjectManifest(BaseModel):
         return v
 
 
-class DeliverableMeta(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    name: str = Field(min_length=1)
-    parent_project: str = Field(min_length=1)
-    description: str = Field(min_length=1)
-    created: _date
-    shared_worktree: bool = False
-
-
-class DeliverableManifest(BaseModel):
-    """Schema for `<deliverable>/design/deliverable.toml`."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    deliverable: DeliverableMeta
-    repos: list[RepoSpec] = Field(default_factory=list)
-    extensions: dict[str, Any] = Field(default_factory=dict)
-
-    @field_validator("repos")
-    @classmethod
-    def _shared_excludes_repos(cls, v: list[RepoSpec], info) -> list[RepoSpec]:
-        meta = info.data.get("deliverable")
-        if meta is not None and meta.shared_worktree and v:
-            raise ValueError("shared_worktree=true is mutually exclusive with [[repos]]")
-        return v
-
-
 class Milestone(BaseModel):
     """A grouping of related implementation work, scoped to the `implementing` phase."""
 

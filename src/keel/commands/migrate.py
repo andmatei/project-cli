@@ -12,14 +12,11 @@ from keel import git_ops, workspace
 from keel.api import (
     HINT_LIST_PROJECTS,
     HINT_PASS_PROJECT,
-    DeliverableManifest,
-    DeliverableMeta,
     ErrorCode,
     Output,
     ProjectManifest,
     ProjectMeta,
     RepoSpec,
-    save_deliverable_manifest,
     save_project_manifest,
 )
 
@@ -138,6 +135,7 @@ def _migrate_deliverables(proj_dir: Path, project_name: str, apply: bool, out) -
         return 0
 
     count = 0
+    # TODO(plan8-task7.1): rewrite migrate.py for the new layout
     for deliv in sorted(deliv_dir.iterdir()):
         if not deliv.is_dir():
             continue
@@ -153,10 +151,9 @@ def _migrate_deliverables(proj_dir: Path, project_name: str, apply: bool, out) -
         repos = _enrich_with_worktree_state(deliv, repos)
         desc = _extract_description(text) or "[migrated]"
 
-        manifest = DeliverableManifest(
-            deliverable=DeliverableMeta(
+        manifest = ProjectManifest(
+            project=ProjectMeta(
                 name=deliv.name,
-                parent_project=project_name,
                 description=desc,
                 created=date.today(),
                 shared_worktree=shared,
@@ -165,7 +162,7 @@ def _migrate_deliverables(proj_dir: Path, project_name: str, apply: bool, out) -
         )
 
         if apply:
-            save_deliverable_manifest(manifest_path, manifest)
+            save_project_manifest(manifest_path, manifest)
             # Initialize .phase if missing
             deliv_scope = workspace.Scope(project=project_name, deliverable=deliv.name)
             if not deliv_scope.phase_file.is_file():

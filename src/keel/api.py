@@ -38,8 +38,6 @@ from keel.lifecycles import (
     load_lifecycle,
 )
 from keel.manifest import (
-    DeliverableManifest,
-    DeliverableMeta,
     Milestone,
     MilestonesManifest,
     ProjectManifest,
@@ -117,8 +115,6 @@ __all__ = [
     "iter_lifecycles",
     "load_lifecycle",
     # Manifest
-    "DeliverableManifest",
-    "DeliverableMeta",
     "Milestone",
     "MilestonesManifest",
     "ProjectManifest",
