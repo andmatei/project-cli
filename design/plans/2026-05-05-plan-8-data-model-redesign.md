@@ -1120,8 +1120,10 @@ def cmd_add(
     parent_scope = resolve_cli_scope(project, None, out=out)
 
     # Inherit lifecycle from parent
+    from keel.lifecycles import load_lifecycle
     parent_manifest = load_project_manifest(parent_scope.manifest_path)
     parent_lifecycle = parent_manifest.project.lifecycle
+    lc = load_lifecycle(parent_lifecycle)
 
     # Build the nested project's scope
     deliv_scope = Scope(project=parent_scope.project, deliverable=name)
@@ -1138,7 +1140,7 @@ def cmd_add(
         description=description,
         lifecycle=parent_lifecycle,
         repos=[],
-        out=out,
+        lc=lc,
     )
 
     out.result(

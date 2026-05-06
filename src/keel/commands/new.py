@@ -102,7 +102,7 @@ def cmd_new(
         log.create_file(scope.phase_path, size=0)
         log.create_file(scope.lifecycle_lock_path, size=0)
         for rp, spec in zip(repo_paths, repo_specs, strict=True):
-            log.create_worktree(proj / spec.worktree, source=rp, branch=spec.branch_prefix or "")
+            log.create_worktree(proj / spec.worktree, source=rp, branch=spec.branch_prefix)
         out.info(log.format_summary())
         return
 
@@ -127,7 +127,7 @@ def cmd_new(
             out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
     out.result(
-        {"path": str(proj), "design": str(proj), "worktrees": created_worktrees},
+        {"path": str(proj), "worktrees": created_worktrees},
         human_text=f"Project created: {proj}",
     )
 
@@ -164,9 +164,11 @@ def _scaffold_unit(
     lifecycle: str,
     repos: list[RepoSpec],
     lc: Lifecycle,
-    templates_module=templates,
 ) -> ProjectManifest:
-    """Write all the v0.1.0 layout files for a unit (project or deliverable).
+    """Write all the new layout files for a unit (project or deliverable).
+
+    Caller is responsible for the unit-doesn't-exist precheck; this function
+    is non-idempotent on existing units.
 
     Returns the persisted manifest so callers can use it for follow-up steps
     (e.g. worktree creation in `keel new`).
@@ -194,16 +196,16 @@ def _scaffold_unit(
 
     # Human-authored content at the unit root.
     scope.scope_md_path.write_text(
-        templates_module.render("scope_md.j2", name=name, description=description)
+        templates.render("scope_md.j2", name=name, description=description)
     )
     scope.design_md_path.write_text(
-        templates_module.render("design_md.j2", name=name, description=description)
+        templates.render("design_md.j2", name=name, description=description)
     )
     scope.decisions_dir.mkdir(exist_ok=True)
 
     # README.
     scope.readme_path.write_text(
-        templates_module.render(
+        templates.render(
             "readme_md.j2",
             project=manifest.project,
             lifecycle=lc,
