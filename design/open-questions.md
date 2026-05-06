@@ -10,58 +10,53 @@ how long things have been open.
 ## 2026-05-05 — TOML contract questions raised after Plans 6/7 + first plugin
 
 Surfaced during the post-publish review of `keel-cli` 0.0.2 + `keel-jira`
-0.0.1. Some of these may dissolve after a fuller "what is keel's data
-model trying to express" brainstorm; recording here so they're not lost.
+0.0.1. Pruned 2026-05-06 after Plan 8 shipped — items 3 and 6 were
+resolved by T9.2 (CONTRIBUTING now documents the `[extensions]` selector
+pattern).
 
 ### High value, low cost
 
 1. **Schema versioning.** No manifest file (`project.toml`,
-   `deliverable.toml`, `milestones.toml`, lifecycle TOMLs) declares its
-   schema version. The first breaking change to any of them will silently
-   misread existing files. Options: top-level `schema = 1`, or rely on
-   Pydantic's `extra="forbid"` + clear error messages, or semver-the-wheel
-   and document migrations.
+   `milestones.toml`, lifecycle TOMLs) declares its schema version. The
+   first breaking change to any of them will silently misread existing
+   files. Options: top-level `schema = 1`, or rely on Pydantic's
+   `extra="forbid"` + clear error messages, or semver-the-wheel and
+   document migrations.
 
 2. **`ticket_id` is a single string.** Assumes one ticketing provider per
    entity. Renaming to `tickets = { jira = "...", github = "..." }` is
-   cheaper now than later.
+   cheaper now than later. Plan 8's spec deferred multi-provider, but
+   the field shape is still the deciding factor.
 
-3. **`[extensions]` conventions are under-documented.** Every plugin
-   author has to read the keel-jira source to learn the namespacing rules.
-   Short spec section under CONTRIBUTING.md or a public doc page.
-
-4. **State-name convention across lifecycles.** Default uses lowercase
+3. **State-name convention across lifecycles.** Default uses lowercase
    single words (`scoping`, `designing`); examples used kebab-case
    (`needs-triage`, `in-doc-review`). Document one rule.
 
 ### Worth discussing
 
-5. **`Task.branch` assumes git.** Research / non-code projects have no
+4. **`Task.branch` assumes git.** Research / non-code projects have no
    branches. Could move into `extensions.code` to keep `Task` provider-
    agnostic, or rename to a neutral `work_ref` with semantics defined per
    lifecycle.
 
-6. **`[extensions.ticketing]` has a hidden selector pattern.** It's the
-   only extension with `provider = "<name>"` + nested per-provider config.
-   Either document the pattern or rename to `[ticketing]` to make it less
-   weird.
-
-7. **`Milestone.fan_out` is unvalidated.** Nothing checks that named
+5. **`Milestone.fan_out` is unvalidated.** Nothing checks that named
    deliverables have a matching `parent = m.id` milestone. `keel validate`
    could enforce.
 
+6. **`lifecycle = "default"` implicit default.** Plan 8 made this more
+   load-bearing (the resolved lifecycle is now snapshotted into
+   `.keel/lifecycle.lock.toml` at `keel new` time). If `default` ever
+   changes meaning, projects without an explicit field silently drift on
+   *new* projects but lock-file-consistent on existing ones. Question is
+   whether new-project behavior should require an explicit pick.
+
 ### Defer
 
-8. **`description = ""` proliferation.** Cosmetic; switch to `Optional`
+7. **`description = ""` proliferation.** Cosmetic; switch to `Optional`
    later if it grates.
 
-9. **`created` is date-only.** Loses timezone/time. Probably fine for
+8. **`created` is date-only.** Loses timezone/time. Probably fine for
    humans; revisit only if audit needs surface.
-
-10. **`lifecycle = "default"` implicit default.** If `default` ever
-    changes meaning, projects without an explicit field silently drift.
-    Either require the field (with a migration helper) or freeze the
-    name `default`.
 
 ---
 
