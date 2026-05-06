@@ -62,18 +62,18 @@ def cmd_rm(
         if not keep_design:
             log.delete_file(deliv)
         log.modify_file(
-            scope.design_dir / "CLAUDE.md",
+            scope.unit_dir / "CLAUDE.md",
             diff=f"- - **{name}**: ...",
         )
         log.modify_file(
-            scope.design_dir / "design.md",
+            scope.design_md_path,
             diff=f"- - **{name}**: ...",
         )
         out.info(log.format_summary())
         return
 
     confirm_destructive(
-        f"Remove deliverable {project}/{name}? This deletes its design dir.",
+        f"Remove deliverable {project}/{name}? This deletes its unit dir.",
         yes=yes,
     )
 
@@ -85,14 +85,20 @@ def cmd_rm(
         except git_ops.GitError as e:
             out.fail(f"failed to remove worktree at {code_dir}: {e}", code=ErrorCode.GIT_FAILED)
 
-    # Remove design dir (unless --keep-design)
-    if not keep_design:
-        design_dir = deliv / "design"
-        if design_dir.is_dir():
-            shutil.rmtree(design_dir)
+    # Remove unit contents (unless --keep-design preserves design artifacts).
+    # New layout has design files at the unit root rather than a design/ subdir, so we remove
+    # everything except the worktree dir(s) we want to keep.
+    if not keep_design and deliv.is_dir():
+        for child in list(deliv.iterdir()):
+            # Preserve any worktree dirs requested via --keep-code
+            if keep_code and child.name == "code":
+                continue
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
 
-    # If the deliverable dir is now empty (no code/ kept, no design/ kept), rmdir it.
-    # If --keep-code preserved code/, leave the dir in place containing just the worktree.
+    # If the deliverable dir is now empty (no code/ kept), rmdir it.
     try:
         if deliv.is_dir() and not any(deliv.iterdir()):
             deliv.rmdir()
@@ -100,26 +106,28 @@ def cmd_rm(
         pass  # best-effort
 
     # Clean up parent CLAUDE.md
-    parent_claude = scope.design_dir / "CLAUDE.md"
+    # TODO(plan8-task9.2): CLAUDE.md links are dead post-redesign.
+    parent_claude = scope.unit_dir / "CLAUDE.md"
     if parent_claude.is_file():
         parent_claude.write_text(
             remove_bullet_under_heading(parent_claude.read_text(), "Deliverables", f"- **{name}**:")
         )
 
     # Clean up parent design.md
-    parent_design = scope.design_dir / "design.md"
+    parent_design = scope.design_md_path
     if parent_design.is_file():
         parent_design.write_text(
             remove_bullet_under_heading(parent_design.read_text(), "Deliverables", f"- **{name}**:")
         )
 
     # Clean up sibling deliverable CLAUDE.md files
+    # TODO(plan8-task9.2): sibling CLAUDE.md is dead post-redesign.
     siblings_dir = workspace.project_dir(project) / "deliverables"
     if siblings_dir.is_dir():
         for sibling in siblings_dir.iterdir():
             if not sibling.is_dir():
                 continue
-            sibling_claude = sibling / "design" / "CLAUDE.md"
+            sibling_claude = sibling / "CLAUDE.md"
             if sibling_claude.is_file():
                 sibling_claude.write_text(
                     remove_bullet_under_heading(

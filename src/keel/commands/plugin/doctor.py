@@ -65,7 +65,7 @@ def cmd_doctor(
     # Check preflights run cleanly against the current scope
     from keel.workspace import read_phase
 
-    current = read_phase(scope.design_dir)
+    current = read_phase(scope.unit_dir)
     for pf in iter_preflights():
         try:
             pf.check(scope, current, current)  # self-transition should be a no-op

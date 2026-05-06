@@ -9,14 +9,14 @@ import typer
 from keel import git_ops, workspace
 from keel.api import (
     HINT_LIST_DELIVERABLES,
-    DeliverableManifest,
-    DeliverableMeta,
     ErrorCode,
     OpLog,
     Output,
-    load_deliverable_manifest,
+    ProjectManifest,
+    ProjectMeta,
+    load_project_manifest,
     resolve_cli_scope,
-    save_deliverable_manifest,
+    save_project_manifest,
 )
 from keel.markdown_edit import insert_under_heading, remove_bullet_under_heading
 
@@ -82,33 +82,34 @@ def cmd_rename(
 
     # 2. Update manifest's `name`
     manifest_path = new_scope.manifest_path
-    m = load_deliverable_manifest(manifest_path)
-    new_manifest = DeliverableManifest(
-        deliverable=DeliverableMeta(
+    m = load_project_manifest(manifest_path)
+    new_manifest = ProjectManifest(
+        project=ProjectMeta(
             name=new,
-            parent_project=m.deliverable.parent_project,
-            description=m.deliverable.description,
-            created=m.deliverable.created,
-            shared_worktree=m.deliverable.shared_worktree,
+            description=m.project.description,
+            created=m.project.created,
+            lifecycle=m.project.lifecycle,
+            shared_worktree=m.project.shared_worktree,
         ),
         repos=m.repos,
     )
-    save_deliverable_manifest(manifest_path, new_manifest)
+    save_project_manifest(manifest_path, new_manifest)
 
     # 3. Update parent CLAUDE.md and design.md references
-    description = m.deliverable.description
+    # TODO(plan8-task9.2): CLAUDE.md links are dead post-redesign.
+    description = m.project.description
     parent_scope = workspace.Scope(project=project, deliverable=None)
-    parent_claude = parent_scope.design_dir / "CLAUDE.md"
+    parent_claude = parent_scope.unit_dir / "CLAUDE.md"
     if parent_claude.is_file():
         text = remove_bullet_under_heading(
             parent_claude.read_text(), "Deliverables", f"- **{old}**:"
         )
         text = insert_under_heading(
-            text, "Deliverables", f"- **{new}**: ../deliverables/{new}/design/ -- {description}\n"
+            text, "Deliverables", f"- **{new}**: ../deliverables/{new}/ -- {description}\n"
         )
         parent_claude.write_text(text)
 
-    parent_design = parent_scope.design_dir / "design.md"
+    parent_design = parent_scope.design_md_path
     if parent_design.is_file():
         text = remove_bullet_under_heading(
             parent_design.read_text(), "Deliverables", f"- **{old}**:"
@@ -116,23 +117,24 @@ def cmd_rename(
         text = insert_under_heading(
             text,
             "Deliverables",
-            f"- **{new}**: {description}. See [design](../deliverables/{new}/design/design.md).\n",
+            f"- **{new}**: {description}. See [design](../deliverables/{new}/design.md).\n",
         )
         parent_design.write_text(text)
 
     # 4. Update sibling deliverable CLAUDE.md files
+    # TODO(plan8-task9.2): sibling CLAUDE.md is dead post-redesign.
     siblings_dir = workspace.project_dir(project) / "deliverables"
     if siblings_dir.is_dir():
         for sibling in siblings_dir.iterdir():
             if not sibling.is_dir() or sibling.name == new:
                 continue
-            sibling_claude = sibling / "design" / "CLAUDE.md"
+            sibling_claude = sibling / "CLAUDE.md"
             if sibling_claude.is_file():
                 text = remove_bullet_under_heading(
                     sibling_claude.read_text(), "Sibling deliverables", f"- {old}:"
                 )
                 text = insert_under_heading(
-                    text, "Sibling deliverables", f"- {new}: ../{new}/design/ -- {description}\n"
+                    text, "Sibling deliverables", f"- {new}: ../{new}/ -- {description}\n"
                 )
                 sibling_claude.write_text(text)
 

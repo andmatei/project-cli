@@ -63,8 +63,8 @@ def cmd_done(
     if milestone.fan_out and not force:
         unfinished: list[str] = []
         for sub_name in milestone.fan_out:
-            sub_path = workspace.milestones_manifest_path(scope.project, sub_name)
-            sub_manifest = load_milestones_manifest(sub_path)
+            sub_scope = workspace.Scope(project=scope.project, deliverable=sub_name)
+            sub_manifest = load_milestones_manifest(sub_scope.milestones_manifest_path)
             sub = next((m for m in sub_manifest.milestones if m.parent == milestone.id), None)
             if sub is None:
                 unfinished.append(f"{sub_name} (no sub-milestone with parent={milestone.id})")

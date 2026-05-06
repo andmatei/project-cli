@@ -6,15 +6,12 @@ import typer
 
 from keel import git_ops, workspace
 from keel.api import (
-    DeliverableManifest,
     ErrorCode,
     OpLog,
     Output,
     ProjectManifest,
     confirm_destructive,
-    load_deliverable_manifest,
     load_project_manifest,
-    save_deliverable_manifest,
     save_project_manifest,
 )
 
@@ -43,20 +40,14 @@ def cmd_rm(
     project = scope.project
     deliverable = scope.deliverable
 
-    if deliverable:
-        manifest_path = (
-            workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
-        )
-        m: DeliverableManifest = load_deliverable_manifest(manifest_path)
-    else:
-        manifest_path = workspace.project_dir(project) / "design" / "project.toml"
-        m: ProjectManifest = load_project_manifest(manifest_path)
+    manifest_path = scope.manifest_path
+    m: ProjectManifest = load_project_manifest(manifest_path)
 
     target = next((r for r in m.repos if r.remote == repo), None)
     if target is None:
         out.fail(f"no repo with remote: {repo}", code=ErrorCode.NOT_FOUND)
 
-    unit_dir = manifest_path.parent.parent
+    unit_dir = scope.unit_dir
     wt_path = unit_dir / target.worktree
 
     if dry_run:
@@ -83,12 +74,8 @@ def cmd_rm(
 
     # Update manifest
     new_repos = [r for r in m.repos if r.remote != repo]
-    if deliverable:
-        new_m = DeliverableManifest(deliverable=m.deliverable, repos=new_repos)
-        save_deliverable_manifest(manifest_path, new_m)
-    else:
-        new_m = ProjectManifest(project=m.project, repos=new_repos)
-        save_project_manifest(manifest_path, new_m)
+    new_m = ProjectManifest(project=m.project, repos=new_repos)
+    save_project_manifest(manifest_path, new_m)
 
     out.result(
         {

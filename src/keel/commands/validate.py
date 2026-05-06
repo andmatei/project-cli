@@ -9,7 +9,7 @@ import typer
 from rich.table import Table
 
 from keel import git_ops, workspace
-from keel.api import Output, load_deliverable_manifest, load_project_manifest
+from keel.api import Output, load_project_manifest
 
 
 @dataclass
@@ -21,9 +21,13 @@ class _Finding:
 
 
 def _check_required_design_files(unit_dir: Path, label: str) -> list[_Finding]:
+    """Verify the required scaffolding files exist at the unit root."""
     findings: list[_Finding] = []
-    for required in ("CLAUDE.md", "design.md", ".phase"):
-        path = unit_dir / "design" / required
+    # Per the new layout: design.md and the phase file under .keel/ are the canonical files.
+    for required, path in (
+        ("design.md", unit_dir / "design.md"),
+        ("phase", unit_dir / ".keel" / "phase"),
+    ):
         if path.is_file():
             findings.append(
                 _Finding("required-files", "pass", f"{label} has {required}", str(path))
@@ -110,10 +114,11 @@ def _check_deliverable_references(scope: workspace.Scope) -> list[_Finding]:
     deliv_dir = scope.unit_dir / "deliverables"
     if not deliv_dir.is_dir():
         return findings
-    parent_claude = scope.design_dir / "CLAUDE.md"
+    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign; this check is mostly historical.
+    parent_claude = scope.unit_dir / "CLAUDE.md"
     parent_text = parent_claude.read_text() if parent_claude.is_file() else ""
     for d in sorted(deliv_dir.iterdir()):
-        if not d.is_dir() or not (d / "design" / "deliverable.toml").is_file():
+        if not d.is_dir() or not (d / "project.toml").is_file():
             continue
         if f"**{d.name}**" not in parent_text:
             findings.append(
@@ -170,8 +175,8 @@ def cmd_validate(
                 continue
             label = f"deliverable {d.name}"
             findings.extend(_check_required_design_files(d, label))
-            d_manifest = d / "design" / "deliverable.toml"
-            d_findings, dm = _check_manifest(d_manifest, load_deliverable_manifest, label)
+            d_manifest = d / "project.toml"
+            d_findings, dm = _check_manifest(d_manifest, load_project_manifest, label)
             findings.extend(d_findings)
             if dm is not None:
                 findings.extend(_check_worktrees(d, dm.repos, label))

@@ -64,10 +64,11 @@ def test_detect_scope_in_project_subdir(monkeypatch, tmp_path) -> None:
 
 
 def test_deliverable_exists_true(monkeypatch, tmp_path) -> None:
+    # TODO(plan8-task4.2): refactor scaffolding to use the make_deliverable fixture.
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
-    (tmp_path / "foo" / "deliverables" / "bar" / "design").mkdir(parents=True)
-    (tmp_path / "foo" / "deliverables" / "bar" / "design" / "deliverable.toml").write_text(
-        '[deliverable]\nname = "bar"\nparent_project = "foo"\ndescription = "d"\ncreated = 2026-04-28\nshared_worktree = false\n'
+    (tmp_path / "foo" / "deliverables" / "bar").mkdir(parents=True)
+    (tmp_path / "foo" / "deliverables" / "bar" / "project.toml").write_text(
+        '[project]\nname = "bar"\ndescription = "d"\ncreated = 2026-04-28\nshared_worktree = false\n'
     )
     from keel.workspace import deliverable_exists
 
@@ -82,9 +83,10 @@ def test_deliverable_exists_false(monkeypatch, tmp_path) -> None:
 
 
 def test_resolve_cli_scope_explicit_project(monkeypatch, tmp_path) -> None:
+    # TODO(plan8-task4.2): refactor scaffolding to use the make_project fixture.
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
-    (tmp_path / "foo" / "design").mkdir(parents=True)
-    (tmp_path / "foo" / "design" / "project.toml").write_text(
+    (tmp_path / "foo").mkdir(parents=True)
+    (tmp_path / "foo" / "project.toml").write_text(
         '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-28\n'
     )
     from keel.workspace import resolve_cli_scope
@@ -95,12 +97,13 @@ def test_resolve_cli_scope_explicit_project(monkeypatch, tmp_path) -> None:
 
 
 def test_resolve_cli_scope_falls_back_to_cwd(monkeypatch, tmp_path) -> None:
+    # TODO(plan8-task4.2): refactor scaffolding to use the make_project fixture.
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
-    (tmp_path / "foo" / "design").mkdir(parents=True)
-    (tmp_path / "foo" / "design" / "project.toml").write_text(
+    (tmp_path / "foo").mkdir(parents=True)
+    (tmp_path / "foo" / "project.toml").write_text(
         '[project]\nname = "foo"\ndescription = "d"\ncreated = 2026-04-28\n'
     )
-    monkeypatch.chdir(tmp_path / "foo" / "design")
+    monkeypatch.chdir(tmp_path / "foo")
     from keel.workspace import resolve_cli_scope
 
     scope = resolve_cli_scope(project=None)

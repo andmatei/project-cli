@@ -123,16 +123,12 @@ def detect_scope(cwd: Path | None = None) -> Scope:
 
 def deliverable_exists(project_name: str, deliverable_name: str) -> bool:
     """Check whether a deliverable's manifest exists on disk."""
-    # TODO(plan8-task4.1): switch to the new layout once migration command lands.
-    return (
-        deliverable_dir(project_name, deliverable_name) / "design" / "deliverable.toml"
-    ).is_file()
+    return Scope(project=project_name, deliverable=deliverable_name).manifest_path.is_file()
 
 
 def project_exists(project_name: str) -> bool:
     """Check whether a project's manifest exists on disk."""
-    # TODO(plan8-task4.1): switch to the new layout once migration command lands.
-    return (project_dir(project_name) / "design" / "project.toml").is_file()
+    return Scope(project=project_name, deliverable=None).manifest_path.is_file()
 
 
 def resolve_cli_scope(
@@ -199,17 +195,16 @@ def resolve_cli_scope(
     return Scope(project=project, deliverable=deliverable)
 
 
-def read_phase(unit_or_design_dir: Path) -> str:
-    """Read the current phase. Tolerates both new and legacy layouts.
+def read_phase(unit_dir: Path) -> str:
+    """Read the current phase from `<unit_dir>/.keel/phase`.
 
-    New layout: `<unit_dir>/.keel/phase`.
-    Legacy (pre-0.1.0): `<dir>/.phase` — supports both `<unit>/design/.phase`
-    and `<unit>/.phase` callers.
+    Falls back to a sibling `.phase` file (pre-0.1.0 legacy layout) for
+    workspaces that haven't been migrated yet, and finally to `DEFAULT_PHASE`.
     """
     from keel.lifecycle import DEFAULT_PHASE
 
-    new_path = unit_or_design_dir / ".keel" / "phase"
-    legacy_path = unit_or_design_dir / ".phase"  # pre-0.1.0
+    new_path = unit_dir / ".keel" / "phase"
+    legacy_path = unit_dir / ".phase"  # pre-0.1.0
     for p in (new_path, legacy_path):
         if p.is_file():
             text = p.read_text().strip()
@@ -220,17 +215,16 @@ def read_phase(unit_or_design_dir: Path) -> str:
 def iter_projects() -> Iterator[tuple[str, ProjectManifest, str]]:
     """Yield (project_name, manifest, current_phase) for each project in PROJECTS_DIR.
 
-    Skips entries that don't have a `design/project.toml`. Useful for cross-project
+    Skips entries that don't have a `project.toml` at the unit root. Useful for cross-project
     tooling (status dashboards, exports, plugins).
     """
-    # TODO(plan8-task4.1): detect new-layout projects (manifest at root) too.
     pdir = projects_dir()
     if not pdir.is_dir():
         return
     for entry in sorted(pdir.iterdir()):
         if not entry.is_dir():
             continue
-        manifest_path = entry / "design" / "project.toml"
+        manifest_path = entry / "project.toml"
         if not manifest_path.is_file():
             continue
         try:
@@ -239,7 +233,7 @@ def iter_projects() -> Iterator[tuple[str, ProjectManifest, str]]:
             manifest = load_project_manifest(manifest_path)
         except Exception:
             continue
-        phase = read_phase(entry / "design")
+        phase = read_phase(entry)
         yield (entry.name, manifest, phase)
 
 

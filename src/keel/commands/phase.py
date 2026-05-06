@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import date
-from pathlib import Path
 
 import typer
 
@@ -20,12 +19,12 @@ from keel.api import (
 )
 from keel.phase_events import fire_phase_transition
 from keel.preflights import iter_preflights
-from keel.workspace import project_dir
 
 
-def _read_phase(path: Path) -> tuple[str, list[str]]:
+def _read_phase(scope: workspace.Scope) -> tuple[str, list[str]]:
     """Returns (current_phase, history_lines). History lines are everything after line 1."""
-    current = workspace.read_phase(path.parent)
+    current = workspace.read_phase(scope.unit_dir)
+    path = scope.phase_path
     if not path.is_file():
         return current, []
     lines = path.read_text().splitlines()
@@ -70,13 +69,13 @@ def cmd_phase(
     project = scope.project
     deliverable = scope.deliverable
 
-    path = scope.phase_file
-    current, history = _read_phase(path)
+    path = scope.phase_path
+    current, history = _read_phase(scope)
 
     # Load the project's lifecycle (deliverables inherit from their parent project)
     try:
-        project_manifest_path = project_dir(scope.project) / "design" / "project.toml"
-        manifest = load_project_manifest(project_manifest_path)
+        project_scope = workspace.Scope(project=scope.project, deliverable=None)
+        manifest = load_project_manifest(project_scope.manifest_path)
         lc = load_lifecycle(manifest.project.lifecycle)
     except LifecycleNotFoundError as e:
         out.fail(
@@ -191,6 +190,7 @@ def cmd_phase(
     if message:
         history_line += f"  ({message})"
     new_lines = [target] + [history_line] + history
+    scope.keel_dir.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(new_lines) + "\n")
 
     # Auto-create phase decision file

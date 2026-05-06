@@ -121,13 +121,11 @@ def cmd_export(
     appendix: list[_Decision] = []
 
     if deliverable:
-        unit_dir = scope.unit_dir
-        unit_design = scope.design_dir
         m = load_deliverable_manifest(scope.manifest_path)
         title = m.deliverable.name
         sections.append(f"# {title}\n")
         if include_scope:
-            scope_path = unit_design / "scope.md"
+            scope_path = scope.scope_md_path
             if scope_path.is_file():
                 sections.append("## Scope\n\n" + scope_path.read_text().strip())
         decisions = (
@@ -140,7 +138,7 @@ def cmd_export(
             else []
         )
         appendix.extend(decisions)
-        design_path = unit_design / "design.md"
+        design_path = scope.design_md_path
         if design_path.is_file():
             text = design_path.read_text().strip()
             text = _replace_decision_links(text, decisions)
@@ -148,12 +146,11 @@ def cmd_export(
     else:
         # Project-level composition
         unit_dir = scope.unit_dir
-        unit_design = scope.design_dir
         m = load_project_manifest(scope.manifest_path)
         title = m.project.name
         sections.append(f"# {title}\n")
         if include_scope:
-            scope_path = unit_design / "scope.md"
+            scope_path = scope.scope_md_path
             if scope_path.is_file():
                 sections.append("## Scope\n\n" + scope_path.read_text().strip())
 
@@ -171,7 +168,7 @@ def cmd_export(
         next_idx = len(proj_decisions) + 1
 
         # Project design
-        design_path = unit_design / "design.md"
+        design_path = scope.design_md_path
         if design_path.is_file():
             text = design_path.read_text().strip()
             text = _replace_decision_links(text, proj_decisions)
@@ -182,12 +179,12 @@ def cmd_export(
             deliv_dir = unit_dir / "deliverables"
             if deliv_dir.is_dir():
                 for d in sorted(deliv_dir.iterdir()):
-                    d_manifest = d / "design" / "deliverable.toml"
+                    d_manifest = d / "project.toml"
                     if not d_manifest.is_file():
                         continue
                     d_decisions = (
                         _collect_decisions(
-                            d / "design" / "decisions",
+                            d / "decisions",
                             include_superseded=include_superseded,
                             start_index=next_idx,
                         )
@@ -196,7 +193,7 @@ def cmd_export(
                     )
                     next_idx += len(d_decisions)
                     appendix.extend(d_decisions)
-                    d_design = d / "design" / "design.md"
+                    d_design = d / "design.md"
                     if d_design.is_file():
                         d_text = d_design.read_text().strip()
                         d_text = _replace_decision_links(d_text, d_decisions)

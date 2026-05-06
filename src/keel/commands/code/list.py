@@ -6,7 +6,7 @@ import typer
 from rich.table import Table
 
 from keel import workspace
-from keel.api import Output, load_deliverable_manifest, load_project_manifest
+from keel.api import Output, load_project_manifest
 
 
 def cmd_list(
@@ -22,17 +22,8 @@ def cmd_list(
     """List source repos declared in the manifest."""
     out = Output.from_context(ctx, json_mode=json_mode)
     scope = workspace.resolve_cli_scope(project, deliverable)
-    project = scope.project
-    deliverable = scope.deliverable
 
-    if deliverable:
-        manifest_path = (
-            workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
-        )
-        m = load_deliverable_manifest(manifest_path)
-    else:
-        manifest_path = workspace.project_dir(project) / "design" / "project.toml"
-        m = load_project_manifest(manifest_path)
+    m = load_project_manifest(scope.manifest_path)
 
     repos_data = [
         {

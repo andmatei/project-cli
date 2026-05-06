@@ -26,23 +26,20 @@ def _scan(projects_root) -> list[_ProjectRow]:
     if not projects_root.exists():
         return rows
     for child in sorted(projects_root.iterdir()):
-        design = child / "design"
-        manifest = design / "project.toml"
+        manifest = child / "project.toml"
         if not manifest.is_file():
             continue
         m = load_project_manifest(manifest)
-        phase = workspace.read_phase(design)
+        phase = workspace.read_phase(child)
         d_dir = child / "deliverables"
         d_count = 0
         if d_dir.is_dir():
-            d_count = sum(
-                1 for d in d_dir.iterdir() if (d / "design" / "deliverable.toml").is_file()
-            )
+            d_count = sum(1 for d in d_dir.iterdir() if (d / "project.toml").is_file())
 
         # Load milestones and count active ones
         active_milestones_count = 0
         active_tasks_count = 0
-        milestones_file = design / "milestones.toml"
+        milestones_file = child / "milestones.toml"
         if milestones_file.is_file():
             try:
                 mm = load_milestones_manifest(milestones_file)

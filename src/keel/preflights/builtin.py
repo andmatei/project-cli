@@ -9,7 +9,7 @@ from keel.workspace import Scope
 
 def _template_diff(scope: Scope, filename: str, template_name: str) -> bool:
     """True if the file on disk differs from a fresh template render."""
-    path = scope.design_dir / filename
+    path = scope.unit_dir / filename
     if not path.is_file():
         return (
             True  # missing file is a "difference" — preflight will flag it elsewhere if it matters
@@ -45,7 +45,7 @@ class _DesignEditedPreflight:
             warns.append("design.md is still the template scaffold")
         decisions = scope.decisions_dir
         if not decisions.is_dir() or not any(decisions.glob("*.md")):
-            warns.append("no decision records under design/decisions/")
+            warns.append("no decision records under decisions/")
         return PreflightResult(warnings=warns)
 
 

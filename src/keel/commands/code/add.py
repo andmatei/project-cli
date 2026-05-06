@@ -8,15 +8,12 @@ import typer
 
 from keel import git_ops, workspace
 from keel.api import (
-    DeliverableManifest,
     ErrorCode,
     OpLog,
     Output,
     ProjectManifest,
     RepoSpec,
-    load_deliverable_manifest,
     load_project_manifest,
-    save_deliverable_manifest,
     save_project_manifest,
 )
 
@@ -68,14 +65,8 @@ def cmd_add(
         branch_prefix = f"{user_slug}/{project}{suffix}-{repo_path.name}"
 
     # Load manifest
-    if deliverable:
-        manifest_path = (
-            workspace.deliverable_dir(project, deliverable) / "design" / "deliverable.toml"
-        )
-        m: DeliverableManifest = load_deliverable_manifest(manifest_path)
-    else:
-        manifest_path = workspace.project_dir(project) / "design" / "project.toml"
-        m: ProjectManifest = load_project_manifest(manifest_path)
+    manifest_path = scope.manifest_path
+    m: ProjectManifest = load_project_manifest(manifest_path)
 
     # Detect duplicates
     for existing in m.repos:
@@ -96,25 +87,21 @@ def cmd_add(
         branch_prefix=branch_prefix,
     )
 
+    unit_dir = scope.unit_dir
+
     if dry_run:
         log = OpLog()
         log.modify_file(manifest_path, diff=f"+ [[repos]] remote={repo_path} worktree={wt_name}")
-        unit_dir = manifest_path.parent.parent
         log.create_worktree(unit_dir / wt_name, source=repo_path, branch=branch_prefix)
         out.info(log.format_summary())
         return
 
     # Append + write back
     new_repos = list(m.repos) + [new_spec]
-    if deliverable:
-        new_m = DeliverableManifest(deliverable=m.deliverable, repos=new_repos)
-        save_deliverable_manifest(manifest_path, new_m)
-    else:
-        new_m = ProjectManifest(project=m.project, repos=new_repos)
-        save_project_manifest(manifest_path, new_m)
+    new_m = ProjectManifest(project=m.project, repos=new_repos)
+    save_project_manifest(manifest_path, new_m)
 
     # Create worktree
-    unit_dir = manifest_path.parent.parent
     try:
         git_ops.create_worktree(repo_path, unit_dir / wt_name, branch=branch_prefix)
     except git_ops.GitError as e:

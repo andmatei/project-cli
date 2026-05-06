@@ -12,7 +12,6 @@ from keel.api import (
     ErrorCode,
     OpLog,
     Output,
-    load_deliverable_manifest,
     load_project_manifest,
 )
 
@@ -40,12 +39,8 @@ def cmd_init(
     project = scope.project
     deliverable = scope.deliverable
 
-    if deliverable:
-        unit_dir = workspace.deliverable_dir(project, deliverable)
-        m = load_deliverable_manifest(unit_dir / "design" / "deliverable.toml")
-    else:
-        unit_dir = workspace.project_dir(project)
-        m = load_project_manifest(unit_dir / "design" / "project.toml")
+    unit_dir = scope.unit_dir
+    m = load_project_manifest(scope.manifest_path)
 
     if dry_run:
         log = OpLog()

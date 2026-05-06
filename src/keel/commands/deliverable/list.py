@@ -8,7 +8,7 @@ import typer
 from rich.table import Table
 
 from keel import workspace
-from keel.api import Output, load_deliverable_manifest, resolve_cli_scope
+from keel.api import Output, load_project_manifest, resolve_cli_scope
 
 
 @dataclass
@@ -21,21 +21,23 @@ class _DeliverableRow:
 
 def _scan(project_name: str) -> list[_DeliverableRow]:
     rows: list[_DeliverableRow] = []
-    deliv_dir = workspace.project_dir(project_name) / "deliverables"
+    project_scope = workspace.Scope(project=project_name)
+    deliv_dir = project_scope.unit_dir / "deliverables"
     if not deliv_dir.is_dir():
         return rows
     for child in sorted(deliv_dir.iterdir()):
-        manifest_path = child / "design" / "deliverable.toml"
+        deliv_scope = workspace.Scope(project=project_name, deliverable=child.name)
+        manifest_path = deliv_scope.manifest_path
         if not manifest_path.is_file():
             continue
-        m = load_deliverable_manifest(manifest_path)
-        phase = workspace.read_phase(child / "design")
+        m = load_project_manifest(manifest_path)
+        phase = workspace.read_phase(deliv_scope.unit_dir)
         rows.append(
             _DeliverableRow(
-                name=m.deliverable.name,
+                name=m.project.name,
                 phase=phase,
-                description=m.deliverable.description,
-                shared_worktree=m.deliverable.shared_worktree,
+                description=m.project.description,
+                shared_worktree=m.project.shared_worktree,
             )
         )
     return rows

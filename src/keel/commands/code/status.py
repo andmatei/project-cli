@@ -9,7 +9,7 @@ import typer
 from rich.table import Table
 
 from keel import git_ops, workspace
-from keel.api import Output, load_deliverable_manifest, load_project_manifest
+from keel.api import Output, load_project_manifest
 
 
 @dataclass
@@ -67,12 +67,8 @@ def cmd_status(
     project = scope.project
     deliverable = scope.deliverable
 
-    if deliverable:
-        unit_dir = workspace.deliverable_dir(project, deliverable)
-        m = load_deliverable_manifest(unit_dir / "design" / "deliverable.toml")
-    else:
-        unit_dir = workspace.project_dir(project)
-        m = load_project_manifest(unit_dir / "design" / "project.toml")
+    unit_dir = scope.unit_dir
+    m = load_project_manifest(scope.manifest_path)
 
     rows = _collect_status(unit_dir, m.repos)
 

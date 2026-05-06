@@ -33,7 +33,7 @@ def cmd_show(
     proj = workspace.project_dir(name)
 
     m = load_project_manifest(scope.manifest_path)
-    phase = workspace.read_phase(scope.design_dir)
+    phase = workspace.read_phase(scope.unit_dir)
     decisions = sorted(scope.decisions_dir.glob("*.md"))
     decision_count = len(decisions)
 
@@ -41,9 +41,9 @@ def cmd_show(
     d_dir = proj / "deliverables"
     if d_dir.is_dir():
         for d in sorted(d_dir.iterdir()):
-            d_manifest = d / "design" / "deliverable.toml"
+            d_manifest = d / "project.toml"
             if d_manifest.is_file():
-                d_phase = workspace.read_phase(d / "design")
+                d_phase = workspace.read_phase(d)
                 deliverables.append((d.name, d_phase))
 
     # Load milestones if not in brief mode
