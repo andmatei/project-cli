@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 import typer
 
-from keel import git_ops, templates, workspace
+from keel import git_ops, workspace
 from keel.api import (
     ErrorCode,
     OpLog,
@@ -21,6 +20,7 @@ from keel.api import (
     save_project_manifest,
     slugify,
 )
+from keel.lifecycles import LifecycleNotFoundError, load_lifecycle
 from keel.markdown_edit import insert_under_heading
 
 
@@ -50,173 +50,139 @@ def cmd_add(
     ),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
-    """Create a new deliverable inside a project."""
+    """Create a new deliverable inside a project.
+
+    Equivalent to creating a nested project — writes the same `project.toml`
+    schema and `.keel/` state as `keel new`.
+    """
     out = Output.from_context(ctx, json_mode=json_mode)
 
-    scope = resolve_cli_scope(project, None, allow_deliverable=False, out=out)
-    project = scope.project
+    parent_scope = resolve_cli_scope(project, None, allow_deliverable=False, out=out)
+    project = parent_scope.project
 
     slug = slugify(name)
     if not slug:
         out.fail("invalid deliverable name", code=ErrorCode.INVALID_NAME, exit_code=2)
 
     deliv_scope = workspace.Scope(project=project, deliverable=slug)
-    deliv = deliv_scope.unit_dir
-    if deliv.exists():
-        out.fail(f"deliverable already exists: {deliv}", code=ErrorCode.EXISTS)
+    if deliv_scope.unit_dir.exists():
+        out.fail(f"deliverable already exists: {deliv_scope.unit_dir}", code=ErrorCode.EXISTS)
 
     description = require_or_fail(description, arg_name="--description", label="Description")
 
-    # Validate --repo if provided
-    repo_path = None
+    # Mutual exclusivity.
     if repo and shared:
         out.fail(
             "--repo and --shared are mutually exclusive",
             code=ErrorCode.CONFLICTING_FLAGS,
             exit_code=2,
         )
+
+    # Validate --repo.
+    repo_paths: list[Path] = []
     if repo:
-        repo_path = Path(repo).expanduser().resolve()
-        if not git_ops.is_git_repo(repo_path):
-            out.fail(f"not a git repo: {repo_path}", code=ErrorCode.NOT_A_REPO)
+        rp = Path(repo).expanduser().resolve()
+        if not git_ops.is_git_repo(rp):
+            out.fail(f"not a git repo: {rp}", code=ErrorCode.NOT_A_REPO)
+        repo_paths.append(rp)
 
-    if dry_run:
-        log = OpLog()
-        log.create_file(deliv_scope.manifest_path, size=0)
-        log.create_file(deliv_scope.unit_dir / "CLAUDE.md", size=0)
-        log.create_file(deliv_scope.design_md_path, size=0)
-        log.create_file(deliv_scope.phase_path, size=0)
-        today = date.today().isoformat()
-        log.create_file(deliv_scope.decisions_dir / f"{today}-deliverable-created.md", size=0)
-        out.info(log.format_summary())
-        return
+    # Inherit lifecycle from parent.
+    parent_manifest = load_project_manifest(parent_scope.manifest_path)
+    parent_lifecycle = parent_manifest.project.lifecycle
+    try:
+        lc = load_lifecycle(parent_lifecycle)
+    except LifecycleNotFoundError:
+        out.fail(
+            f"parent project's lifecycle '{parent_lifecycle}' is unknown",
+            code=ErrorCode.NOT_FOUND,
+        )
 
-    # Create directories
-    deliv_scope.decisions_dir.mkdir(parents=True)
-
-    # Build manifest
+    # Build repo specs (deliverable's own worktree is always 'code' if --repo given).
     repo_specs: list[RepoSpec] = []
-    if repo_path is not None:
+    if repo_paths:
         try:
-            user_slug = git_ops.git_user_slug(repo_path)
+            user_slug = git_ops.git_user_slug(repo_paths[0])
         except Exception:
             user_slug = "user"
         repo_specs.append(
             RepoSpec(
-                remote=str(repo_path),
-                local_hint=str(repo_path),
+                remote=str(repo_paths[0]),
+                local_hint=str(repo_paths[0]),
                 worktree="code",
                 branch_prefix=f"{user_slug}/{project}-{slug}",
             )
         )
-    manifest = ProjectManifest(
-        project=ProjectMeta(
-            name=slug,
-            description=description,
-            created=date.today(),
-            shared_worktree=shared,
-        ),
-        repos=repo_specs,
-    )
-    save_project_manifest(deliv_scope.manifest_path, manifest)
 
-    # Discover existing siblings for the new deliverable's CLAUDE.md
-    # TODO(plan8-task9.2): claude_md.j2 / sibling CLAUDE.md handling is dead post-redesign.
-    existing_siblings: list[dict[str, str]] = []
-    siblings_dir_for_render = workspace.project_dir(project) / "deliverables"
-    if siblings_dir_for_render.is_dir():
-        for sibling in sorted(siblings_dir_for_render.iterdir()):
-            if not sibling.is_dir():
-                continue
-            sib_manifest = sibling / "project.toml"
-            if not sib_manifest.is_file():
-                continue
-            sm = load_project_manifest(sib_manifest)
-            existing_siblings.append(
-                {"name": sm.project.name, "description": sm.project.description}
+    if dry_run:
+        log = OpLog()
+        log.create_file(deliv_scope.manifest_path, size=0)
+        log.create_file(deliv_scope.readme_path, size=0)
+        log.create_file(deliv_scope.scope_md_path, size=0)
+        log.create_file(deliv_scope.design_md_path, size=0)
+        log.create_file(deliv_scope.phase_path, size=0)
+        log.create_file(deliv_scope.lifecycle_lock_path, size=0)
+        if repo_paths:
+            log.create_worktree(
+                deliv_scope.unit_dir / "code",
+                source=repo_paths[0],
+                branch=repo_specs[0].branch_prefix,
             )
+        out.info(log.format_summary())
+        return
 
-    # Templates
-    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign; leaving generation in place for now.
-    (deliv_scope.unit_dir / "CLAUDE.md").write_text(
-        templates.render(
-            "claude_md.j2",
-            name=slug,
-            description=description,
+    # Reuse the same scaffold logic as `keel new`. Late-import to avoid circulars.
+    from keel.commands.new import _scaffold_unit
+
+    manifest = _scaffold_unit(
+        scope=deliv_scope,
+        name=slug,
+        description=description,
+        lifecycle=parent_lifecycle,
+        repos=repo_specs,
+        lc=lc,
+    )
+
+    # Persist `shared_worktree=True` if requested. `_scaffold_unit` always builds with
+    # the default (False); we re-save the manifest here when --shared is set.
+    if shared:
+        manifest = ProjectManifest(
+            project=ProjectMeta(
+                name=manifest.project.name,
+                description=manifest.project.description,
+                created=manifest.project.created,
+                lifecycle=manifest.project.lifecycle,
+                shared_worktree=True,
+            ),
             repos=[],
-            deliverables=[],
-            siblings=existing_siblings,
+            extensions=manifest.extensions,
         )
-    )
-    deliv_scope.design_md_path.write_text(
-        templates.render("design_md.j2", name=slug, description=description)
-    )
+        save_project_manifest(deliv_scope.manifest_path, manifest)
 
-    # Phase
-    deliv_scope.keel_dir.mkdir(parents=True, exist_ok=True)
-    deliv_scope.phase_path.write_text("scoping\n")
-
-    # Initial decision
-    today = date.today().isoformat()
-    (deliv_scope.decisions_dir / f"{today}-deliverable-created.md").write_text(
-        templates.render("decision_entry.j2", date=today, title=f"Create deliverable {slug}")
-    )
-
-    # Create worktree if --repo
-    created_worktree = None
-    if repo_path is not None:
-        wt_dest = deliv / "code"
+    # Create worktree if --repo was provided.
+    created_worktree: str | None = None
+    if repo_paths:
+        wt_dest = deliv_scope.unit_dir / "code"
         try:
-            git_ops.create_worktree(repo_path, wt_dest, branch=repo_specs[0].branch_prefix)
+            git_ops.create_worktree(repo_paths[0], wt_dest, branch=repo_specs[0].branch_prefix)
             created_worktree = str(wt_dest)
         except git_ops.GitError as e:
-            out.info(f"Design files are at {deliv}; clean up manually if needed.")
+            out.info(f"Files are at {deliv_scope.unit_dir}; clean up manually if needed.")
             out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
 
-    # AST-edit the parent's CLAUDE.md to list this deliverable
-    # TODO(plan8-task9.2): CLAUDE.md links are dead post-redesign.
-    parent_scope_for_edits = workspace.Scope(project=project, deliverable=None)
-    parent_claude_path = parent_scope_for_edits.unit_dir / "CLAUDE.md"
-    if parent_claude_path.is_file():
-        line = f"- **{slug}**: ../deliverables/{slug}/ -- {description}\n"
-        new_text = insert_under_heading(parent_claude_path.read_text(), "Deliverables", line)
-        parent_claude_path.write_text(new_text)
-
-    # AST-edit the parent's design.md
-    parent_design_path = parent_scope_for_edits.design_md_path
+    # AST-edit parent's design.md to reference the new deliverable.
+    parent_design_path = parent_scope.design_md_path
+    modified_files: list[str] = []
     if parent_design_path.is_file():
-        line = f"- **{slug}**: {description}. See [design](../deliverables/{slug}/design.md).\n"
+        line = f"- **{slug}**: {description}. See [design](deliverables/{slug}/design.md).\n"
         new_text = insert_under_heading(parent_design_path.read_text(), "Deliverables", line)
         parent_design_path.write_text(new_text)
-
-    # AST-edit existing siblings' CLAUDE.md to add this new deliverable
-    # TODO(plan8-task9.2): sibling CLAUDE.md is dead post-redesign.
-    siblings_dir = workspace.project_dir(project) / "deliverables"
-    sibling_modifications = []
-    if siblings_dir.is_dir():
-        for sibling in sorted(siblings_dir.iterdir()):
-            if sibling.name == slug or not sibling.is_dir():
-                continue
-            sibling_claude = sibling / "CLAUDE.md"
-            if sibling_claude.is_file():
-                line = f"- {slug}: ../{slug}/ -- {description}\n"
-                new_text = insert_under_heading(
-                    sibling_claude.read_text(), "Sibling deliverables", line
-                )
-                sibling_claude.write_text(new_text)
-                sibling_modifications.append(str(sibling_claude))
-
-    modified_files = []
-    if parent_claude_path.is_file():
-        modified_files.append(str(parent_claude_path))
-    if parent_design_path.is_file():
         modified_files.append(str(parent_design_path))
-    modified_files.extend(sibling_modifications)
+
     out.result(
         {
-            "deliverable_path": str(deliv),
+            "deliverable_path": str(deliv_scope.unit_dir),
             "modified_files": modified_files,
             "worktree": created_worktree,
         },
-        human_text=f"Deliverable created: {deliv}",
+        human_text=f"Deliverable created: {deliv_scope.unit_dir}",
     )
