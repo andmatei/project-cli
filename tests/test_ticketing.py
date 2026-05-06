@@ -190,7 +190,7 @@ def test_get_provider_for_project_no_config(make_project) -> None:
     from keel.ticketing import get_provider_for_project
 
     proj = make_project("foo")
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     assert get_provider_for_project(m) is None
 
 
@@ -203,10 +203,10 @@ def test_get_provider_for_project_unknown_provider(make_project) -> None:
     from keel.ticketing import get_provider_for_project
 
     proj = make_project("foo")
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     m.extensions["ticketing"] = {"provider": "ghost"}
-    save_project_manifest(proj / "design" / "project.toml", m)
-    m2 = load_project_manifest(proj / "design" / "project.toml")
+    save_project_manifest(proj / "project.toml", m)
+    m2 = load_project_manifest(proj / "project.toml")
     assert get_provider_for_project(m2) is None
 
 
@@ -222,10 +222,10 @@ def test_get_provider_for_project_loads_and_configures(make_project) -> None:
     from keel.ticketing.mock import MockProvider
 
     proj = make_project("foo")
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     m.extensions["ticketing"] = {"provider": "mock", "mock": {"key": "value"}}
-    save_project_manifest(proj / "design" / "project.toml", m)
-    m2 = load_project_manifest(proj / "design" / "project.toml")
+    save_project_manifest(proj / "project.toml", m)
+    m2 = load_project_manifest(proj / "project.toml")
 
     # Patch load_provider to return a fresh MockProvider for "mock"
     fake = MockProvider()
@@ -252,10 +252,10 @@ def test_milestone_add_pushes_to_provider(make_project, monkeypatch) -> None:
 
     runner = CliRunner()
     proj = make_project("foo")
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     m.extensions["ticketing"] = {"provider": "mock", "parent_id": "EPIC-1"}
-    save_project_manifest(proj / "design" / "project.toml", m)
-    monkeypatch.chdir(proj / "design")
+    save_project_manifest(proj / "project.toml", m)
+    monkeypatch.chdir(proj)
 
     fake = MockProvider()
     with patch("keel.ticketing.load_provider", return_value=fake):
@@ -263,7 +263,7 @@ def test_milestone_add_pushes_to_provider(make_project, monkeypatch) -> None:
             app, ["milestone", "add", "m1", "--title", "X"], catch_exceptions=False
         )
     assert result.exit_code == 0
-    saved = load_milestones_manifest(proj / "design" / "milestones.toml")
+    saved = load_milestones_manifest(proj / "milestones.toml")
     assert saved.milestones[0].ticket_id is not None
     assert saved.milestones[0].ticket_id.startswith("MOCK-")
     assert any(c[0] == "create_milestone" for c in fake.calls)
@@ -285,16 +285,16 @@ def test_milestone_add_no_push_skips_provider(make_project, monkeypatch) -> None
 
     runner = CliRunner()
     proj = make_project("foo")
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     m.extensions["ticketing"] = {"provider": "mock"}
-    save_project_manifest(proj / "design" / "project.toml", m)
-    monkeypatch.chdir(proj / "design")
+    save_project_manifest(proj / "project.toml", m)
+    monkeypatch.chdir(proj)
 
     fake = MockProvider()
     with patch("keel.ticketing.load_provider", return_value=fake):
         result = runner.invoke(app, ["milestone", "add", "m1", "--title", "X", "--no-push"])
     assert result.exit_code == 0
-    saved = load_milestones_manifest(proj / "design" / "milestones.toml")
+    saved = load_milestones_manifest(proj / "milestones.toml")
     assert saved.milestones[0].ticket_id is None
     assert not any(c[0] == "create_milestone" for c in fake.calls)
 
@@ -314,10 +314,10 @@ def test_task_add_pushes_with_parent_milestone_ticket_id(make_project, monkeypat
 
     runner = CliRunner()
     proj = make_project("foo")
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     m.extensions["ticketing"] = {"provider": "mock", "parent_id": "EPIC-1"}
-    save_project_manifest(proj / "design" / "project.toml", m)
-    monkeypatch.chdir(proj / "design")
+    save_project_manifest(proj / "project.toml", m)
+    monkeypatch.chdir(proj)
 
     fake = MockProvider()
     with patch("keel.ticketing.load_provider", return_value=fake):
@@ -325,7 +325,7 @@ def test_task_add_pushes_with_parent_milestone_ticket_id(make_project, monkeypat
         # milestone now has ticket_id = MOCK-1 (or similar)
         result = runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "T"])
     assert result.exit_code == 0
-    saved = load_milestones_manifest(proj / "design" / "milestones.toml")
+    saved = load_milestones_manifest(proj / "milestones.toml")
     assert saved.tasks[0].ticket_id is not None
 
 
@@ -340,10 +340,10 @@ def test_milestone_done_transitions_provider(make_project, monkeypatch) -> None:
 
     runner = CliRunner()
     proj = make_project("foo")
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     m.extensions["ticketing"] = {"provider": "mock"}
-    save_project_manifest(proj / "design" / "project.toml", m)
-    monkeypatch.chdir(proj / "design")
+    save_project_manifest(proj / "project.toml", m)
+    monkeypatch.chdir(proj)
 
     fake = MockProvider()
     with patch("keel.ticketing.load_provider", return_value=fake):
@@ -373,10 +373,10 @@ def test_milestone_add_provider_failure_does_not_fail_command(
 
     runner = CliRunner()
     proj = make_project("foo")
-    m = load_project_manifest(proj / "design" / "project.toml")
+    m = load_project_manifest(proj / "project.toml")
     m.extensions["ticketing"] = {"provider": "mock"}
-    save_project_manifest(proj / "design" / "project.toml", m)
-    monkeypatch.chdir(proj / "design")
+    save_project_manifest(proj / "project.toml", m)
+    monkeypatch.chdir(proj)
 
     class BrokenProvider(MockProvider):
         def create_milestone(self, *args, **kwargs):
@@ -387,7 +387,7 @@ def test_milestone_add_provider_failure_does_not_fail_command(
         result = runner.invoke(app, ["milestone", "add", "m1", "--title", "X"])
     # Even though provider failed, command should succeed and save locally.
     assert result.exit_code == 0
-    saved = load_milestones_manifest(proj / "design" / "milestones.toml")
+    saved = load_milestones_manifest(proj / "milestones.toml")
     assert len(saved.milestones) == 1
     assert saved.milestones[0].ticket_id is None
     # Warning surfaced somewhere (stderr or stdout; out.warn goes to stderr)

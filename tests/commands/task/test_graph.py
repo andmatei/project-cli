@@ -10,7 +10,7 @@ runner = CliRunner()
 
 
 def _seed(proj, monkeypatch):
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "First"])
     runner.invoke(
@@ -78,7 +78,7 @@ def test_graph_json(projects, make_project, monkeypatch) -> None:
 
 def test_graph_milestone_filter(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["milestone", "add", "m2", "--title", "M2"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "x"])
@@ -91,6 +91,6 @@ def test_graph_milestone_filter(projects, make_project, monkeypatch) -> None:
 
 def test_graph_dot_and_json_mutually_exclusive(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["task", "graph", "--dot", "--json"])
     assert result.exit_code != 0

@@ -15,7 +15,7 @@ def test_archive_moves_project_to_archive(projects, make_project) -> None:
     archive_dirs = list((projects / ".archive").glob("foo-*"))
     assert len(archive_dirs) == 1
     assert (archive_dirs[0] / ".archived").is_file()
-    assert (archive_dirs[0] / "design" / "project.toml").is_file()
+    assert (archive_dirs[0] / "project.toml").is_file()
 
 
 def test_archive_unknown(projects) -> None:

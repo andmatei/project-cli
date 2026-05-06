@@ -11,7 +11,7 @@ runner = CliRunner()
 
 
 def _seed(proj, monkeypatch):
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "First"])
     runner.invoke(
@@ -30,14 +30,14 @@ def test_next_returns_topo_first_ready(projects, make_project, monkeypatch) -> N
 
 def test_next_no_ready_tasks_fails(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["task", "next"])
     assert result.exit_code == 1
 
 
 def test_next_with_milestone_filter(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["milestone", "add", "m2", "--title", "M2"])
     runner.invoke(app, ["task", "add", "a", "--milestone", "m1", "--title", "x"])
@@ -52,7 +52,7 @@ def test_next_start_flag(projects, make_project, monkeypatch) -> None:
     _seed(proj, monkeypatch)
     result = runner.invoke(app, ["task", "next", "--start"])
     assert result.exit_code == 0
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m = load_milestones_manifest(proj / "milestones.toml")
     t1 = next(t for t in m.tasks if t.id == "t1")
     assert t1.status == "active"
     assert t1.branch is not None

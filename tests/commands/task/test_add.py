@@ -16,7 +16,7 @@ def _setup_milestone(proj):
 
 def test_add_creates_first_task(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     _setup_milestone(proj)
     result = runner.invoke(
         app,
@@ -24,7 +24,7 @@ def test_add_creates_first_task(projects, make_project, monkeypatch) -> None:
         catch_exceptions=False,
     )
     assert result.exit_code == 0, result.stderr
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m = load_milestones_manifest(proj / "milestones.toml")
     assert len(m.tasks) == 1
     assert m.tasks[0].id == "t1"
     assert m.tasks[0].milestone == "m1"
@@ -34,7 +34,7 @@ def test_add_creates_first_task(projects, make_project, monkeypatch) -> None:
 
 def test_add_with_dependencies(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     _setup_milestone(proj)
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "First"])
     result = runner.invoke(
@@ -53,14 +53,14 @@ def test_add_with_dependencies(projects, make_project, monkeypatch) -> None:
         catch_exceptions=False,
     )
     assert result.exit_code == 0
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m = load_milestones_manifest(proj / "milestones.toml")
     t2 = next(t for t in m.tasks if t.id == "t2")
     assert t2.depends_on == ["t1"]
 
 
 def test_add_with_multiple_dependencies(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     _setup_milestone(proj)
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "a"])
     runner.invoke(app, ["task", "add", "t2", "--milestone", "m1", "--title", "b"])
@@ -79,14 +79,14 @@ def test_add_with_multiple_dependencies(projects, make_project, monkeypatch) -> 
         ],
     )
     assert result.exit_code == 0
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m = load_milestones_manifest(proj / "milestones.toml")
     t3 = next(t for t in m.tasks if t.id == "t3")
     assert sorted(t3.depends_on) == ["t1", "t2"]
 
 
 def test_add_unknown_milestone_fails(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(
         app,
         ["task", "add", "t1", "--milestone", "ghost", "--title", "x"],
@@ -97,7 +97,7 @@ def test_add_unknown_milestone_fails(projects, make_project, monkeypatch) -> Non
 
 def test_add_unknown_dependency_fails(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     _setup_milestone(proj)
     result = runner.invoke(
         app,
@@ -121,14 +121,14 @@ def test_add_rejects_cycle_in_existing_manifest(projects, make_project, monkeypa
     import tomlkit
 
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "a"])
     runner.invoke(
         app, ["task", "add", "t2", "--milestone", "m1", "--title", "b", "--depends-on", "t1"]
     )
     # Inject a cycle: t1 depends on t2
-    mp = proj / "design" / "milestones.toml"
+    mp = proj / "milestones.toml"
     doc = tomlkit.parse(mp.read_text())
     for t in doc["tasks"]:
         if t["id"] == "t1":
@@ -143,7 +143,7 @@ def test_add_rejects_cycle_in_existing_manifest(projects, make_project, monkeypa
 
 def test_add_duplicate_id_rejected(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     _setup_milestone(proj)
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "First"])
     result = runner.invoke(
@@ -155,7 +155,7 @@ def test_add_duplicate_id_rejected(projects, make_project, monkeypatch) -> None:
 
 def test_add_json(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     _setup_milestone(proj)
     result = runner.invoke(
         app,
@@ -171,11 +171,11 @@ def test_add_json(projects, make_project, monkeypatch) -> None:
 def test_add_dry_run_writes_nothing(projects, make_project, monkeypatch) -> None:
     """Dry-run validates but does not write to manifest."""
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     _setup_milestone(proj)
 
     # Capture pre-state
-    mp = proj / "design" / "milestones.toml"
+    mp = proj / "milestones.toml"
     pre_text = mp.read_text() if mp.exists() else None
 
     result = runner.invoke(

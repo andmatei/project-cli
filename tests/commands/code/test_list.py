@@ -35,7 +35,7 @@ def test_list_one_repo(projects, make_project) -> None:
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
     result = runner.invoke(app, ["code", "list", "--project", "foo"])
     assert result.exit_code == 0
     assert "git@example.com:org/r.git" in result.stdout
@@ -48,7 +48,7 @@ def test_list_json_shape(projects, make_project) -> None:
         project=ProjectMeta(name="foo", description="d", created=date(2026, 4, 29)),
         repos=[RepoSpec(remote="git@e.com:o/r.git", worktree="code", branch_prefix="a/foo")],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
     result = runner.invoke(app, ["code", "list", "--project", "foo", "--json"])
     payload = json.loads(result.stdout)
     assert payload["repos"][0]["remote"] == "git@e.com:o/r.git"
@@ -57,24 +57,16 @@ def test_list_json_shape(projects, make_project) -> None:
 
 def test_list_at_deliverable_scope(projects, make_deliverable) -> None:
     deliv = make_deliverable(project_name="foo", name="bar", description="d")
-    from keel.manifest import (
-        DeliverableManifest,
-        DeliverableMeta,
-        RepoSpec,
-        save_deliverable_manifest,
-    )
-
-    m = DeliverableManifest(
-        deliverable=DeliverableMeta(
+    m = ProjectManifest(
+        project=ProjectMeta(
             name="bar",
-            parent_project="foo",
             description="d",
             created=date(2026, 4, 29),
             shared_worktree=False,
         ),
         repos=[RepoSpec(remote="git@e.com:o/d.git", worktree="code", branch_prefix="a/foo-bar")],
     )
-    save_deliverable_manifest(deliv / "design" / "deliverable.toml", m)
+    save_project_manifest(deliv / "project.toml", m)
     result = runner.invoke(app, ["code", "list", "--project", "foo", "-D", "bar"])
     assert result.exit_code == 0
     assert "git@e.com:o/d.git" in result.stdout

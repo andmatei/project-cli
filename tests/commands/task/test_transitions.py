@@ -10,7 +10,7 @@ runner = CliRunner()
 
 
 def _seed(proj, monkeypatch):
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "First"])
 
@@ -20,7 +20,7 @@ def test_start_planned_to_active(projects, make_project, monkeypatch) -> None:
     _seed(proj, monkeypatch)
     result = runner.invoke(app, ["task", "start", "t1"], catch_exceptions=False)
     assert result.exit_code == 0
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m = load_milestones_manifest(proj / "milestones.toml")
     assert m.tasks[0].status == "active"
     assert m.tasks[0].branch is not None
     assert "m1" in m.tasks[0].branch
@@ -32,7 +32,7 @@ def test_start_with_explicit_branch(projects, make_project, monkeypatch) -> None
     _seed(proj, monkeypatch)
     result = runner.invoke(app, ["task", "start", "t1", "--branch", "custom/branch"])
     assert result.exit_code == 0
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m = load_milestones_manifest(proj / "milestones.toml")
     assert m.tasks[0].branch == "custom/branch"
 
 
@@ -50,7 +50,7 @@ def test_done_active_to_done(projects, make_project, monkeypatch) -> None:
     runner.invoke(app, ["task", "start", "t1"])
     result = runner.invoke(app, ["task", "done", "t1"], catch_exceptions=False)
     assert result.exit_code == 0
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m = load_milestones_manifest(proj / "milestones.toml")
     assert m.tasks[0].status == "done"
 
 
@@ -78,9 +78,9 @@ def test_cancel_from_state(
     _seed(proj, monkeypatch)
     for cmd in setup_actions:
         runner.invoke(app, list(cmd))
-    m = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m = load_milestones_manifest(proj / "milestones.toml")
     assert m.tasks[0].status == expected_initial
     result = runner.invoke(app, ["task", "cancel", "t1", "-y"])
     assert result.exit_code == 0
-    m_after = load_milestones_manifest(proj / "design" / "milestones.toml")
+    m_after = load_milestones_manifest(proj / "milestones.toml")
     assert m_after.tasks[0].status == "cancelled"

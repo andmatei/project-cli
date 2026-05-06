@@ -11,7 +11,7 @@ runner = CliRunner()
 
 def test_show_renders_decision(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["decision", "new", "Pick a thing", "--no-edit"])
     result = runner.invoke(app, ["decision", "show", "pick-a-thing"])
     assert result.exit_code == 0
@@ -20,7 +20,7 @@ def test_show_renders_decision(projects, make_project, monkeypatch) -> None:
 
 def test_show_raw_dumps_file_unchanged(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["decision", "new", "Pick a thing", "--no-edit"])
     result = runner.invoke(app, ["decision", "show", "pick-a-thing", "--raw"])
     assert result.exit_code == 0
@@ -30,7 +30,7 @@ def test_show_raw_dumps_file_unchanged(projects, make_project, monkeypatch) -> N
 
 def test_show_json(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["decision", "new", "Pick a thing", "--no-edit"])
     result = runner.invoke(app, ["decision", "show", "pick-a-thing", "--json"])
     payload = json.loads(result.stdout)
@@ -40,14 +40,14 @@ def test_show_json(projects, make_project, monkeypatch) -> None:
 
 def test_show_unknown_slug(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["decision", "show", "nonexistent"])
     assert result.exit_code == 1
 
 
 def test_show_unknown_slug_includes_hint(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["decision", "show", "nonexistent"])
     assert result.exit_code == 1
     assert "Hint" in result.stderr

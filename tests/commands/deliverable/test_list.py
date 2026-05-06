@@ -38,7 +38,7 @@ def test_list_auto_detects_project_from_cwd(
     projects, make_project, make_deliverable, monkeypatch
 ) -> None:
     proj = make_deliverable(project_name="foo", name="bar", description="d").parent.parent
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["deliverable", "list"])
     assert result.exit_code == 0
     assert "bar" in result.stdout

@@ -11,7 +11,7 @@ runner = CliRunner()
 
 def test_show_basic(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation"])
     result = runner.invoke(app, ["milestone", "show", "m1"], catch_exceptions=False)
     assert result.exit_code == 0
@@ -22,7 +22,7 @@ def test_show_basic(projects, make_project, monkeypatch) -> None:
 
 def test_show_json(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation"])
     result = runner.invoke(app, ["milestone", "show", "m1", "--json"])
     assert result.exit_code == 0
@@ -36,7 +36,7 @@ def test_show_json(projects, make_project, monkeypatch) -> None:
 
 def test_show_unknown_id_fails(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["milestone", "show", "nonexistent"])
     assert result.exit_code == 1
     assert "not found" in result.stderr.lower() or "no milestone" in result.stderr.lower()

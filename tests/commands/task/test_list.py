@@ -10,7 +10,7 @@ runner = CliRunner()
 
 
 def _setup(proj_dir, monkeypatch):
-    monkeypatch.chdir(proj_dir / "design")
+    monkeypatch.chdir(proj_dir)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["milestone", "add", "m2", "--title", "M2"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "a"])
@@ -22,7 +22,7 @@ def _setup(proj_dir, monkeypatch):
 
 def test_list_empty(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["task", "list"], catch_exceptions=False)
     assert result.exit_code == 0
 
@@ -80,7 +80,7 @@ def test_list_blocked(projects, make_project, monkeypatch) -> None:
 
 def test_list_ready_and_blocked_mutually_exclusive(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["task", "list", "--ready", "--blocked"])
     assert result.exit_code != 0
 

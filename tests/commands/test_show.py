@@ -26,7 +26,7 @@ def test_show_unknown_project(projects) -> None:
 
 def test_show_auto_detects_project_from_cwd(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo", "auto-detected")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["show"])
     assert result.exit_code == 0, result.stderr
     assert "foo" in result.stdout
@@ -61,7 +61,7 @@ def test_show_json_shape(projects, make_project) -> None:
 
 def test_show_with_milestones_summary(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "x"])
     runner.invoke(
@@ -74,7 +74,7 @@ def test_show_with_milestones_summary(projects, make_project, monkeypatch) -> No
 
 def test_show_json_includes_milestones(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     result = runner.invoke(app, ["show", "foo", "--json"])
     data = json.loads(result.stdout)
@@ -84,7 +84,7 @@ def test_show_json_includes_milestones(projects, make_project, monkeypatch) -> N
 
 def test_show_brief_skips_milestones(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     result = runner.invoke(app, ["show", "foo", "--brief", "--json"])
     data = json.loads(result.stdout)

@@ -10,7 +10,7 @@ runner = CliRunner()
 def test_manifest_validate_valid_project(projects, make_project) -> None:
     """Test manifest validate with a valid project.toml."""
     proj = make_project("foo")
-    result = runner.invoke(app, ["manifest", "validate", str(proj / "design" / "project.toml")])
+    result = runner.invoke(app, ["manifest", "validate", str(proj / "project.toml")])
     assert result.exit_code == 0
 
 

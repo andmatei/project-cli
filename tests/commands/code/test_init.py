@@ -31,7 +31,7 @@ def test_init_creates_missing_worktree(projects, make_project, source_repo) -> N
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
 
     result = runner.invoke(app, ["code", "init", "--project", "foo", "-y"])
     assert result.exit_code == 0
@@ -62,7 +62,7 @@ def test_init_idempotent(projects, make_project, source_repo) -> None:
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
     runner.invoke(app, ["code", "init", "--project", "foo", "-y"])
     result = runner.invoke(app, ["code", "init", "--project", "foo", "-y"])
     assert result.exit_code == 0
@@ -90,7 +90,7 @@ def test_init_dry_run_writes_nothing(projects, make_project, source_repo) -> Non
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
     result = runner.invoke(app, ["code", "init", "--project", "foo", "--dry-run", "-y"])
     assert result.exit_code == 0
     assert not (proj / "code").exists()
@@ -120,7 +120,7 @@ def test_init_fails_when_local_repo_missing_without_clone_flag(projects, make_pr
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
     result = runner.invoke(app, ["code", "init", "--project", "foo", "-y"])
     assert result.exit_code == 1
     assert "missing" in result.stderr.lower() or "not found" in result.stderr.lower()

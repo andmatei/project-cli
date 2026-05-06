@@ -10,7 +10,7 @@ runner = CliRunner()
 
 
 def _seed(proj, monkeypatch):
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "First"])
     runner.invoke(
@@ -42,6 +42,6 @@ def test_show_json(projects, make_project, monkeypatch) -> None:
 
 def test_show_unknown(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["task", "show", "nothing"])
     assert result.exit_code == 1

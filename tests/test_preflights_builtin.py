@@ -20,9 +20,7 @@ def test_scope_edited_warns_when_template(make_project) -> None:
     """Scope.md still being template should warn on scoping->designing."""
     proj = make_project("foo")
     # Overwrite with template-like content (empty description)
-    (proj / "design" / "scope.md").write_text(
-        templates.render("scope_md.j2", name="foo", description="")
-    )
+    (proj / "scope.md").write_text(templates.render("scope_md.j2", name="foo", description=""))
     scope = Scope(project="foo", deliverable=None)
     r = _ScopeEditedPreflight().check(scope, "scoping", "designing")
     assert len(r.warnings) == 1
@@ -32,7 +30,7 @@ def test_scope_edited_warns_when_template(make_project) -> None:
 def test_scope_edited_clean_when_modified(make_project) -> None:
     """Modified scope.md should pass on scoping->designing."""
     proj = make_project("foo")
-    (proj / "design" / "scope.md").write_text("# foo\n\nReal content here.")
+    (proj / "scope.md").write_text("# foo\n\nReal content here.")
     scope = Scope(project="foo", deliverable=None)
     r = _ScopeEditedPreflight().check(scope, "scoping", "designing")
     assert r.ok
@@ -52,9 +50,7 @@ def test_design_edited_warns_when_template(make_project) -> None:
     """Design.md still being template should warn on designing->poc."""
     proj = make_project("foo")
     # Overwrite with template-like content (empty description)
-    (proj / "design" / "design.md").write_text(
-        templates.render("design_md.j2", name="foo", description="")
-    )
+    (proj / "design.md").write_text(templates.render("design_md.j2", name="foo", description=""))
     scope = Scope(project="foo", deliverable=None)
     r = _DesignEditedPreflight().check(scope, "designing", "poc")
     # Both design.md template and no decisions should warn
@@ -66,7 +62,7 @@ def test_design_edited_warns_when_no_decisions(make_project) -> None:
     """Missing decision records should warn on designing->poc."""
     proj = make_project("foo")
     # Remove the decisions directory to simulate no decisions
-    (proj / "design" / "decisions").rmdir()
+    (proj / "decisions").rmdir()
     scope = Scope(project="foo", deliverable=None)
     r = _DesignEditedPreflight().check(scope, "designing", "poc")
     assert len(r.warnings) >= 1
@@ -77,8 +73,8 @@ def test_design_edited_clean_when_both_done(make_project) -> None:
     """Modified design.md with decisions should pass on designing->poc."""
     proj = make_project("foo")
     # Modify design.md to be different from template
-    (proj / "design" / "design.md").write_text("# Real design\n\nFull custom content here.")
-    (proj / "design" / "decisions" / "2026-01-01-test.md").write_text("# Decision\n")
+    (proj / "design.md").write_text("# Real design\n\nFull custom content here.")
+    (proj / "decisions" / "2026-01-01-test.md").write_text("# Decision\n")
     scope = Scope(project="foo", deliverable=None)
     r = _DesignEditedPreflight().check(scope, "designing", "poc")
     assert r.ok
@@ -107,7 +103,7 @@ def test_milestone_exists_passes_when_present(make_project) -> None:
     """Existing milestone should pass poc->implementing."""
     proj = make_project("foo")
     m = MilestonesManifest(milestones=[Milestone(id="m1", title="Test", status="planned")])
-    save_milestones_manifest(proj / "design" / "milestones.toml", m)
+    save_milestones_manifest(proj / "milestones.toml", m)
     scope = Scope(project="foo", deliverable=None)
     r = _MilestoneExistsPreflight().check(scope, "poc", "implementing")
     assert r.ok
@@ -132,7 +128,7 @@ def test_milestones_complete_warns_on_shipping_with_unfinished(make_project) -> 
             Milestone(id="m2", title="Unfinished", status="planned"),
         ]
     )
-    save_milestones_manifest(proj / "design" / "milestones.toml", m)
+    save_milestones_manifest(proj / "milestones.toml", m)
     scope = Scope(project="foo", deliverable=None)
     r = _MilestonesCompletePreflight().check(scope, "implementing", "shipping")
     assert len(r.warnings) == 1
@@ -148,7 +144,7 @@ def test_milestones_complete_blocks_on_done_with_unfinished(make_project) -> Non
             Milestone(id="m2", title="Unfinished", status="active"),
         ]
     )
-    save_milestones_manifest(proj / "design" / "milestones.toml", m)
+    save_milestones_manifest(proj / "milestones.toml", m)
     scope = Scope(project="foo", deliverable=None)
     r = _MilestonesCompletePreflight().check(scope, "shipping", "done")
     assert len(r.blockers) == 1
@@ -164,7 +160,7 @@ def test_milestones_complete_passes_when_all_done(make_project) -> None:
             Milestone(id="m2", title="Cancelled", status="cancelled"),
         ]
     )
-    save_milestones_manifest(proj / "design" / "milestones.toml", m)
+    save_milestones_manifest(proj / "milestones.toml", m)
     scope = Scope(project="foo", deliverable=None)
     r = _MilestonesCompletePreflight().check(scope, "shipping", "done")
     assert r.ok
@@ -174,7 +170,7 @@ def test_milestones_complete_ignores_other_transitions(make_project) -> None:
     """Milestones-complete should only care about ->shipping and ->done."""
     proj = make_project("foo")
     m = MilestonesManifest(milestones=[Milestone(id="m1", title="Unfinished", status="planned")])
-    save_milestones_manifest(proj / "design" / "milestones.toml", m)
+    save_milestones_manifest(proj / "milestones.toml", m)
     scope = Scope(project="foo", deliverable=None)
     r = _MilestonesCompletePreflight().check(scope, "poc", "implementing")
     assert r.ok

@@ -12,7 +12,7 @@ def test_rename_moves_project_dir(projects, make_project) -> None:
     result = runner.invoke(app, ["rename", "foo", "bar", "-y"])
     assert result.exit_code == 0
     assert not (projects / "foo").exists()
-    assert (projects / "bar" / "design" / "project.toml").is_file()
+    assert (projects / "bar" / "project.toml").is_file()
 
 
 def test_rename_updates_manifest_name(projects, make_project) -> None:
@@ -20,7 +20,7 @@ def test_rename_updates_manifest_name(projects, make_project) -> None:
     runner.invoke(app, ["rename", "foo", "bar", "-y"])
     from keel.manifest import load_project_manifest
 
-    m = load_project_manifest(projects / "bar" / "design" / "project.toml")
+    m = load_project_manifest(projects / "bar" / "project.toml")
     assert m.project.name == "bar"
 
 
@@ -58,7 +58,7 @@ def test_rename_with_worktree_uses_git_worktree_move(
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
 
     move_calls = []
     real_move = git_ops.move_worktree

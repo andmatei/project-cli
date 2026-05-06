@@ -39,7 +39,7 @@ def test_status_repo_not_cloned(projects, make_project) -> None:
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
     result = runner.invoke(app, ["code", "status", "--project", "foo", "--json"])
     payload = json.loads(result.stdout)
     assert payload["repos"][0]["cloned"] is False
@@ -73,7 +73,7 @@ def test_status_worktree_clean(projects, make_project, source_repo) -> None:
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
 
     result = runner.invoke(app, ["code", "status", "--project", "foo", "--json"])
     payload = json.loads(result.stdout)
@@ -110,7 +110,7 @@ def test_status_worktree_dirty(projects, make_project, source_repo) -> None:
             )
         ],
     )
-    save_project_manifest(proj / "design" / "project.toml", m)
+    save_project_manifest(proj / "project.toml", m)
 
     result = runner.invoke(app, ["code", "status", "--project", "foo", "--json"])
     payload = json.loads(result.stdout)

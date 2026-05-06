@@ -50,7 +50,7 @@ def test_list_json_shape(projects, make_project) -> None:
 def test_list_phase_filter(projects, make_project) -> None:
     make_project("foo", "scoping project")
     bar = make_project("bar", "implementing project")
-    (bar / "design" / ".phase").write_text("implementing\n")
+    (bar / ".keel" / "phase").write_text("implementing\n")
 
     result = runner.invoke(app, ["list", "--phase", "implementing"])
     assert result.exit_code == 0
@@ -68,7 +68,7 @@ def test_list_phase_filter_no_match(projects, make_project) -> None:
 
 def test_list_with_active_columns(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["milestone", "start", "m1"])
     result = runner.invoke(app, ["list", "--json"])
@@ -81,7 +81,7 @@ def test_list_with_active_columns(projects, make_project, monkeypatch) -> None:
 def test_list_active_filter(projects, make_project, monkeypatch) -> None:
     make_project("alpha")  # no milestones — not active
     proj_b = make_project("beta")
-    monkeypatch.chdir(proj_b / "design")
+    monkeypatch.chdir(proj_b)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["milestone", "start", "m1"])
     monkeypatch.chdir(proj_b.parent)  # leave the project dir

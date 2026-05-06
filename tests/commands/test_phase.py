@@ -16,7 +16,7 @@ runner = CliRunner()
 
 def test_phase_show_at_project(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase"])
     assert result.exit_code == 0
     assert "scoping" in result.stdout
@@ -25,7 +25,7 @@ def test_phase_show_at_project(projects, make_project, monkeypatch) -> None:
 
 def test_phase_show_at_deliverable(projects, make_deliverable, monkeypatch) -> None:
     deliv = make_deliverable(project_name="foo", name="bar", description="d")
-    monkeypatch.chdir(deliv / "design")
+    monkeypatch.chdir(deliv)
     result = runner.invoke(app, ["phase"])
     assert result.exit_code == 0
     assert "scoping" in result.stdout
@@ -44,10 +44,10 @@ def test_phase_show_no_scope(projects, monkeypatch, tmp_path) -> None:
 
 def test_phase_forward_transition(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "designing", "-m", "scope locked"])
     assert result.exit_code == 0
-    phase_text = (proj / "design" / ".phase").read_text()
+    phase_text = (proj / ".keel" / "phase").read_text()
     assert phase_text.startswith("designing\n")
     # History line includes transition info:
     assert "scoping → designing" in phase_text or "scoping -> designing" in phase_text
@@ -55,23 +55,23 @@ def test_phase_forward_transition(projects, make_project, monkeypatch) -> None:
 
 def test_phase_transition_creates_decision_file(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["phase", "designing", "-m", "ready"])
-    decisions = list((proj / "design" / "decisions").glob("*-phase-designing.md"))
+    decisions = list((proj / "decisions").glob("*-phase-designing.md"))
     assert len(decisions) == 1
 
 
 def test_phase_transition_no_decision(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["phase", "designing", "--no-decision"])
-    decisions = list((proj / "design" / "decisions").glob("*-phase-designing.md"))
+    decisions = list((proj / "decisions").glob("*-phase-designing.md"))
     assert len(decisions) == 0
 
 
 def test_phase_invalid_phase(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "bogus"])
     assert result.exit_code != 0
 
@@ -83,16 +83,16 @@ def test_phase_invalid_phase(projects, make_project, monkeypatch) -> None:
 
 def test_phase_next_advances_one_step(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "--next"])
     assert result.exit_code == 0
-    assert (proj / "design" / ".phase").read_text().startswith("designing\n")
+    assert (proj / ".keel" / "phase").read_text().startswith("designing\n")
 
 
 def test_phase_next_at_end_of_lifecycle(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    (proj / "design" / ".phase").write_text("done\n")
-    monkeypatch.chdir(proj / "design")
+    (proj / ".keel" / "phase").write_text("done\n")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "--next"])
     assert result.exit_code == 1
     assert "no forward transition" in result.stderr.lower() or "terminal" in result.stderr.lower()
@@ -101,7 +101,7 @@ def test_phase_next_at_end_of_lifecycle(projects, make_project, monkeypatch) -> 
 def test_phase_does_not_print_duplicate_messages(projects, make_project, monkeypatch) -> None:
     """'Phase: X → Y' (stderr) was redundant with 'Phase: X → Y' (stdout)."""
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "designing"])
     assert result.exit_code == 0
     # The transition line should appear only once (on stdout via out.result), not also on stderr
@@ -119,10 +119,8 @@ def test_phase_next_warns_on_template_scope(projects, make_project, monkeypatch)
 
     proj = make_project("foo")
     # Overwrite scope.md with the unedited template
-    (proj / "design" / "scope.md").write_text(
-        templates.render("scope_md.j2", name="foo", description="")
-    )
-    monkeypatch.chdir(proj / "design")
+    (proj / "scope.md").write_text(templates.render("scope_md.j2", name="foo", description=""))
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "--next", "-y"])
     assert result.exit_code == 0
     assert "scope.md" in result.stderr.lower()
@@ -133,17 +131,15 @@ def test_phase_strict_blocks_on_warning(projects, make_project, monkeypatch) -> 
 
     proj = make_project("foo")
     # Overwrite scope.md with the unedited template to trigger a warning
-    (proj / "design" / "scope.md").write_text(
-        templates.render("scope_md.j2", name="foo", description="")
-    )
-    monkeypatch.chdir(proj / "design")
+    (proj / "scope.md").write_text(templates.render("scope_md.j2", name="foo", description=""))
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "--next", "--strict"])
     assert result.exit_code != 0
 
 
 def test_phase_force_skips_preflight(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "--next", "--force"])
     assert result.exit_code == 0
 
@@ -151,7 +147,7 @@ def test_phase_force_skips_preflight(projects, make_project, monkeypatch) -> Non
 def test_phase_blocker_blocks_without_force(projects, make_project, monkeypatch) -> None:
     """poc → implementing without milestones blocks."""
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     # Force ahead through scoping→designing→poc, then try implementing without milestones
     runner.invoke(app, ["phase", "designing", "--force"])
     runner.invoke(app, ["phase", "poc", "--force"])
@@ -167,7 +163,7 @@ def test_phase_blocker_blocks_without_force(projects, make_project, monkeypatch)
 
 def test_phase_list_next_default(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["phase", "--list-next", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
@@ -178,9 +174,9 @@ def test_phase_list_next_default(projects, make_project, monkeypatch) -> None:
 
 def test_phase_list_next_at_end(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     # Write done to the phase file directly (bypass transition validation)
-    (proj / "design" / ".phase").write_text("done\n")
+    (proj / ".keel" / "phase").write_text("done\n")
     result = runner.invoke(app, ["phase", "--list-next", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
@@ -215,7 +211,7 @@ reviewing = ["published", "proposing"]
     runner.invoke(
         app, ["new", "alpha", "-d", "x", "--no-worktree", "-y", "--lifecycle", "research"]
     )
-    monkeypatch.chdir(projects / "alpha" / "design")
+    monkeypatch.chdir(projects / "alpha")
 
     # Initial phase should be 'proposing'
     result = runner.invoke(app, ["phase", "--list-next", "--json"])
@@ -243,7 +239,7 @@ a = ["b", "c"]
     )
     monkeypatch.chdir(projects)
     runner.invoke(app, ["new", "alpha", "-d", "x", "--no-worktree", "-y", "--lifecycle", "branchy"])
-    monkeypatch.chdir(projects / "alpha" / "design")
+    monkeypatch.chdir(projects / "alpha")
     result = runner.invoke(app, ["phase", "--list-next", "--json"])
     data = json.loads(result.stdout)
     assert data["current"] == "a"
@@ -269,7 +265,7 @@ b = ["c"]
     )
     monkeypatch.chdir(projects)
     runner.invoke(app, ["new", "alpha", "-d", "x", "--no-worktree", "-y", "--lifecycle", "linear"])
-    monkeypatch.chdir(projects / "alpha" / "design")
+    monkeypatch.chdir(projects / "alpha")
     # 'a' has no edge to 'c' — should fail
     result = runner.invoke(app, ["phase", "c", "--force"])
     assert result.exit_code != 0

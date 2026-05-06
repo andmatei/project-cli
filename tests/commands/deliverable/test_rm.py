@@ -20,12 +20,13 @@ def test_rm_removes_design_dir(projects, make_project, make_deliverable) -> None
 
 def test_rm_cleans_parent_claude_md(projects, make_project) -> None:
     """After deliverable rm, the parent's CLAUDE.md no longer mentions it."""
+    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign; rework once T9.2 lands.
     make_project("foo")
     runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo"])
-    parent_claude = (projects / "foo" / "design" / "CLAUDE.md").read_text()
+    parent_claude = (projects / "foo" / "CLAUDE.md").read_text()
     assert "bar" in parent_claude  # Sanity: it's there before rm
     runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo"])
-    parent_claude_after = (projects / "foo" / "design" / "CLAUDE.md").read_text()
+    parent_claude_after = (projects / "foo" / "CLAUDE.md").read_text()
     # The deliverable line is removed (not the heading itself necessarily):
     assert "**bar**" not in parent_claude_after
 
@@ -76,8 +77,8 @@ def test_rm_keep_code_preserves_code_dir(
         ),
     )
     runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo", "--keep-code"])
-    # design dir gone, but code/ preserved with its contents
-    assert not (deliv / "design").exists()
+    # design artifacts gone, but code/ preserved with its contents
+    assert not (deliv / "project.toml").exists()
     assert (deliv / "code" / "marker.txt").read_text() == "preserve me"
 
 
@@ -85,7 +86,7 @@ def test_rm_keep_design_preserves_design_dir(projects, make_project, make_delive
     """--keep-design must not destroy the design dir."""
     deliv = make_deliverable(project_name="foo", name="bar", description="d")
     runner.invoke(app, ["deliverable", "rm", "bar", "-y", "--project", "foo", "--keep-design"])
-    assert (deliv / "design" / "deliverable.toml").is_file()
+    assert (deliv / "project.toml").is_file()
 
 
 def test_rm_unknown_deliverable_includes_hint(projects, make_project) -> None:

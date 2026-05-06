@@ -18,18 +18,16 @@ def test_rename_moves_design_dir(projects, make_project, make_deliverable) -> No
     assert not old.exists()
     new = projects / "foo" / "deliverables" / "baz"
     assert new.is_dir()
-    assert (new / "design" / "deliverable.toml").is_file()
+    assert (new / "project.toml").is_file()
 
 
 def test_rename_updates_manifest_name(projects, make_project, make_deliverable) -> None:
     make_deliverable(project_name="foo", name="bar", description="d")
     runner.invoke(app, ["deliverable", "rename", "bar", "baz", "-y", "--project", "foo"])
-    from keel.manifest import load_deliverable_manifest
+    from keel.manifest import load_project_manifest
 
-    m = load_deliverable_manifest(
-        projects / "foo" / "deliverables" / "baz" / "design" / "deliverable.toml"
-    )
-    assert m.deliverable.name == "baz"
+    m = load_project_manifest(projects / "foo" / "deliverables" / "baz" / "project.toml")
+    assert m.project.name == "baz"
 
 
 def test_rename_fails_if_target_exists(projects, make_project, make_deliverable) -> None:
@@ -41,10 +39,11 @@ def test_rename_fails_if_target_exists(projects, make_project, make_deliverable)
 
 
 def test_rename_updates_parent_references(projects, make_project) -> None:
+    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign; rework once T9.2 lands.
     make_project("foo")
     runner.invoke(app, ["deliverable", "add", "bar", "-d", "d", "-y", "--project", "foo"])
     runner.invoke(app, ["deliverable", "rename", "bar", "baz", "-y", "--project", "foo"])
-    parent_claude = (projects / "foo" / "design" / "CLAUDE.md").read_text()
+    parent_claude = (projects / "foo" / "CLAUDE.md").read_text()
     assert "**bar**" not in parent_claude
     assert "**baz**" in parent_claude
 

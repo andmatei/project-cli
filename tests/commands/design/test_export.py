@@ -11,7 +11,7 @@ def test_export_deliverable(projects, make_deliverable) -> None:
     """Deliverable-level export produces a single doc with the deliverable's design + decisions."""
     deliv = make_deliverable(project_name="foo", name="bar", description="the bar")
     # Create a decision in the deliverable
-    decision_dir = deliv / "design" / "decisions"
+    decision_dir = deliv / "decisions"
     decision_dir.mkdir(parents=True, exist_ok=True)
     (decision_dir / "2026-04-29-pick-x.md").write_text(
         "---\ndate: 2026-04-29\ntitle: Pick X\nstatus: proposed\n---\n# Pick X\n## Question\nQ?\n## Conclusion\nC.\n"
@@ -24,7 +24,7 @@ def test_export_deliverable(projects, make_deliverable) -> None:
 
 def test_export_deliverable_excludes_superseded(projects, make_deliverable) -> None:
     deliv = make_deliverable(project_name="foo", name="bar", description="d")
-    decision_dir = deliv / "design" / "decisions"
+    decision_dir = deliv / "decisions"
     decision_dir.mkdir(parents=True, exist_ok=True)
     (decision_dir / "2026-04-29-old.md").write_text(
         "---\ndate: 2026-04-29\ntitle: Old\nstatus: superseded\n---\n# Old\n## Question\nQ?\n## Conclusion\nC.\n"
@@ -74,10 +74,10 @@ def test_export_decision_numbering_flat_across_project(projects, make_project) -
     make_project("foo")
     runner.invoke(app, ["deliverable", "add", "alpha", "-d", "d", "-y", "--project", "foo"])
     # Add decisions
-    (proj_path / "design" / "decisions" / "2026-04-29-p1.md").write_text(
+    (proj_path / "decisions" / "2026-04-29-p1.md").write_text(
         "---\ndate: 2026-04-29\ntitle: P1\nstatus: proposed\n---\n# P1\n## Question\nQ\n## Conclusion\nC\n"
     )
-    deliv_decisions = proj_path / "deliverables" / "alpha" / "design" / "decisions"
+    deliv_decisions = proj_path / "deliverables" / "alpha" / "decisions"
     deliv_decisions.mkdir(parents=True, exist_ok=True)
     (deliv_decisions / "2026-04-29-a1.md").write_text(
         "---\ndate: 2026-04-29\ntitle: A1\nstatus: proposed\n---\n# A1\n## Question\nQ\n## Conclusion\nC\n"

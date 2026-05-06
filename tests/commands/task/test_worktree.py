@@ -39,7 +39,7 @@ def test_task_worktree_creates_branch_worktree(
 ) -> None:
     """`task worktree t1` creates a git worktree at the task's branch."""
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     # Add the source repo to the project
     runner.invoke(app, ["code", "add", "--repo", str(source_repo)])
     # Add a milestone + task and start it (records a branch)
@@ -57,7 +57,7 @@ def test_task_worktree_creates_branch_worktree(
 
 def test_task_worktree_unknown_id_fails(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["task", "worktree", "nothing"])
     assert result.exit_code == 1
 
@@ -67,7 +67,7 @@ def test_task_worktree_no_branch_recorded_fails(
 ) -> None:
     """If the task has no branch (never started), worktree fails clearly."""
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["code", "add", "--repo", str(source_repo)])
     runner.invoke(app, ["milestone", "add", "m1", "--title", "M1"])
     runner.invoke(app, ["task", "add", "t1", "--milestone", "m1", "--title", "x"])
@@ -82,7 +82,7 @@ def test_task_worktree_multi_repo_requires_explicit_repo(
 ) -> None:
     """When the project has multiple repos, --repo is required."""
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     # Add two source repos so the project has multiple [[repos]] entries.
     second_repo = tmp_path / "src2"
     second_repo.mkdir()

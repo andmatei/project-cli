@@ -17,7 +17,7 @@ def test_add_appends_to_manifest_and_creates_worktree(projects, make_project, so
     assert result.exit_code == 0, result.stderr
     from keel.manifest import load_project_manifest
 
-    m = load_project_manifest(projects / "foo" / "design" / "project.toml")
+    m = load_project_manifest(projects / "foo" / "project.toml")
     assert len(m.repos) == 1
     assert m.repos[0].remote == str(source_repo)
     # first repo → "code"; worktree must exist

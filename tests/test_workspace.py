@@ -43,15 +43,15 @@ def test_detect_scope_outside_projects(monkeypatch, tmp_path) -> None:
 
 def test_detect_scope_in_project(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
-    (tmp_path / "foo" / "design").mkdir(parents=True)
-    monkeypatch.chdir(tmp_path / "foo" / "design")
+    (tmp_path / "foo").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path / "foo")
     assert detect_scope() == Scope(project="foo", deliverable=None)
 
 
 def test_detect_scope_in_deliverable(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
-    (tmp_path / "foo" / "deliverables" / "bar" / "design").mkdir(parents=True)
-    monkeypatch.chdir(tmp_path / "foo" / "deliverables" / "bar" / "design")
+    (tmp_path / "foo" / "deliverables" / "bar").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path / "foo" / "deliverables" / "bar")
     assert detect_scope() == Scope(project="foo", deliverable="bar")
 
 
@@ -64,7 +64,6 @@ def test_detect_scope_in_project_subdir(monkeypatch, tmp_path) -> None:
 
 
 def test_deliverable_exists_true(monkeypatch, tmp_path) -> None:
-    # TODO(plan8-task4.2): refactor scaffolding to use the make_deliverable fixture.
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     (tmp_path / "foo" / "deliverables" / "bar").mkdir(parents=True)
     (tmp_path / "foo" / "deliverables" / "bar" / "project.toml").write_text(
@@ -83,7 +82,6 @@ def test_deliverable_exists_false(monkeypatch, tmp_path) -> None:
 
 
 def test_resolve_cli_scope_explicit_project(monkeypatch, tmp_path) -> None:
-    # TODO(plan8-task4.2): refactor scaffolding to use the make_project fixture.
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     (tmp_path / "foo").mkdir(parents=True)
     (tmp_path / "foo" / "project.toml").write_text(
@@ -97,7 +95,6 @@ def test_resolve_cli_scope_explicit_project(monkeypatch, tmp_path) -> None:
 
 
 def test_resolve_cli_scope_falls_back_to_cwd(monkeypatch, tmp_path) -> None:
-    # TODO(plan8-task4.2): refactor scaffolding to use the make_project fixture.
     monkeypatch.setenv("PROJECTS_DIR", str(tmp_path))
     (tmp_path / "foo").mkdir(parents=True)
     (tmp_path / "foo" / "project.toml").write_text(

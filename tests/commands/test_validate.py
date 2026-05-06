@@ -17,7 +17,7 @@ def test_validate_clean_project(projects, make_project) -> None:
 
 def test_validate_missing_design_md_warns(projects, make_project) -> None:
     proj = make_project("foo")
-    (proj / "design" / "design.md").unlink()
+    (proj / "design.md").unlink()
     result = runner.invoke(app, ["validate", "foo", "--json"])
     payload = json.loads(result.stdout)
     summary = payload["summary"]
@@ -26,7 +26,7 @@ def test_validate_missing_design_md_warns(projects, make_project) -> None:
 
 def test_validate_missing_phase_warns(projects, make_project) -> None:
     proj = make_project("foo")
-    (proj / "design" / ".phase").unlink()
+    (proj / ".keel" / "phase").unlink()
     result = runner.invoke(app, ["validate", "foo", "--json"])
     payload = json.loads(result.stdout)
     assert payload["summary"]["fail"] >= 1 or payload["summary"]["warn"] >= 1
@@ -34,9 +34,12 @@ def test_validate_missing_phase_warns(projects, make_project) -> None:
 
 def test_validate_orphan_deliverable_dir_warns(projects, make_project, make_deliverable) -> None:
     """A deliverable on disk but not mentioned in parent CLAUDE.md should warn."""
+    # TODO(plan8-task9.2): CLAUDE.md is dead post-redesign. make_deliverable no longer
+    # creates a parent CLAUDE.md, so this test's setup will fail. Rework when CLAUDE.md
+    # validation is removed in T9.2.
     make_deliverable(project_name="foo", name="bar", description="d")
     # Deliberately strip the parent's mention of this deliverable
-    parent_claude = projects / "foo" / "design" / "CLAUDE.md"
+    parent_claude = projects / "foo" / "CLAUDE.md"
     text = parent_claude.read_text()
     parent_claude.write_text(text.replace("- **bar**:", "- **REMOVED**:"))
     result = runner.invoke(app, ["validate", "foo", "--json"])

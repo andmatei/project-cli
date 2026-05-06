@@ -11,14 +11,14 @@ runner = CliRunner()
 
 def test_list_empty(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["milestone", "list"], catch_exceptions=False)
     assert result.exit_code == 0
 
 
 def test_list_after_add(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation"])
     runner.invoke(app, ["milestone", "add", "m2", "--title", "Polish"])
     result = runner.invoke(app, ["milestone", "list"], catch_exceptions=False)
@@ -31,7 +31,7 @@ def test_list_after_add(projects, make_project, monkeypatch) -> None:
 
 def test_list_json(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "Foundation"])
     result = runner.invoke(app, ["milestone", "list", "--json"], catch_exceptions=False)
     assert result.exit_code == 0
@@ -44,7 +44,7 @@ def test_list_json(projects, make_project, monkeypatch) -> None:
 def test_list_status_filter(projects, make_project, monkeypatch) -> None:
     """--status filter shows only milestones in that state."""
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["milestone", "add", "m1", "--title", "First"])
     runner.invoke(app, ["milestone", "add", "m2", "--title", "Second"])
     # Both default to planned. Filter by 'active' should yield none.

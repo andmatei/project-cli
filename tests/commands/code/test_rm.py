@@ -15,7 +15,7 @@ def test_rm_removes_manifest_entry_and_worktree(projects, make_project, source_r
     assert add_result.exit_code == 0, add_result.stderr
     from keel.manifest import load_project_manifest
 
-    m = load_project_manifest(projects / "foo" / "design" / "project.toml")
+    m = load_project_manifest(projects / "foo" / "project.toml")
     wt_path = projects / "foo" / m.repos[0].worktree
     assert wt_path.is_dir()
 
@@ -24,7 +24,7 @@ def test_rm_removes_manifest_entry_and_worktree(projects, make_project, source_r
     )
     assert result.exit_code == 0
     assert not wt_path.exists()
-    m = load_project_manifest(projects / "foo" / "design" / "project.toml")
+    m = load_project_manifest(projects / "foo" / "project.toml")
     assert m.repos == []
 
 
@@ -45,7 +45,7 @@ def test_rm_dirty_worktree_without_force(projects, make_project, source_repo) ->
     assert add_result.exit_code == 0, add_result.stderr
     from keel.manifest import load_project_manifest
 
-    m = load_project_manifest(projects / "foo" / "design" / "project.toml")
+    m = load_project_manifest(projects / "foo" / "project.toml")
     wt_path = projects / "foo" / m.repos[0].worktree
     (wt_path / "dirty.txt").write_text("dirty")
     result = runner.invoke(

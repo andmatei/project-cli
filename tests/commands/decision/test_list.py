@@ -11,14 +11,14 @@ runner = CliRunner()
 
 def test_list_empty(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     result = runner.invoke(app, ["decision", "list"])
     assert result.exit_code == 0
 
 
 def test_list_one_decision(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["decision", "new", "Pick a thing", "--no-edit"])
     result = runner.invoke(app, ["decision", "list"])
     assert "Pick a thing" in result.stdout or "pick-a-thing" in result.stdout
@@ -26,7 +26,7 @@ def test_list_one_decision(projects, make_project, monkeypatch) -> None:
 
 def test_list_json(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
-    monkeypatch.chdir(proj / "design")
+    monkeypatch.chdir(proj)
     runner.invoke(app, ["decision", "new", "Pick a thing", "--no-edit"])
     result = runner.invoke(app, ["decision", "list", "--json"])
     payload = json.loads(result.stdout)
