@@ -101,3 +101,71 @@ def test_new_supersedes_nonexistent_includes_hint(projects, make_project, monkey
     assert result.exit_code == 1
     assert "Hint" in result.stderr
     assert "keel decision list" in result.stderr
+
+
+def test_decision_new_fires_pre_and_post(projects, make_project, monkeypatch) -> None:
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+        fired: list[tuple[str, dict]] = []
+
+        @subscribes_to("pre-decision-new")
+        def pre(event: HookEvent, *, out) -> None:
+            fired.append((event.full_name, dict(event.payload)))
+
+        @subscribes_to("post-decision-new")
+        def post(event: HookEvent, *, out) -> None:
+            fired.append((event.full_name, dict(event.payload)))
+
+        runner = CliRunner()
+        proj = make_project("foo")
+        monkeypatch.chdir(proj)
+        result = runner.invoke(app, ["decision", "new", "Use Postgres", "--no-edit"])
+        assert result.exit_code == 0
+
+        assert len(fired) == 2
+        pre_name, pre_payload = fired[0]
+        post_name, post_payload = fired[1]
+        assert pre_name == "pre-decision-new"
+        assert pre_payload["title"] == "Use Postgres"
+        assert pre_payload["slug"] == "use-postgres"
+        assert post_name == "post-decision-new"
+        assert "path" in post_payload
+    finally:
+        _clear_registry()
+        register_builtin_listeners()
+
+
+def test_decision_new_no_verify(projects, make_project, monkeypatch) -> None:
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookAborted, HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+
+        @subscribes_to("pre-decision-new")
+        def block(event: HookEvent, *, out) -> None:
+            raise HookAborted("nope")
+
+        runner = CliRunner()
+        proj = make_project("foo")
+        monkeypatch.chdir(proj)
+        blocked = runner.invoke(app, ["decision", "new", "Test", "--no-edit"])
+        assert blocked.exit_code != 0
+        bypassed = runner.invoke(app, ["decision", "new", "Test", "--no-edit", "--no-verify"])
+        assert bypassed.exit_code == 0
+    finally:
+        _clear_registry()
+        register_builtin_listeners()

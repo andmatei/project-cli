@@ -13,8 +13,10 @@ import typer
 
 from keel import templates
 from keel.api import HINT_LIST_DECISIONS, ErrorCode, OpLog, Output, resolve_cli_scope, slugify
+from keel.hooks import HookAborted, hook_event, hookable
 
 
+@hookable("decision-new")
 def cmd_new(
     ctx: typer.Context,
     title: str = typer.Argument(...),
@@ -41,6 +43,7 @@ def cmd_new(
     force: bool = typer.Option(
         False, "--force", help="Overwrite an existing decision file with the same name."
     ),
+    no_verify: bool = typer.Option(False, "--no-verify", help="Skip pre-decision-new hooks."),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Print intended operations and exit; write nothing."
     ),
@@ -89,25 +92,42 @@ def cmd_new(
         out.info(log.format_summary())
         return
 
-    target_dir.mkdir(parents=True, exist_ok=True)
-    path.write_text(templates.render("decision_entry.j2", date=today, title=title))
+    try:
+        with hook_event(
+            "decision-new",
+            project=project,
+            deliverable=deliverable,
+            payload={"slug": slug_value, "title": title, "supersedes": supersedes},
+            positional_args=(slug_value,),
+            out=out,
+            no_verify=no_verify,
+        ) as ev:
+            target_dir.mkdir(parents=True, exist_ok=True)
+            path.write_text(templates.render("decision_entry.j2", date=today, title=title))
 
-    if supersedes and supersedes_path is not None:
-        # supersedes_path was validated above — apply the status mutation
-        old_text = supersedes_path.read_text()
-        # Replace status field in frontmatter
-        new_text = re.sub(
-            r"^status:\s*\S+",
-            "status: superseded",
-            old_text,
-            count=1,
-            flags=re.MULTILINE,
+            if supersedes and supersedes_path is not None:
+                # supersedes_path was validated above — apply the status mutation
+                old_text = supersedes_path.read_text()
+                # Replace status field in frontmatter
+                new_text = re.sub(
+                    r"^status:\s*\S+",
+                    "status: superseded",
+                    old_text,
+                    count=1,
+                    flags=re.MULTILINE,
+                )
+                # Append "Superseded by:" line at end
+                superseded_by_line = f"\nSuperseded by: {filename[:-3]}\n"  # strip .md
+                if "Superseded by:" not in new_text:
+                    new_text = new_text.rstrip("\n") + superseded_by_line
+                supersedes_path.write_text(new_text)
+
+            ev.add_post_payload({"path": str(path)})
+    except HookAborted as e:
+        out.fail(
+            f"decision new aborted: {e} (use --no-verify to override)",
+            code=ErrorCode.PREFLIGHT_BLOCKED,
         )
-        # Append "Superseded by:" line at end
-        superseded_by_line = f"\nSuperseded by: {filename[:-3]}\n"  # strip .md
-        if "Superseded by:" not in new_text:
-            new_text = new_text.rstrip("\n") + superseded_by_line
-        supersedes_path.write_text(new_text)
 
     out.result(
         {"path": str(path), "scope": scope_label, "slug": slug_value, "supersedes": supersedes},
