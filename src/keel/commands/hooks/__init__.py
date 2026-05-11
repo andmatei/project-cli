@@ -13,3 +13,7 @@ app = typer.Typer(
 from keel.commands.hooks.init import cmd_init  # noqa: E402
 
 app.command(name="init")(cmd_init)
+
+from keel.commands.hooks.list import cmd_list  # noqa: E402
+
+app.command(name="list")(cmd_list)
