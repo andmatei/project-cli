@@ -12,6 +12,7 @@ license = "MIT"
 authors = [{ name = "Andrei Matei" }]
 keywords = ["keel", "jira", "ticketing", "plugin"]
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

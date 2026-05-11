@@ -242,57 +242,43 @@ avoids friction when checking out scripts cross-platform).
 `.keel/hooks/` is created on demand: `keel hooks init` (workspace or
 project) scaffolds the directory with a README pointing at the docs.
 
-## Phase-event consolidation
+## Phase-event consolidation (breaking change)
 
-The new dispatcher replaces both legacy entry-point groups:
+The new dispatcher **replaces** both legacy entry-point groups with no
+backward-compat bridge. This is a breaking change for any out-of-tree
+plugin currently shipping `keel.phase_preflights` or
+`keel.phase_transitions` entry-points. **Rationale:** keel is still
+alpha (`Development Status :: 3 - Alpha`, `0.0.x` series); no compatibility
+guarantees are made between minor releases, and the in-tree audit confirms
+no first-party plugin or test fixture uses either legacy group.
 
-| Legacy | New |
+| Removed | Replacement |
 |---|---|
 | `keel.phase_preflights` entry-point + `PhasePreflight.check()` shape | `keel.event_listeners` subscribers on `pre-phase` (raise `HookAborted` to block) |
 | `keel.phase_transitions` entry-point + `hook(scope, from, to)` | `keel.event_listeners` subscribers on `post-phase` |
 | Built-in preflights in `keel.preflights.builtin` (`_ScopeEditedPreflight`, `_DesignEditedPreflight`) | Refactored to in-tree subscribers via `@subscribes_to("pre-phase")` |
+| `keel.preflights.registry`, `keel.preflights.base`, `keel.phase_events` modules | Deleted; logic moves into `keel.hooks` |
 
-### Bridge adapters
+### Code removed in this plan
 
-Existing out-of-tree plugins that ship `keel.phase_preflights` or
-`keel.phase_transitions` entry-points continue to work. A bridge adapter
-loads the legacy entry-points and registers them as
-`pre-phase`/`post-phase` subscribers on the new dispatcher:
+- `src/keel/preflights/registry.py` (legacy preflight loader)
+- `src/keel/preflights/base.py` (`PhasePreflight`, `PreflightResult` types)
+- `src/keel/phase_events.py` (legacy transition loader)
+- `keel.phase_preflights` and `keel.phase_transitions` entries in
+  `src/keel/commands/plugin/list.py`'s known-groups list
 
-```python
-# keel/hooks/_bridges.py (sketch)
-
-def _bridge_phase_preflights() -> None:
-    """Load legacy keel.phase_preflights and register as pre-phase subscribers."""
-    for ep in entry_points(group="keel.phase_preflights"):
-        getter = ep.load()
-        for preflight in getter():
-            _adapt(preflight)  # wraps .check() to a pre-phase subscriber
-
-def _adapt(preflight: PhasePreflight) -> EventListener:
-    @subscribes_to("pre-phase")
-    def _adapted(event: HookEvent, *, out):
-        result = preflight.check(
-            scope=Scope(project=event.project, deliverable=event.deliverable),
-            from_phase=event.payload["from"],
-            to_phase=event.payload["to"],
-        )
-        for warning in result.warnings:
-            out.warn(f"[{preflight.name}] {warning}")
-        if result.blocked:
-            raise HookAborted(f"[{preflight.name}] {result.message}")
-    return _adapted
-```
-
-### Deprecation schedule
-
-| Version | Status |
-|---|---|
-| 0.0.4 (this plan) | New dispatcher ships. Legacy groups load via bridges. `DeprecationWarning` on legacy entry-point discovery. |
-| 0.0.5 | Update CONTRIBUTING + docs to point at new API. |
-| Future 0.0.x | Remove `keel.phase_preflights` and `keel.phase_transitions` entry-point groups. Bridge code deleted. |
+The built-in preflights in `src/keel/preflights/builtin.py` survive but
+move to `src/keel/hooks/builtin_listeners.py` and use the new
+`@subscribes_to("pre-phase")` API. The migration guide below applies to
+out-of-tree plugin authors who must update their packages to ship in
+0.0.4 or later.
 
 ## Migration guide
+
+> Required reading for any out-of-tree plugin shipping
+> `keel.phase_preflights` or `keel.phase_transitions` entry-points. Those
+> groups are removed in 0.0.4; plugins must migrate before pinning to
+> `keel-cli>=0.0.4`.
 
 ### For plugin authors using `keel.phase_preflights`
 
@@ -456,7 +442,7 @@ keel hooks list --plugin       # subscribers registered by plugins
 | Dispatcher | unit tests with fake subscribers — ordering (in-tree → plugin → user-script), exception propagation in pre vs post, payload routing |
 | User-script integration | `tmp_path` writes hook scripts; runs command; asserts hook fired, env vars seen, args correct, stdin parsed, exit code respected |
 | Plugin entry-point loading | a fake plugin registers via test fixture; verifies `@subscribes_to` resolves and subscriber receives `HookEvent` |
-| Legacy bridge | a fake legacy `phase_preflights` plugin → verifies bridge adapts and fires on `pre-phase`; `DeprecationWarning` emitted |
+| Legacy removal | confirm no `keel.preflights.*` or `keel.phase_events` imports survive in the codebase; confirm a fake plugin shipping the old entry-points produces a clear ImportError-or-NotFound when the user tries to use it |
 | `--no-verify` | pre-hook that would block; with the flag, command succeeds; without, command exits 1 |
 | Hook discovery layering | workspace hook + project hook both present; both fire in the right order |
 | Per-event smoke | one integration test per event in v0 surface (7 events × {pre,post} where applicable ≈ 12 tests) |
@@ -476,9 +462,9 @@ keel hooks list --plugin       # subscribers registered by plugins
   files are skipped silently. Matches git.
 - Workspace `.keel/hooks/` is opt-in: keel doesn't create it on first run.
   `keel hooks init` (workspace mode) scaffolds it with a README.
-- The legacy bridges install on first import of `keel.hooks` and emit
-  `DeprecationWarning` once per legacy entry-point group (not per
-  subscriber — would be noisy).
+- No legacy bridge code is shipped — the breaking change is a hard cut.
+  Plugin authors get the migration guide above; users pinning `keel-cli`
+  to 0.0.3 keep the old behavior until they upgrade.
 
 ## Open questions (resolve during implementation)
 
