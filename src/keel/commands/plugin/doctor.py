@@ -7,7 +7,6 @@ import typer
 from keel.api import (
     ErrorCode,
     Output,
-    iter_preflights,
     load_project_manifest,
     resolve_cli_scope,
 )
@@ -61,18 +60,6 @@ def cmd_doctor(
                 findings.append(
                     {"level": "error", "area": "ticketing", "message": f"configure() raised: {e}"}
                 )
-
-    # Check preflights run cleanly against the current scope
-    from keel.workspace import read_phase
-
-    current = read_phase(scope.unit_dir)
-    for pf in iter_preflights():
-        try:
-            pf.check(scope, current, current)  # self-transition should be a no-op
-        except Exception as e:
-            findings.append(
-                {"level": "error", "area": "preflight", "message": f"'{pf.name}' raised: {e}"}
-            )
 
     if json_mode:
         out.result({"findings": findings})

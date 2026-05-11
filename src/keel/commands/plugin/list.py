@@ -12,8 +12,8 @@ from keel.api import Output
 GROUPS = [
     "keel.commands",
     "keel.ticket_providers",
-    "keel.phase_preflights",
-    "keel.phase_transitions",
+    "keel.event_listeners",
+    "keel.lifecycles",
 ]
 
 
