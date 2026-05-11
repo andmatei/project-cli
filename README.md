@@ -283,10 +283,10 @@ so cross-plugin development works without `pip install -e` shenanigans.
 
 **External plugin authors** don't need to live here. Write `your-name/keel-foo`
 in your own GitHub repo, register a `keel.ticket_providers` (or
-`keel.commands`, `keel.phase_preflights`, `keel.phase_transitions`)
-entry point in your `pyproject.toml`, publish to PyPI, and `pip install
-keel-foo` will plug it in via discovery — no fork or PR to this repo
-required. See [`plugins/jira/`](plugins/jira/) as a working reference
+`keel.commands`, `keel.event_listeners`) entry point in your
+`pyproject.toml`, publish to PyPI, and `pip install keel-foo` will plug
+it in via discovery — no fork or PR to this repo required. See
+[`plugins/jira/`](plugins/jira/) as a working reference
 implementation. The plugin contract is documented in
 [`CONTRIBUTING.md`](CONTRIBUTING.md#authoring-a-plugin) and the rationale
 for this dual layout (first-party in monorepo, third-party anywhere) is in
@@ -320,6 +320,33 @@ terminal states. If a `cancelled` state is declared, every state with
 `cancellable = true` (the default) gets an implicit `<state> → cancelled`
 edge; lifecycles without a `cancelled` state simply don't support
 cancellation.
+
+## User hooks
+
+Drop executable scripts in `~/projects/.keel/hooks/` (workspace-global)
+or `~/projects/<name>/.keel/hooks/` (per-project) to react to keel
+events:
+
+```bash
+keel hooks init   # scaffold ~/projects/.keel/hooks/ with a README
+
+cat > ~/projects/.keel/hooks/post-phase <<'EOF'
+#!/usr/bin/env bash
+# Args: <from_phase> <to_phase>
+echo "$KEEL_PROJECT: $1 → $2"
+EOF
+chmod +x ~/projects/.keel/hooks/post-phase
+```
+
+Supported events (v0): `new`, `phase`, `deliverable-add`, `decision-new`,
+`archive` (each with `pre-` and `post-` variants), plus post-only
+`restore` and `rename`. Pre-hooks can block their command by exiting
+non-zero; `--no-verify` overrides.
+
+`keel hooks list` shows everything keel can fire and who's subscribed.
+
+For plugin authors, the `keel.event_listeners` entry-point group provides
+the same surface as a Python API — see CONTRIBUTING.md.
 
 ## Roadmap
 

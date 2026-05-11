@@ -202,42 +202,39 @@ See `keel.ticketing.base.TicketProvider` and the reference `MockProvider`.
 jira = "keel_jira.provider:JiraProvider"
 ```
 
-### `keel.phase_preflights` — add preflight checks for phase transitions
+### Subscribing to events
+
+Plugins react to keel events via the `keel.event_listeners` entry-point
+group. Each entry point resolves to a function decorated with
+`@subscribes_to("pre-<event>")` or `@subscribes_to("post-<event>")`:
 
 ```toml
-[project.entry-points."keel.phase_preflights"]
-my_rules = "my_pkg.preflights:get_preflights"
+[project.entry-points."keel.event_listeners"]
+my_listener = "my_pkg.listeners:on_phase_change"
 ```
 
 ```python
-# my_pkg/preflights.py
-from keel.api import PhasePreflight, PreflightResult
+from keel.hooks import HookAborted, HookEvent, subscribes_to
 
-class TicketsAcceptedPreflight:
-    name = "tickets-accepted"
-    def check(self, scope, from_phase, to_phase):
-        if to_phase != "implementing":
-            return PreflightResult()
-        # ... query ticketing system ...
-        return PreflightResult(warnings=[]) if accepted else PreflightResult(blockers=["..."])
-
-def get_preflights():
-    return [TicketsAcceptedPreflight()]
+@subscribes_to("pre-phase")
+def on_phase_change(event: HookEvent, *, out) -> None:
+    if event.payload["to"] == "done":
+        if has_open_issues(event.project):
+            raise HookAborted("can't mark 'done' with open issues")
 ```
 
-### `keel.phase_transitions` — react after a successful transition
+Subscribers receive the `HookEvent` (with `name`, `phase`, `project`,
+`deliverable`, `payload`, `positional_args`) plus the keel `Output`.
+Pre-event subscribers may raise `HookAborted` to abort the command;
+post-event subscribers' exceptions are caught and logged.
 
-```toml
-[project.entry-points."keel.phase_transitions"]
-my_hook = "my_pkg.hooks:on_transition"
-```
+For end-user automation (without packaging a plugin), drop an executable
+script in `~/projects/.keel/hooks/<event>`. See the spec at
+`design/specs/2026-05-11-user-hooks-design.md` for details.
 
-```python
-# my_pkg/hooks.py
-def on_transition(scope, from_phase, to_phase):
-    # Side-effect only. Errors are caught and logged via out.warn.
-    print(f"transitioned {from_phase} -> {to_phase}")
-```
+> **Migrating from `keel.phase_preflights` / `keel.phase_transitions`?**
+> Those entry-point groups were removed in 0.0.4 with no backward-compat
+> bridge. See the migration guide in the spec linked above.
 
 ### Plugin configuration: the selector pattern
 
