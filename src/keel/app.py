@@ -153,5 +153,9 @@ from keel.commands.lifecycle import app as lifecycle_app  # noqa: E402
 
 app.add_typer(lifecycle_app, name="lifecycle")
 
+from keel.commands.hooks import app as hooks_app  # noqa: E402
+
+app.add_typer(hooks_app, name="hooks")
+
 # Load any third-party plugins last so they can extend existing groups.
 _load_plugin_commands()

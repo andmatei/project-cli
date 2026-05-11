@@ -1,0 +1,25 @@
+# keel hooks
+
+Drop executable scripts in this directory to react to keel events. Each
+script must have its executable bit set (`chmod +x post-phase`).
+
+Naming: `pre-<event>` or `post-<event>`, where `<event>` is one of:
+
+- `new` (project creation)
+- `phase` (phase transition; args: `<from> <to>`)
+- `deliverable-add`
+- `decision-new`
+- `archive`
+- `post-restore` (post-only)
+- `post-rename` (post-only; args: `<old> <new>`)
+
+Scripts receive:
+- Positional args (see above)
+- Env vars: `KEEL_EVENT`, `KEEL_PROJECT`, `KEEL_DELIVERABLE`,
+  `KEEL_HOOK_LAYER`, plus per-event extras like `KEEL_PHASE_FROM`
+- JSON event payload on stdin
+
+Pre-hooks can block their command by exiting non-zero; `--no-verify`
+overrides. Post-hooks are advisory and run after the command succeeds.
+
+See `keel hooks list` for the live set of events and subscribers.
