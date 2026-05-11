@@ -10,8 +10,10 @@ import typer
 
 from keel import git_ops, workspace
 from keel.api import ErrorCode, OpLog, Output, confirm_destructive
+from keel.hooks import HookAborted, hook_event, hookable
 
 
+@hookable("archive")
 def cmd_archive(
     ctx: typer.Context,
     name: str | None = typer.Argument(
@@ -19,6 +21,7 @@ def cmd_archive(
     ),
     force: bool = typer.Option(False, "--force", help="Allow archive even if worktrees are dirty."),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip confirmation prompt."),
+    no_verify: bool = typer.Option(False, "--no-verify", help="Skip pre-archive hooks."),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Print intended operations and exit; write nothing."
     ),
@@ -57,23 +60,21 @@ def cmd_archive(
                 found.append(child)
         return found
 
-    removed_worktrees = 0
+    removed_worktrees: int = 0
 
-    # Remove worktrees under the project root
-    for wt in _collect_worktrees(proj_dir):
-        try:
-            git_ops.remove_worktree(wt, force=force)
-            removed_worktrees += 1
-        except git_ops.GitError as e:
-            out.fail(f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED)
-
-    # Also handle deliverable worktrees
-    deliv_dir = proj_dir / "deliverables"
-    if deliv_dir.is_dir():
-        for d in sorted(deliv_dir.iterdir()):
-            if not d.is_dir():
-                continue
-            for wt in _collect_worktrees(d):
+    # Fire pre-archive, do the work, fire post-archive.
+    try:
+        with hook_event(
+            "archive",
+            project=project,
+            deliverable=None,
+            payload={},
+            positional_args=(project,),
+            out=out,
+            no_verify=no_verify,
+        ) as ev:
+            # Remove worktrees under the project root
+            for wt in _collect_worktrees(proj_dir):
                 try:
                     git_ops.remove_worktree(wt, force=force)
                     removed_worktrees += 1
@@ -82,10 +83,35 @@ def cmd_archive(
                         f"can't remove worktree {wt}: {e} (use --force)", code=ErrorCode.GIT_FAILED
                     )
 
-    # Move the project tree
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(proj_dir), str(dest))
-    (dest / ".archived").write_text(f"archived: {today}\nfrom: {proj_dir}\n")
+            # Also handle deliverable worktrees
+            deliv_dir = proj_dir / "deliverables"
+            if deliv_dir.is_dir():
+                for d in sorted(deliv_dir.iterdir()):
+                    if not d.is_dir():
+                        continue
+                    for wt in _collect_worktrees(d):
+                        try:
+                            git_ops.remove_worktree(wt, force=force)
+                            removed_worktrees += 1
+                        except git_ops.GitError as e:
+                            out.fail(
+                                f"can't remove worktree {wt}: {e} (use --force)",
+                                code=ErrorCode.GIT_FAILED,
+                            )
+
+            # Move the project tree
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(proj_dir), str(dest))
+            (dest / ".archived").write_text(f"archived: {today}\nfrom: {proj_dir}\n")
+
+            ev.add_post_payload(
+                {"archived_path": str(dest), "removed_worktrees": removed_worktrees}
+            )
+    except HookAborted as e:
+        out.fail(
+            f"archive aborted: {e} (use --no-verify to override)",
+            code=ErrorCode.PREFLIGHT_BLOCKED,
+        )
 
     out.result(
         {"archived_to": str(dest), "removed_worktrees": removed_worktrees},
