@@ -20,10 +20,12 @@ from keel.api import (
     save_project_manifest,
     slugify,
 )
+from keel.hooks import HookAborted, hook_event, hookable
 from keel.lifecycles import LifecycleNotFoundError, load_lifecycle
 from keel.markdown_edit import insert_under_heading
 
 
+@hookable("deliverable-add")
 def cmd_add(
     ctx: typer.Context,
     name: str = typer.Argument(..., help="Deliverable name (will be slugified)."),
@@ -48,6 +50,7 @@ def cmd_add(
     yes: bool = typer.Option(
         False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."
     ),
+    no_verify: bool = typer.Option(False, "--no-verify", help="Skip pre-deliverable-add hooks."),
     json_mode: bool = typer.Option(False, "--json", help="Emit machine-readable JSON to stdout."),
 ) -> None:
     """Create a new deliverable inside a project.
@@ -130,53 +133,84 @@ def cmd_add(
         out.info(log.format_summary())
         return
 
-    # Reuse the same scaffold logic as `keel new`. Late-import to avoid circulars.
-    from keel.commands.new import _scaffold_unit
-
-    manifest = _scaffold_unit(
-        scope=deliv_scope,
-        name=slug,
-        description=description,
-        lifecycle=parent_lifecycle,
-        repos=repo_specs,
-        lc=lc,
-    )
-
-    # Persist `shared_worktree=True` if requested. `_scaffold_unit` always builds with
-    # the default (False); we re-save the manifest here when --shared is set.
-    if shared:
-        manifest = ProjectManifest(
-            project=ProjectMeta(
-                name=manifest.project.name,
-                description=manifest.project.description,
-                created=manifest.project.created,
-                lifecycle=manifest.project.lifecycle,
-                shared_worktree=True,
-            ),
-            repos=[],
-            extensions=manifest.extensions,
-        )
-        save_project_manifest(deliv_scope.manifest_path, manifest)
-
-    # Create worktree if --repo was provided.
     created_worktree: str | None = None
-    if repo_paths:
-        wt_dest = deliv_scope.unit_dir / "code"
-        try:
-            git_ops.create_worktree(repo_paths[0], wt_dest, branch=repo_specs[0].branch_prefix)
-            created_worktree = str(wt_dest)
-        except git_ops.GitError as e:
-            out.info(f"Files are at {deliv_scope.unit_dir}; clean up manually if needed.")
-            out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
-
-    # AST-edit parent's design.md to reference the new deliverable.
-    parent_design_path = parent_scope.design_md_path
     modified_files: list[str] = []
-    if parent_design_path.is_file():
-        line = f"- **{slug}**: {description}. See [design](deliverables/{slug}/design.md).\n"
-        new_text = insert_under_heading(parent_design_path.read_text(), "Deliverables", line)
-        parent_design_path.write_text(new_text)
-        modified_files.append(str(parent_design_path))
+
+    # Fire pre-deliverable-add, do the work, fire post-deliverable-add.
+    try:
+        with hook_event(
+            "deliverable-add",
+            project=project,
+            deliverable=slug,
+            payload={"description": description, "lifecycle": parent_lifecycle},
+            positional_args=(slug,),
+            out=out,
+            no_verify=no_verify,
+        ) as ev:
+            # Reuse the same scaffold logic as `keel new`. Late-import to avoid circulars.
+            from keel.commands.new import _scaffold_unit
+
+            manifest = _scaffold_unit(
+                scope=deliv_scope,
+                name=slug,
+                description=description,
+                lifecycle=parent_lifecycle,
+                repos=repo_specs,
+                lc=lc,
+            )
+
+            # Persist `shared_worktree=True` if requested. `_scaffold_unit` always builds with
+            # the default (False); we re-save the manifest here when --shared is set.
+            if shared:
+                manifest = ProjectManifest(
+                    project=ProjectMeta(
+                        name=manifest.project.name,
+                        description=manifest.project.description,
+                        created=manifest.project.created,
+                        lifecycle=manifest.project.lifecycle,
+                        shared_worktree=True,
+                    ),
+                    repos=[],
+                    extensions=manifest.extensions,
+                )
+                save_project_manifest(deliv_scope.manifest_path, manifest)
+
+            # Create worktree if --repo was provided.
+            if repo_paths:
+                wt_dest = deliv_scope.unit_dir / "code"
+                try:
+                    git_ops.create_worktree(
+                        repo_paths[0], wt_dest, branch=repo_specs[0].branch_prefix
+                    )
+                    created_worktree = str(wt_dest)
+                except git_ops.GitError as e:
+                    out.info(f"Files are at {deliv_scope.unit_dir}; clean up manually if needed.")
+                    out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
+
+            # AST-edit parent's design.md to reference the new deliverable.
+            parent_design_path = parent_scope.design_md_path
+            if parent_design_path.is_file():
+                line = (
+                    f"- **{slug}**: {description}. See [design](deliverables/{slug}/design.md).\n"
+                )
+                new_text = insert_under_heading(
+                    parent_design_path.read_text(), "Deliverables", line
+                )
+                parent_design_path.write_text(new_text)
+                modified_files.append(str(parent_design_path))
+
+            ev.add_post_payload(
+                {
+                    "path": str(deliv_scope.unit_dir),
+                    "modified_files": modified_files,
+                    "worktree": created_worktree,
+                }
+            )
+    except HookAborted as e:
+        out.fail(
+            f"deliverable add aborted: {e} (use --no-verify to override)",
+            code=ErrorCode.PREFLIGHT_BLOCKED,
+        )
 
     out.result(
         {

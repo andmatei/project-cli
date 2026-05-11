@@ -153,3 +153,67 @@ def test_deliverable_add_inherits_lifecycle_from_parent(
     runner.invoke(app, ["deliverable", "add", "bar", "-d", "x", "-y"])
     deliv_manifest = load_project_manifest(proj / "deliverables" / "bar" / "project.toml")
     assert deliv_manifest.project.lifecycle == "default"
+
+
+def test_deliverable_add_fires_pre_and_post(projects, make_project, monkeypatch) -> None:
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+        fired: list[str] = []
+
+        @subscribes_to("pre-deliverable-add")
+        def pre(event: HookEvent, *, out) -> None:
+            fired.append(event.full_name)
+            assert event.project == "foo"
+
+        @subscribes_to("post-deliverable-add")
+        def post(event: HookEvent, *, out) -> None:
+            fired.append(event.full_name)
+            assert event.deliverable == "bar"
+            assert "path" in event.payload
+
+        runner = CliRunner()
+        proj = make_project("foo")
+        monkeypatch.chdir(proj)
+        result = runner.invoke(app, ["deliverable", "add", "bar", "-d", "test", "-y"])
+        assert result.exit_code == 0
+        assert fired == ["pre-deliverable-add", "post-deliverable-add"]
+    finally:
+        _clear_registry()
+        register_builtin_listeners()
+
+
+def test_deliverable_add_no_verify(projects, make_project, monkeypatch) -> None:
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookAborted, HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+
+        @subscribes_to("pre-deliverable-add")
+        def block(event: HookEvent, *, out) -> None:
+            raise HookAborted("nope")
+
+        runner = CliRunner()
+        proj = make_project("foo")
+        monkeypatch.chdir(proj)
+        blocked = runner.invoke(app, ["deliverable", "add", "bar", "-d", "x", "-y"])
+        assert blocked.exit_code != 0
+
+        bypassed = runner.invoke(app, ["deliverable", "add", "bar", "-d", "x", "-y", "--no-verify"])
+        assert bypassed.exit_code == 0
+    finally:
+        _clear_registry()
+        register_builtin_listeners()
