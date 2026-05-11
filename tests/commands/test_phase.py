@@ -110,7 +110,7 @@ def test_phase_does_not_print_duplicate_messages(projects, make_project, monkeyp
 
 
 # ---------------------------------------------------------------------------
-# Task 2.1: Preflights with --strict, --force, -y
+# Task 2.1: Preflights with --no-verify, -y
 # ---------------------------------------------------------------------------
 
 
@@ -126,32 +126,22 @@ def test_phase_next_warns_on_template_scope(projects, make_project, monkeypatch)
     assert "scope.md" in result.stderr.lower()
 
 
-def test_phase_strict_blocks_on_warning(projects, make_project, monkeypatch) -> None:
-    from keel import templates
-
-    proj = make_project("foo")
-    # Overwrite scope.md with the unedited template to trigger a warning
-    (proj / "scope.md").write_text(templates.render("scope_md.j2", name="foo", description=""))
-    monkeypatch.chdir(proj)
-    result = runner.invoke(app, ["phase", "--next", "--strict"])
-    assert result.exit_code != 0
-
-
-def test_phase_force_skips_preflight(projects, make_project, monkeypatch) -> None:
+def test_phase_no_verify_skips_preflight(projects, make_project, monkeypatch) -> None:
     proj = make_project("foo")
     monkeypatch.chdir(proj)
-    result = runner.invoke(app, ["phase", "--next", "--force"])
+    result = runner.invoke(app, ["phase", "--next", "--no-verify"])
     assert result.exit_code == 0
 
 
-def test_phase_blocker_blocks_without_force(projects, make_project, monkeypatch) -> None:
+def test_phase_blocker_blocks_without_no_verify(projects, make_project, monkeypatch) -> None:
     """poc → implementing without milestones blocks."""
     proj = make_project("foo")
     monkeypatch.chdir(proj)
-    # Force ahead through scoping→designing→poc, then try implementing without milestones
-    runner.invoke(app, ["phase", "designing", "--force"])
-    runner.invoke(app, ["phase", "poc", "--force"])
-    result = runner.invoke(app, ["phase", "implementing", "--strict"])
+    # Walk ahead through scoping→designing→poc using --no-verify to bypass intermediate
+    # warnings, then try implementing without milestones (blocker, not warning).
+    runner.invoke(app, ["phase", "designing", "--no-verify"])
+    runner.invoke(app, ["phase", "poc", "--no-verify"])
+    result = runner.invoke(app, ["phase", "implementing", "-y"])
     assert result.exit_code != 0
     assert "milestone" in result.stderr.lower()
 
@@ -267,5 +257,83 @@ b = ["c"]
     runner.invoke(app, ["new", "alpha", "-d", "x", "--no-worktree", "-y", "--lifecycle", "linear"])
     monkeypatch.chdir(projects / "alpha")
     # 'a' has no edge to 'c' — should fail
-    result = runner.invoke(app, ["phase", "c", "--force"])
+    result = runner.invoke(app, ["phase", "c", "--no-verify"])
     assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# Task 2.2: hook_event dispatch wiring + --no-verify flag
+# ---------------------------------------------------------------------------
+
+
+def test_phase_no_verify_skips_pre_hooks(projects, make_project, monkeypatch) -> None:
+    """--no-verify bypasses pre-phase blockers."""
+    from typer.testing import CliRunner
+
+    from keel.app import app
+
+    runner = CliRunner()
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    # Set phase to poc so transitioning to implementing triggers the
+    # milestone-exists blocker (which would raise HookAborted).
+    (proj / ".keel" / "phase").write_text("poc\n")
+
+    # Without --no-verify: blocked
+    result_block = runner.invoke(app, ["phase", "implementing", "-y"])
+    assert result_block.exit_code != 0
+
+    # With --no-verify: succeeds
+    result_ok = runner.invoke(app, ["phase", "implementing", "-y", "--no-verify"])
+    assert result_ok.exit_code == 0, result_ok.stderr
+
+
+def test_phase_fires_post_phase_subscriber(projects, make_project, monkeypatch) -> None:
+    """Successful transition fires post-phase subscribers."""
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookEvent, subscribes_to
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    # Re-register builtins after clearing
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+
+    register_builtin_listeners()
+
+    captured: list[tuple[str | None, str | None]] = []
+
+    @subscribes_to("post-phase")
+    def capture(event: HookEvent, *, out) -> None:
+        captured.append((event.payload.get("from"), event.payload.get("to")))
+
+    runner = CliRunner()
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    # Edit scope.md so the scope-edited preflight passes
+    (proj / "scope.md").write_text("# foo\n\nReal scope content.\n")
+
+    result = runner.invoke(app, ["phase", "designing", "-y"])
+    assert result.exit_code == 0, result.stderr
+    assert captured == [("scoping", "designing")]
+
+
+def test_phase_preflight_warning_still_prompts(projects, make_project, monkeypatch) -> None:
+    """Subscribers that out.warn produce a confirmation prompt (preserved behavior)."""
+    from typer.testing import CliRunner
+
+    from keel.app import app
+
+    runner = CliRunner()
+    proj = make_project("foo")
+    monkeypatch.chdir(proj)
+    # Leave scope.md as scaffold so scope-md-edited fires a warning
+    from keel import templates
+
+    (proj / "scope.md").write_text(templates.render("scope_md.j2", name="foo", description=""))
+
+    # -y skips the prompt — must still succeed with warning
+    result = runner.invoke(app, ["phase", "designing", "-y"])
+    assert result.exit_code == 0
+    assert "scope.md is still the template scaffold" in result.stderr

@@ -12,13 +12,15 @@ from keel.api import (
     LifecycleNotFoundError,
     OpLog,
     Output,
-    confirm_destructive,
     load_lifecycle,
     load_project_manifest,
     resolve_cli_scope,
 )
-from keel.phase_events import fire_phase_transition
-from keel.preflights import iter_preflights
+from keel.hooks import HookAborted, hook_event, hookable
+from keel.hooks.builtin_listeners import register_builtin_listeners
+
+# Activate built-in pre-phase listeners on first import of this module.
+register_builtin_listeners()
 
 
 def _read_phase(scope: workspace.Scope) -> tuple[str, list[str]]:
@@ -31,6 +33,7 @@ def _read_phase(scope: workspace.Scope) -> tuple[str, list[str]]:
     return current, lines[1:]
 
 
+@hookable("phase")
 def cmd_phase(
     ctx: typer.Context,
     phase: str | None = typer.Argument(
@@ -49,8 +52,9 @@ def cmd_phase(
     no_decision: bool = typer.Option(
         False, "--no-decision", help="Skip auto-creating a phase-transition decision file."
     ),
-    strict: bool = typer.Option(False, "--strict", help="Treat preflight warnings as blockers."),
-    force: bool = typer.Option(False, "--force", help="Skip preflight checks entirely."),
+    no_verify: bool = typer.Option(
+        False, "--no-verify", help="Skip all pre-phase hooks (in-tree + plugin + user-script)."
+    ),
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip the warning confirmation prompt."),
     list_next: bool = typer.Option(
         False,
@@ -78,10 +82,7 @@ def cmd_phase(
         manifest = load_project_manifest(project_scope.manifest_path)
         lc = load_lifecycle(manifest.project.lifecycle)
     except LifecycleNotFoundError as e:
-        out.fail(
-            f"lifecycle not found: {e}",
-            code=ErrorCode.NOT_FOUND,
-        )
+        out.fail(f"lifecycle not found: {e}", code=ErrorCode.NOT_FOUND)
 
     # --list-next mode: show valid next transitions and exit
     if list_next:
@@ -117,7 +118,6 @@ def cmd_phase(
         return
 
     # Transition mode
-    # Determine target phase
     target = phase
     if next_phase:
         if current not in lc.states:
@@ -130,14 +130,12 @@ def cmd_phase(
             )
         target = explicit_successors[0]
 
-    # Validate target state is known
     if target not in lc.states:
         out.fail(
             f"unknown phase '{target}' for lifecycle '{lc.name}'",
             code=ErrorCode.INVALID_PHASE,
         )
 
-    # Validate transition is allowed (unless it's a no-op)
     if target != current and target not in lc.successors(current):
         out.fail(
             f"cannot transition from '{current}' to '{target}' "
@@ -149,32 +147,6 @@ def cmd_phase(
         out.info(f"already in phase: {current}")
         return
 
-    # Run preflights
-    if not force and current != target:  # skip when forcing or no-op
-        accumulated_warnings: list[str] = []
-        accumulated_blockers: list[str] = []
-        for pf in iter_preflights():
-            result = pf.check(scope, current, target)
-            accumulated_warnings.extend(result.warnings)
-            accumulated_blockers.extend(result.blockers)
-        if strict:
-            accumulated_blockers.extend(accumulated_warnings)
-            accumulated_warnings = []
-        if accumulated_blockers:
-            for b in accumulated_blockers:
-                out.error(f"preflight blocker: {b}", code=ErrorCode.PREFLIGHT_BLOCKED)
-            out.fail(
-                "phase transition blocked by preflight checks (use --force to override)",
-                code=ErrorCode.PREFLIGHT_BLOCKED,
-            )
-        if accumulated_warnings:
-            for w in accumulated_warnings:
-                out.warn(f"preflight: {w}")
-            confirm_destructive(
-                f"Continue with phase {current} -> {target}? (use --strict to block on warnings)",
-                yes=yes,
-            )
-
     if dry_run:
         log = OpLog()
         log.modify_file(path, diff=f"{current} → {target}")
@@ -184,31 +156,44 @@ def cmd_phase(
         out.info(log.format_summary())
         return
 
-    # Apply transition
-    today = date.today().isoformat()
-    history_line = f"{today}  {current} → {target}"
-    if message:
-        history_line += f"  ({message})"
-    new_lines = [target] + [history_line] + history
-    scope.keel_dir.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(new_lines) + "\n")
+    # Fire pre-phase + body + post-phase via hook_event.
+    try:
+        with hook_event(
+            "phase",
+            project=project,
+            deliverable=deliverable,
+            payload={"from": current, "to": target},
+            positional_args=(current, target),
+            out=out,
+            no_verify=no_verify,
+        ):
+            # Apply transition.
+            today = date.today().isoformat()
+            history_line = f"{today}  {current} → {target}"
+            if message:
+                history_line += f"  ({message})"
+            new_lines = [target] + [history_line] + history
+            scope.keel_dir.mkdir(parents=True, exist_ok=True)
+            path.write_text("\n".join(new_lines) + "\n")
 
-    # Auto-create phase decision file
-    if not no_decision:
-        _decisions_dir = scope.decisions_dir
-        _decisions_dir.mkdir(parents=True, exist_ok=True)
-        decision_path = _decisions_dir / f"{today}-phase-{target}.md"
-        if not decision_path.exists():
-            decision_path.write_text(
-                templates.render(
-                    "decision_entry.j2",
-                    date=today,
-                    title=f"Phase transition: {current} → {target}",
-                )
-            )
-
-    # Fire phase transition hooks
-    fire_phase_transition(scope, current, target, out=out)
+            # Auto-create phase decision file.
+            if not no_decision:
+                _decisions_dir = scope.decisions_dir
+                _decisions_dir.mkdir(parents=True, exist_ok=True)
+                decision_path = _decisions_dir / f"{today}-phase-{target}.md"
+                if not decision_path.exists():
+                    decision_path.write_text(
+                        templates.render(
+                            "decision_entry.j2",
+                            date=today,
+                            title=f"Phase transition: {current} → {target}",
+                        )
+                    )
+    except HookAborted as e:
+        out.fail(
+            f"phase transition blocked: {e} (use --no-verify to override)",
+            code=ErrorCode.PREFLIGHT_BLOCKED,
+        )
 
     out.result(
         {
