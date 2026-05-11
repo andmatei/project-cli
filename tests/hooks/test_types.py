@@ -31,8 +31,12 @@ def test_hook_event_is_frozen() -> None:
     from keel.hooks import HookEvent
 
     event = HookEvent(
-        name="new", phase="pre", project="foo", deliverable=None,
-        payload={}, positional_args=(),
+        name="new",
+        phase="pre",
+        project="foo",
+        deliverable=None,
+        payload={},
+        positional_args=(),
     )
     with pytest.raises(FrozenInstanceError):
         event.name = "phase"  # type: ignore[misc]
@@ -42,8 +46,12 @@ def test_hook_event_full_name() -> None:
     """full_name returns 'pre-<name>' or 'post-<name>'."""
     from keel.hooks import HookEvent
 
-    pre = HookEvent(name="new", phase="pre", project=None, deliverable=None, payload={}, positional_args=())
-    post = HookEvent(name="phase", phase="post", project="foo", deliverable=None, payload={}, positional_args=())
+    pre = HookEvent(
+        name="new", phase="pre", project=None, deliverable=None, payload={}, positional_args=()
+    )
+    post = HookEvent(
+        name="phase", phase="post", project="foo", deliverable=None, payload={}, positional_args=()
+    )
     assert pre.full_name == "pre-new"
     assert post.full_name == "post-phase"
 
