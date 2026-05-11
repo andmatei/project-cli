@@ -5,8 +5,10 @@ from __future__ import annotations
 import typer
 
 from keel.api import ErrorCode, OpLog, Output, confirm_destructive, projects_dir
+from keel.hooks import hook_event, hookable
 
 
+@hookable("restore")
 def cmd_restore(
     ctx: typer.Context,
     name: str = typer.Argument(..., help="Project name to restore from .archive/."),
@@ -52,7 +54,17 @@ def cmd_restore(
 
     confirm_destructive(f"Restore project '{name}' from archive?", yes=yes)
 
-    archive_dir.rename(target_dir)
+    with hook_event(
+        "restore",
+        project=name,
+        deliverable=None,
+        payload={},
+        positional_args=(name,),
+        out=out,
+    ) as ev:
+        archive_dir.rename(target_dir)
+        ev.add_post_payload({"path": str(target_dir)})
+
     out.result(
         {"restored": name, "path": str(target_dir)},
         human_text=f"Restored: {name} → {target_dir}",

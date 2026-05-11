@@ -72,3 +72,33 @@ def test_rename_with_worktree_uses_git_worktree_move(
     assert result.exit_code == 0
     assert len(move_calls) == 1
     assert (projects / "bar" / "code" / "README").is_file()
+
+
+def test_rename_fires_post_rename(projects, make_project, monkeypatch) -> None:
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+        fired: list[dict] = []
+
+        @subscribes_to("post-rename")
+        def post(event: HookEvent, *, out) -> None:
+            fired.append(dict(event.payload))
+
+        runner = CliRunner()
+        make_project("foo")
+        monkeypatch.chdir(projects)
+        result = runner.invoke(app, ["rename", "foo", "bar", "-y"])
+        assert result.exit_code == 0, result.stderr
+        assert len(fired) == 1
+        assert fired[0]["old_name"] == "foo"
+        assert fired[0]["new_name"] == "bar"
+    finally:
+        _clear_registry()
+        register_builtin_listeners()

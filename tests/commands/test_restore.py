@@ -51,3 +51,38 @@ def test_restore_dry_run(projects, make_project, monkeypatch) -> None:
     # Still archived after dry run
     archived_dirs = list((projects / ".archive").glob("foo-*"))
     assert len(archived_dirs) == 1
+
+
+def test_restore_fires_post_restore(projects, monkeypatch) -> None:
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+        fired: list[str] = []
+
+        @subscribes_to("post-restore")
+        def post(event: HookEvent, *, out) -> None:
+            fired.append(event.full_name)
+            assert event.project == "foo"
+            assert "path" in event.payload
+
+        # Set up an archived project
+        runner = CliRunner()
+        monkeypatch.chdir(projects)
+        (projects / ".archive").mkdir()
+        archived = projects / ".archive" / "foo-2025-01-01"
+        archived.mkdir()
+        (archived / ".archived").write_text("archived: 2025-01-01\nfrom: /old\n")
+
+        result = runner.invoke(app, ["restore", "foo", "-y"])
+        assert result.exit_code == 0, result.stderr
+        assert fired == ["post-restore"]
+    finally:
+        _clear_registry()
+        register_builtin_listeners()

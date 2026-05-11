@@ -20,8 +20,10 @@ from keel.api import (
     save_project_manifest,
     slugify,
 )
+from keel.hooks import hook_event, hookable
 
 
+@hookable("rename")
 def cmd_rename(
     ctx: typer.Context,
     old: str = typer.Argument(..., help="Current project name."),
@@ -64,54 +66,65 @@ def cmd_rename(
         yes=yes,
     )
 
-    m = load_project_manifest(old_scope.manifest_path)
-
-    # Ensure target dir exists before moving any children.
-    new_path.mkdir(parents=True, exist_ok=True)
-
-    # Move worktrees with git_ops.move_worktree (preserves linkage)
     branch_renames: list[tuple[str, str]] = []
-    new_repos = []
-    for r in m.repos:
-        old_wt = old_path / r.worktree
-        new_wt = new_path / r.worktree
-        if old_wt.is_dir():
-            git_ops.move_worktree(old_wt, new_wt)
-            if rename_branches and r.branch_prefix and old in r.branch_prefix:
-                old_branch = git_ops.current_branch(new_wt)
-                if old_branch and old_branch.startswith(r.branch_prefix):
-                    new_branch_prefix = r.branch_prefix.replace(old, new_slug, 1)
-                    new_branch = old_branch.replace(r.branch_prefix, new_branch_prefix, 1)
-                    git_ops.rename_branch(new_wt, old=old_branch, new=new_branch)
-                    branch_renames.append((old_branch, new_branch))
-                    r = RepoSpec(
-                        remote=r.remote,
-                        local_hint=r.local_hint,
-                        worktree=r.worktree,
-                        branch_prefix=new_branch_prefix,
-                    )
-        new_repos.append(r)
 
-    # Move the rest (design dir, deliverables, etc.)
-    for child in list(old_path.iterdir()):
-        if (new_path / child.name).exists():
-            continue  # already moved (worktree)
-        shutil.move(str(child), str(new_path / child.name))
+    with hook_event(
+        "rename",
+        project=new_slug,
+        deliverable=None,
+        payload={"old_name": old, "new_name": new_slug},
+        positional_args=(old, new_slug),
+        out=out,
+    ) as ev:
+        m = load_project_manifest(old_scope.manifest_path)
 
-    # rmdir old path if empty
-    if old_path.exists() and not any(old_path.iterdir()):
-        old_path.rmdir()
+        # Ensure target dir exists before moving any children.
+        new_path.mkdir(parents=True, exist_ok=True)
 
-    # Update manifest's name and (if renamed) repo branch prefixes
-    new_manifest = ProjectManifest(
-        project=ProjectMeta(
-            name=new_slug,
-            description=m.project.description,
-            created=m.project.created,
-        ),
-        repos=new_repos,
-    )
-    save_project_manifest(new_scope.manifest_path, new_manifest)
+        # Move worktrees with git_ops.move_worktree (preserves linkage)
+        new_repos = []
+        for r in m.repos:
+            old_wt = old_path / r.worktree
+            new_wt = new_path / r.worktree
+            if old_wt.is_dir():
+                git_ops.move_worktree(old_wt, new_wt)
+                if rename_branches and r.branch_prefix and old in r.branch_prefix:
+                    old_branch = git_ops.current_branch(new_wt)
+                    if old_branch and old_branch.startswith(r.branch_prefix):
+                        new_branch_prefix = r.branch_prefix.replace(old, new_slug, 1)
+                        new_branch = old_branch.replace(r.branch_prefix, new_branch_prefix, 1)
+                        git_ops.rename_branch(new_wt, old=old_branch, new=new_branch)
+                        branch_renames.append((old_branch, new_branch))
+                        r = RepoSpec(
+                            remote=r.remote,
+                            local_hint=r.local_hint,
+                            worktree=r.worktree,
+                            branch_prefix=new_branch_prefix,
+                        )
+            new_repos.append(r)
+
+        # Move the rest (design dir, deliverables, etc.)
+        for child in list(old_path.iterdir()):
+            if (new_path / child.name).exists():
+                continue  # already moved (worktree)
+            shutil.move(str(child), str(new_path / child.name))
+
+        # rmdir old path if empty
+        if old_path.exists() and not any(old_path.iterdir()):
+            old_path.rmdir()
+
+        # Update manifest's name and (if renamed) repo branch prefixes
+        new_manifest = ProjectManifest(
+            project=ProjectMeta(
+                name=new_slug,
+                description=m.project.description,
+                created=m.project.created,
+            ),
+            repos=new_repos,
+        )
+        save_project_manifest(new_scope.manifest_path, new_manifest)
+
+        ev.add_post_payload({"branch_renames": branch_renames})
 
     out.result(
         {"old": old, "new": new_slug, "branch_renames": branch_renames},
