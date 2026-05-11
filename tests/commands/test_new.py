@@ -243,3 +243,100 @@ def test_new_human_design_files_at_root(projects, monkeypatch) -> None:
     assert (projects / "alpha" / "decisions").is_dir()
     # design/ subfolder MUST NOT be created in the new layout
     assert not (projects / "alpha" / "design").exists()
+
+
+# ---------------------------------------------------------------------------
+# Task 3.1: hook_event wiring (pre-new / post-new) + --no-verify
+# ---------------------------------------------------------------------------
+
+
+def test_new_fires_pre_and_post_subscribers(projects, monkeypatch) -> None:
+    """Both pre-new and post-new fire around a successful keel new."""
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+        fired: list[str] = []
+
+        @subscribes_to("pre-new")
+        def pre(event: HookEvent, *, out) -> None:
+            fired.append(event.full_name)
+
+        @subscribes_to("post-new")
+        def post(event: HookEvent, *, out) -> None:
+            fired.append(event.full_name)
+            # Post payload contains 'path'
+            assert "path" in event.payload
+
+        runner = CliRunner()
+        monkeypatch.chdir(projects)
+        result = runner.invoke(app, ["new", "foo", "-d", "test", "--no-worktree", "-y"])
+        assert result.exit_code == 0
+        assert fired == ["pre-new", "post-new"]
+    finally:
+        _clear_registry()
+        register_builtin_listeners()
+
+
+def test_new_pre_hook_can_block(projects, monkeypatch) -> None:
+    """A pre-new subscriber raising HookAborted aborts the command."""
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookAborted, HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+
+        @subscribes_to("pre-new")
+        def block(event: HookEvent, *, out) -> None:
+            raise HookAborted("not allowed")
+
+        runner = CliRunner()
+        monkeypatch.chdir(projects)
+        result = runner.invoke(app, ["new", "foo", "-d", "test", "--no-worktree", "-y"])
+        assert result.exit_code != 0
+        assert "not allowed" in result.stderr
+        # No project dir created
+        assert not (projects / "foo").exists()
+    finally:
+        _clear_registry()
+        register_builtin_listeners()
+
+
+def test_new_no_verify_bypasses_pre_hook(projects, monkeypatch) -> None:
+    """--no-verify skips pre-new subscribers."""
+    from typer.testing import CliRunner
+
+    from keel.app import app
+    from keel.hooks import HookAborted, HookEvent, subscribes_to
+    from keel.hooks.builtin_listeners import register_builtin_listeners
+    from keel.hooks.registry import _clear_registry
+
+    _clear_registry()
+    register_builtin_listeners()
+    try:
+
+        @subscribes_to("pre-new")
+        def block(event: HookEvent, *, out) -> None:
+            raise HookAborted("not allowed")
+
+        runner = CliRunner()
+        monkeypatch.chdir(projects)
+        result = runner.invoke(
+            app, ["new", "foo", "-d", "test", "--no-worktree", "-y", "--no-verify"]
+        )
+        assert result.exit_code == 0
+        assert (projects / "foo" / "project.toml").is_file()
+    finally:
+        _clear_registry()
+        register_builtin_listeners()

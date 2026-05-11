@@ -20,6 +20,7 @@ from keel.api import (
     save_project_manifest,
     slugify,
 )
+from keel.hooks import HookAborted, hook_event, hookable
 from keel.lifecycles import (
     Lifecycle,
     LifecycleNotFoundError,
@@ -28,6 +29,7 @@ from keel.lifecycles import (
 )
 
 
+@hookable("new")
 def cmd_new(
     ctx: typer.Context,
     name: str = typer.Argument(..., help="Project name (will be slugified)."),
@@ -51,6 +53,9 @@ def cmd_new(
     ),
     yes: bool = typer.Option(
         False, "-y", "--yes", help="Skip interactive prompts (description, etc.)."
+    ),
+    no_verify: bool = typer.Option(
+        False, "--no-verify", help="Skip pre-new hooks (in-tree + plugin + user-script)."
     ),
     lifecycle: str = typer.Option(
         "default",
@@ -106,25 +111,43 @@ def cmd_new(
         out.info(log.format_summary())
         return
 
-    manifest = _scaffold_unit(
-        scope=scope,
-        name=slug,
-        description=description,
-        lifecycle=lifecycle,
-        repos=repo_specs,
-        lc=lc,
-    )
-
-    # Worktrees (last — file ops above already done)
     created_worktrees: list[str] = []
-    for rp, spec in zip(repo_paths, manifest.repos, strict=True):
-        wt_dest = proj / spec.worktree
-        try:
-            git_ops.create_worktree(rp, wt_dest, branch=spec.branch_prefix)
-            created_worktrees.append(str(wt_dest))
-        except git_ops.GitError as e:
-            out.info(f"Files are at {proj}; clean up with `rm -rf {proj}` or retry.")
-            out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
+
+    # Fire pre-new, do the work, fire post-new.
+    try:
+        with hook_event(
+            "new",
+            project=slug,
+            payload={"description": description, "lifecycle": lifecycle},
+            positional_args=(slug,),
+            out=out,
+            no_verify=no_verify,
+        ) as ev:
+            manifest = _scaffold_unit(
+                scope=scope,
+                name=slug,
+                description=description,
+                lifecycle=lifecycle,
+                repos=repo_specs,
+                lc=lc,
+            )
+
+            # Worktrees (last — file ops above already done)
+            for rp, spec in zip(repo_paths, manifest.repos, strict=True):
+                wt_dest = proj / spec.worktree
+                try:
+                    git_ops.create_worktree(rp, wt_dest, branch=spec.branch_prefix)
+                    created_worktrees.append(str(wt_dest))
+                except git_ops.GitError as e:
+                    out.info(f"Files are at {proj}; clean up with `rm -rf {proj}` or retry.")
+                    out.fail(f"worktree creation failed: {e}", code=ErrorCode.GIT_FAILED)
+
+            ev.add_post_payload({"path": str(proj), "worktrees": created_worktrees})
+    except HookAborted as e:
+        out.fail(
+            f"new aborted: {e} (use --no-verify to override)",
+            code=ErrorCode.PREFLIGHT_BLOCKED,
+        )
 
     out.result(
         {"path": str(proj), "worktrees": created_worktrees},
