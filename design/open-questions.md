@@ -60,4 +60,22 @@ pattern).
 
 ---
 
+## 2026-05-11 — Feature ideas surfaced during Plan 9
+
+### Tags for projects and deliverables
+
+User wants to add tags to projects (and deliverables) for categorization
+and filtering on `keel list` / `keel deliverable list`. Likely fits as:
+- `tags: list[str]` field on `ProjectMeta` (TOML: `tags = ["api", "research"]`)
+- `--tag <name>` filter on `keel list` (repeatable, AND semantics)
+- Reasonable defaults: empty list, validator forbids whitespace/special chars
+- Open Qs: hierarchical tags? `keel tag add/rm` management commands? colors
+  for terminal rendering?
+
+Worth its own brainstorm + plan after Plan 9 ships. Small surface, no
+breaking changes expected — `tags` defaults to `[]`, existing projects
+work unchanged.
+
+---
+
 (Add more sections below as new questions surface.)
